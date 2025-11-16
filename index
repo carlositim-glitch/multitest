@@ -11,7 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
 
   <script>
-    // Configuración Firebase
+    // ==================== CONFIGURACIÓN FIREBASE ====================
     const firebaseConfig = {
       apiKey: "AIzaSyCQ5u2bs7kv7KNsS7HQ_T2HYNNnhI-KbG4",
       authDomain: "multitest-gobcan.firebaseapp.com",
@@ -22,12 +22,267 @@
       measurementId: "G-D3PN7H340S"
     };
     
+    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
     const analytics = firebase.analytics();
 
     console.log('🔥 Firebase configurado correctamente');
+
+    // ==================== FUNCIONES GLOBALES PARA LOGIN ====================
+    window.loginWithGoogle = function() {
+      console.log('🔵 Iniciando login con Google...');
+      
+      showLoginLoading(true);
+      hideErrorMessage();
+
+      const btnGoogle = document.getElementById('btnGoogleLogin');
+      if (btnGoogle) btnGoogle.disabled = true;
+
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
+
+      firebase.auth().signInWithPopup(provider)
+        .then((result) => {
+          console.log('✅ Login Google exitoso:', result.user);
+          handleLoginSuccess(result.user);
+        })
+        .catch((error) => {
+          console.error('❌ Error login Google:', error);
+          
+          let errorMsg = 'Error en login con Google';
+          
+          switch(error.code) {
+            case 'auth/popup-blocked':
+              errorMsg = 'El navegador bloqueó la ventana emergente. Por favor, permite las ventanas emergentes.';
+              break;
+            case 'auth/popup-closed-by-user':
+              errorMsg = 'Cerraste la ventana de login antes de completar el proceso.';
+              break;
+            case 'auth/unauthorized-domain':
+              errorMsg = 'Este dominio no está autorizado. Verifica la configuración en Firebase Console.';
+              break;
+            case 'auth/operation-not-allowed':
+              errorMsg = 'El login con Google no está habilitado. Actívalo en Firebase Console.';
+              break;
+            case 'auth/network-request-failed':
+              errorMsg = 'Error de red. Verifica tu conexión a internet.';
+              break;
+            default:
+              errorMsg = `Error: ${error.message}`;
+          }
+          
+          showErrorMessage(errorMsg);
+          showLoginLoading(false);
+          if (btnGoogle) btnGoogle.disabled = false;
+        });
+    };
+
+    window.loginWithEmail = function() {
+      const email = document.getElementById('emailInput').value.trim();
+      const password = document.getElementById('passwordInput').value;
+
+      if (!email || !password) {
+        showErrorMessage('Por favor completa ambos campos');
+        return;
+      }
+
+      if (!validateEmail(email)) {
+        showErrorMessage('Por favor ingresa un email válido');
+        return;
+      }
+
+      showLoginLoading(true);
+      hideErrorMessage();
+
+      firebase.auth().signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          console.log('✅ Login email exitoso:', userCredential.user);
+          handleLoginSuccess(userCredential.user);
+        })
+        .catch((error) => {
+          console.error('❌ Error login email:', error);
+          
+          let errorMsg = 'Error al iniciar sesión';
+          
+          switch(error.code) {
+            case 'auth/user-not-found':
+              errorMsg = 'No existe una cuenta con este email';
+              break;
+            case 'auth/wrong-password':
+              errorMsg = 'Contraseña incorrecta';
+              break;
+            case 'auth/invalid-email':
+              errorMsg = 'Email inválido';
+              break;
+            case 'auth/user-disabled':
+              errorMsg = 'Esta cuenta ha sido deshabilitada';
+              break;
+            case 'auth/too-many-requests':
+              errorMsg = 'Demasiados intentos fallidos. Intenta más tarde';
+              break;
+            default:
+              errorMsg = error.message;
+          }
+          
+          showErrorMessage(errorMsg);
+          showLoginLoading(false);
+        });
+    };
+
+    window.registerWithEmail = function() {
+      const email = document.getElementById('emailInput').value.trim();
+      const password = document.getElementById('passwordInput').value;
+
+      if (!email || !password) {
+        showErrorMessage('Por favor completa ambos campos');
+        return;
+      }
+
+      if (!validateEmail(email)) {
+        showErrorMessage('Por favor ingresa un email válido');
+        return;
+      }
+
+      if (password.length < 6) {
+        showErrorMessage('La contraseña debe tener al menos 6 caracteres');
+        return;
+      }
+
+      showLoginLoading(true);
+      hideErrorMessage();
+
+      firebase.auth().createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          console.log('✅ Registro exitoso:', userCredential.user);
+          handleLoginSuccess(userCredential.user);
+        })
+        .catch((error) => {
+          console.error('❌ Error al registrarse:', error);
+          
+          let errorMsg = 'Error al crear la cuenta';
+          
+          switch(error.code) {
+            case 'auth/email-already-in-use':
+              errorMsg = 'Este email ya está registrado. Intenta iniciar sesión';
+              break;
+            case 'auth/invalid-email':
+              errorMsg = 'Email inválido';
+              break;
+            case 'auth/weak-password':
+              errorMsg = 'La contraseña es muy débil';
+              break;
+            default:
+              errorMsg = error.message;
+          }
+          
+          showErrorMessage(errorMsg);
+          showLoginLoading(false);
+        });
+    };
+
+    // Funciones auxiliares globales
+    window.showLoginLoading = function(show) {
+      document.getElementById('loginLoading').style.display = show ? 'block' : 'none';
+    };
+
+    window.hideErrorMessage = function() {
+      const errorDiv = document.getElementById('errorMessage');
+      if (errorDiv) {
+        errorDiv.classList.remove('show');
+      }
+    };
+
+    window.showErrorMessage = function(message) {
+      const errorDiv = document.getElementById('errorMessage');
+      if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.classList.add('show');
+      }
+    };
+
+    window.validateEmail = function(email) {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return re.test(email);
+    };
+
+    window.handleLoginSuccess = function(user) {
+      usuarioActual = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || user.email
+      };
+
+      document.getElementById('userEmail').textContent = usuarioActual.email;
+      showLoginLoading(false);
+      mostrarPantalla('screenCategorias');
+
+      crearPerfilUsuario();
+      cargarCategoriasDisponibles();
+
+      if (typeof analytics !== 'undefined') {
+        firebase.analytics().setUserId(user.uid);
+        firebase.analytics().logEvent('login', {
+          method: user.providerData[0]?.providerId || 'unknown'
+        });
+      }
+    };
+
+    window.cerrarSesion = function() {
+      firebase.auth().signOut()
+        .then(() => {
+          console.log('✅ Sesión cerrada correctamente');
+          usuarioActual = null;
+          categoriaActual = null;
+          masterPreguntasPool = [];
+          remainingPreguntas = [];
+          preguntasActuales = [];
+          indicePreguntaActual = 0;
+          respuestasUsuario = [];
+          numeroTanda = 0;
+
+          if (analytics) {
+            firebase.analytics().setUserId(null);
+          }
+
+          document.getElementById('emailInput').value = '';
+          document.getElementById('passwordInput').value = '';
+          hideErrorMessage();
+
+          mostrarPantalla('screenLogin');
+        })
+        .catch((error) => {
+          console.error('❌ Error cerrando sesión:', error);
+          showErrorMessage('Error al cerrar sesión');
+        });
+    };
+
+    // ==================== VARIABLES GLOBALES ====================
+    let usuarioActual = null;
+    let categoriaActual = null;
+    let masterPreguntasPool = [];
+    let preguntasRealizadasGlobal = 0;
+    let remainingPreguntas = [];
+    let failedPreguntas = [];
+    let preguntasActuales = [];
+    let indicePreguntaActual = 0;
+    let respuestasUsuario = [];
+    let numeroTanda = 0;
+    let totalPreguntas = 0;
+    let preguntasPorTanda = 30;
+    let aciertosGlobal = 0;
+    let inicioTestTimestamp = null;
+
+    // ==================== CONFIG ====================
+    const useLocalData = false;
+    const preguntasFolder = 'preguntas';
+
+    const CONFIG = {
+      mostrarProgresoTanda: false,
+      mostrarRestantesGlobal: false
+    };
   </script>
 
   <style>
@@ -455,7 +710,7 @@
     .opciones {
       display: grid;
       gap: 12px;
-      margin-bottom: 24px;
+      margin-bottom: 0; /* Reducido porque el botón IA está separado */
     }
 
     .opcion {
@@ -563,7 +818,7 @@
     #tandaOptions {
       display: flex;
       gap: 8px;
-      margin-top: 16px;
+      margin-top: 20px; /* Aumentado para dar espacio después del botón IA */
     }
 
     #tandaOptions .btn {
@@ -571,6 +826,23 @@
       padding: 10px 12px;
       font-size: 13px;
       white-space: nowrap;
+    }
+
+    /* BOTÓN EXPLICAR CON IA */
+    #btnExplicarIA {
+      width: 100%;
+      margin-top: 16px;
+      background: transparent;
+      border: 2px solid var(--border-hover);
+      color: var(--text);
+      transition: all 0.3s ease;
+    }
+
+    #btnExplicarIA:hover {
+      background: var(--card-2);
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-1px);
     }
 
     .progress-bar {
@@ -1100,12 +1372,18 @@
       /* OPCIONES COMPACTAS */
       .opciones {
         gap: 10px; /* Reducido de 12px */
-        margin-bottom: 16px; /* Reducido de 24px */
+        margin-bottom: 0; /* Sin margen porque el botón está separado */
       }
 
       .opcion {
         padding: 10px 12px; /* Reducido lateral de 14px a 12px */
         gap: 10px;
+      }
+
+      /* Botón Explicar IA en móvil */
+      #btnExplicarIA {
+        margin-top: 12px;
+        font-size: 13px;
       }
 
       .opcion-letra {
@@ -1142,7 +1420,7 @@
 
       #tandaOptions {
         gap: 6px;
-        margin-top: 12px;
+        margin-top: 16px; /* Espacio después del botón IA */
       }
 
       #tandaOptions .btn {
@@ -1316,6 +1594,10 @@
           <div class="pregunta-texto" id="preguntaTexto"></div>
 
           <div class="opciones" id="opcionesContainer"></div>
+
+          <button class="btn" id="btnExplicarIA" onclick="explicarPreguntaConChatGPT()">
+            💬 Explicar con IA
+          </button>
 
           <div id="feedbackContainer" style="display:none; margin-top: 20px;"></div>
         </div>
@@ -1496,215 +1778,9 @@
       }
     }
 
-    // ==================== CONFIG ====================
-    const useLocalData = false;
-    const preguntasFolder = 'preguntas';
-
-    const CONFIG = {
-      mostrarProgresoTanda: false,
-      mostrarRestantesGlobal: false
-    };
-
-    // ==================== VARIABLES GLOBALES ====================
-    let usuarioActual = null;
-    let categoriaActual = null;
-    let masterPreguntasPool = [];
-    let preguntasRealizadasGlobal = 0;
-    let remainingPreguntas = [];
-    let failedPreguntas = [];
-    let preguntasActuales = [];
-    let indicePreguntaActual = 0;
-    let respuestasUsuario = [];
-    let numeroTanda = 0;
-    let totalPreguntas = 0;
-    let preguntasPorTanda = 30;
-    let aciertosGlobal = 0;
-    let inicioTestTimestamp = null;
-
     function progresoKey() {
       if (!usuarioActual || !categoriaActual) return null;
       return `progreso_${usuarioActual.uid}_${categoriaActual}`;
-    }
-
-    // ==================== FUNCIONES FIREBASE AUTH ====================
-    function loginWithGoogle() {
-      console.log('🔵 Iniciando login con Google...');
-      
-      showLoginLoading(true);
-      hideErrorMessage();
-
-      const btnGoogle = document.getElementById('btnGoogleLogin');
-      if (btnGoogle) btnGoogle.disabled = true;
-
-      const provider = new firebase.auth.GoogleAuthProvider();
-      provider.addScope('profile');
-      provider.addScope('email');
-      provider.setCustomParameters({
-        'prompt': 'select_account'
-      });
-
-      firebase.auth().signInWithPopup(provider)
-        .then((result) => {
-          console.log('✅ Login Google exitoso:', result.user);
-          handleLoginSuccess(result.user);
-        })
-        .catch((error) => {
-          console.error('❌ Error login Google:', error);
-          
-          let errorMsg = 'Error en login con Google';
-          
-          switch(error.code) {
-            case 'auth/popup-blocked':
-              errorMsg = 'El navegador bloqueó la ventana emergente. Por favor, permite las ventanas emergentes.';
-              break;
-            case 'auth/popup-closed-by-user':
-              errorMsg = 'Cerraste la ventana de login antes de completar el proceso.';
-              break;
-            case 'auth/cancelled-popup-request':
-              errorMsg = 'Se canceló la solicitud de login.';
-              break;
-            case 'auth/unauthorized-domain':
-              errorMsg = 'Este dominio no está autorizado. Verifica la configuración en Firebase Console.';
-              break;
-            case 'auth/operation-not-allowed':
-              errorMsg = 'El login con Google no está habilitado. Actívalo en Firebase Console.';
-              break;
-            case 'auth/network-request-failed':
-              errorMsg = 'Error de red. Verifica tu conexión a internet.';
-              break;
-            default:
-              errorMsg = `Error: ${error.message}`;
-          }
-          
-          showErrorMessage(errorMsg);
-          showLoginLoading(false);
-          if (btnGoogle) btnGoogle.disabled = false;
-        });
-    }
-
-    function loginWithEmail() {
-      const email = document.getElementById('emailInput').value.trim();
-      const password = document.getElementById('passwordInput').value;
-
-      if (!email || !password) {
-        showErrorMessage('Por favor completa ambos campos');
-        return;
-      }
-
-      if (!validateEmail(email)) {
-        showErrorMessage('Por favor ingresa un email válido');
-        return;
-      }
-
-      showLoginLoading(true);
-      hideErrorMessage();
-
-      firebase.auth().signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          console.log('✅ Login email exitoso:', userCredential.user);
-          handleLoginSuccess(userCredential.user);
-        })
-        .catch((error) => {
-          console.error('❌ Error login email:', error);
-          
-          let errorMsg = 'Error al iniciar sesión';
-          
-          switch(error.code) {
-            case 'auth/user-not-found':
-              errorMsg = 'No existe una cuenta con este email';
-              break;
-            case 'auth/wrong-password':
-              errorMsg = 'Contraseña incorrecta';
-              break;
-            case 'auth/invalid-email':
-              errorMsg = 'Email inválido';
-              break;
-            case 'auth/user-disabled':
-              errorMsg = 'Esta cuenta ha sido deshabilitada';
-              break;
-            case 'auth/too-many-requests':
-              errorMsg = 'Demasiados intentos fallidos. Intenta más tarde';
-              break;
-            default:
-              errorMsg = error.message;
-          }
-          
-          showErrorMessage(errorMsg);
-          showLoginLoading(false);
-        });
-    }
-
-    function registerWithEmail() {
-      const email = document.getElementById('emailInput').value.trim();
-      const password = document.getElementById('passwordInput').value;
-
-      if (!email || !password) {
-        showErrorMessage('Por favor completa ambos campos');
-        return;
-      }
-
-      if (!validateEmail(email)) {
-        showErrorMessage('Por favor ingresa un email válido');
-        return;
-      }
-
-      if (password.length < 6) {
-        showErrorMessage('La contraseña debe tener al menos 6 caracteres');
-        return;
-      }
-
-      showLoginLoading(true);
-      hideErrorMessage();
-
-      firebase.auth().createUserWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          console.log('✅ Registro exitoso:', userCredential.user);
-          handleLoginSuccess(userCredential.user);
-        })
-        .catch((error) => {
-          console.error('❌ Error al registrarse:', error);
-          
-          let errorMsg = 'Error al crear la cuenta';
-          
-          switch(error.code) {
-            case 'auth/email-already-in-use':
-              errorMsg = 'Este email ya está registrado. Intenta iniciar sesión';
-              break;
-            case 'auth/invalid-email':
-              errorMsg = 'Email inválido';
-              break;
-            case 'auth/weak-password':
-              errorMsg = 'La contraseña es muy débil';
-              break;
-            default:
-              errorMsg = error.message;
-          }
-          
-          showErrorMessage(errorMsg);
-          showLoginLoading(false);
-        });
-    }
-
-    function handleLoginSuccess(user) {
-      usuarioActual = {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName || user.email
-      };
-
-      document.getElementById('userEmail').textContent = usuarioActual.email;
-      showLoginLoading(false);
-      mostrarPantalla('screenCategorias');
-
-      crearPerfilUsuario();
-      cargarCategoriasDisponibles();
-
-      if (typeof analytics !== 'undefined') {
-        firebase.analytics().setUserId(user.uid);
-        firebase.analytics().logEvent('login', {
-          method: user.providerData[0]?.providerId || 'unknown'
-        });
-      }
     }
 
     function crearPerfilUsuario() {
@@ -1718,59 +1794,6 @@
       }, { merge: true }).catch(error => {
         console.error('Error creando perfil:', error);
       });
-    }
-
-    function validateEmail(email) {
-      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return re.test(email);
-    }
-
-    function showErrorMessage(message) {
-      const errorDiv = document.getElementById('errorMessage');
-      if (errorDiv) {
-        errorDiv.textContent = message;
-        errorDiv.classList.add('show');
-      }
-    }
-
-    function hideErrorMessage() {
-      const errorDiv = document.getElementById('errorMessage');
-      if (errorDiv) {
-        errorDiv.classList.remove('show');
-      }
-    }
-
-    function showLoginLoading(show) {
-      document.getElementById('loginLoading').style.display = show ? 'block' : 'none';
-    }
-
-    function cerrarSesion() {
-      firebase.auth().signOut()
-        .then(() => {
-          console.log('✅ Sesión cerrada correctamente');
-          usuarioActual = null;
-          categoriaActual = null;
-          masterPreguntasPool = [];
-          remainingPreguntas = [];
-          preguntasActuales = [];
-          indicePreguntaActual = 0;
-          respuestasUsuario = [];
-          numeroTanda = 0;
-
-          if (analytics) {
-            firebase.analytics().setUserId(null);
-          }
-
-          document.getElementById('emailInput').value = '';
-          document.getElementById('passwordInput').value = '';
-          hideErrorMessage();
-
-          mostrarPantalla('screenLogin');
-        })
-        .catch((error) => {
-          console.error('❌ Error cerrando sesión:', error);
-          showErrorMessage('Error al cerrar sesión');
-        });
     }
 
     firebase.auth().onAuthStateChanged((user) => {
@@ -2037,15 +2060,11 @@
         numeroTanda,
         preguntasPorTanda,
         preguntasRealizadasGlobal,
+        aciertosGlobal,
         timestamp: Date.now()
       };
 
-      try {
-        localStorage.setItem(key, JSON.stringify(estado));
-      } catch (e) {
-        console.warn('No se pudo guardar en localStorage:', e);
-      }
-
+      // Guardar SOLO en Firestore (nube)
       try {
         const docId = `${usuarioActual.uid}_${categoriaActual}`;
         db.collection('progresos').doc(docId).set({
@@ -2053,43 +2072,67 @@
           usuarioId: usuarioActual.uid,
           categoria: categoriaActual,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true }).catch(err => console.warn('No se pudo guardar progreso en Firestore:', err));
+        }, { merge: true })
+        .then(() => {
+          console.log('💾 Progreso guardado en la nube');
+        })
+        .catch(err => {
+          console.error('❌ Error guardando progreso en Firestore:', err);
+        });
       } catch (e) {
-        console.warn('Error guardando progreso en Firestore:', e);
+        console.error('❌ Error guardando progreso:', e);
       }
-
-      console.log('💾 Progreso guardado');
     }
 
-    function cargarProgresoSiExiste() {
-      const key = progresoKey();
-      if (!key) return null;
+    async function cargarProgresoSiExiste() {
+      if (!usuarioActual || !categoriaActual) return null;
+      
       try {
-        const raw = localStorage.getItem(key);
-        if (!raw) return null;
-        const estado = JSON.parse(raw);
+        const docId = `${usuarioActual.uid}_${categoriaActual}`;
+        const doc = await db.collection('progresos').doc(docId).get();
+        
+        if (!doc.exists) {
+          console.log('📭 No hay progreso guardado en la nube');
+          return null;
+        }
+        
+        const estado = doc.data();
+        
         if (typeof estado.preguntasRealizadasGlobal === 'number') {
           preguntasRealizadasGlobal = estado.preguntasRealizadasGlobal;
         } else {
           preguntasRealizadasGlobal = 0;
         }
+        
+        if (typeof estado.aciertosGlobal === 'number') {
+          aciertosGlobal = estado.aciertosGlobal;
+        } else {
+          aciertosGlobal = 0;
+        }
+        
+        console.log('📥 Progreso cargado desde la nube');
         return estado;
       } catch (e) {
-        console.warn('Error leyendo progreso en localStorage:', e);
+        console.error('❌ Error leyendo progreso desde Firestore:', e);
         return null;
       }
     }
 
     function eliminarProgreso() {
-      const key = progresoKey();
-      if (!key) return;
-      try {
-        localStorage.removeItem(key);
-      } catch (e) {}
+      if (!usuarioActual || !categoriaActual) return;
+      
       try {
         const docId = `${usuarioActual.uid}_${categoriaActual}`;
-        db.collection('progresos').doc(docId).delete().catch(()=>{});
-      } catch (e) {}
+        db.collection('progresos').doc(docId).delete()
+          .then(() => {
+            console.log('🗑️ Progreso eliminado de la nube');
+          })
+          .catch(err => {
+            console.error('❌ Error eliminando progreso:', err);
+          });
+      } catch (e) {
+        console.error('❌ Error eliminando progreso:', e);
+      }
     }
 
     // ==================== TEST ====================
@@ -2128,7 +2171,7 @@
             if (!res.ok) throw new Error('HTTP ' + res.status + ' al cargar ' + preguntasPath);
             return res.json();
           })
-          .then(allPreguntas => {
+          .then(async allPreguntas => {
             let preguntasFiltradas = Array.isArray(allPreguntas) ? allPreguntas : [];
 
             preguntasFiltradas = preguntasFiltradas.filter((p, idx) => {
@@ -2154,9 +2197,9 @@
             masterPreguntasPool = mezclarArray(preguntasFiltradas.slice());
             remainingPreguntas = masterPreguntasPool.slice();
 
-            const progreso = cargarProgresoSiExiste();
+            const progreso = await cargarProgresoSiExiste();
             if (progreso && progreso.preguntasActualesIds && progreso.preguntasActualesIds.length > 0) {
-              const quiereContinuar = confirm('Se ha encontrado progreso guardado para esta categoría. ¿Deseas continuar donde lo dejaste?');
+              const quiereContinuar = confirm('Se ha encontrado progreso guardado en la nube para esta categoría. ¿Deseas continuar donde lo dejaste?');
               if (quiereContinuar) {
                 const idToQuestion = {};
                 masterPreguntasPool.forEach(p => idToQuestion[p.id] = p);
@@ -2164,7 +2207,15 @@
                 failedPreguntas = (progreso.failedIds || []).map(id => idToQuestion[id]).filter(Boolean);
                 remainingPreguntas = (progreso.remainingIds || []).map(id => idToQuestion[id]).filter(Boolean);
                 preguntasActuales = (progreso.preguntasActualesIds || []).map(id => idToQuestion[id]).filter(Boolean);
-                respuestasUsuario = progreso.respuestasUsuario || new Array(preguntasActuales.length).fill(null);
+                
+                // IMPORTANTE: Asegurar que respuestasUsuario tiene el tamaño correcto
+                const respuestasGuardadas = progreso.respuestasUsuario || [];
+                respuestasUsuario = new Array(preguntasActuales.length).fill(null);
+                // Copiar solo las respuestas que corresponden al tamaño actual
+                for (let i = 0; i < Math.min(respuestasGuardadas.length, preguntasActuales.length); i++) {
+                  respuestasUsuario[i] = respuestasGuardadas[i];
+                }
+                
                 indicePreguntaActual = progreso.indicePreguntaActual || 0;
                 numeroTanda = progreso.numeroTanda || 1;
 
@@ -2207,7 +2258,7 @@
             .where('activa', '==', true)
             .get();
         })
-        .then((querySnapshot) => {
+        .then(async (querySnapshot) => {
           console.log('✅ Preguntas recibidas:', querySnapshot.size);
 
           if(querySnapshot.empty) {
@@ -2225,9 +2276,9 @@
           masterPreguntasPool = mezclarArray(masterPreguntasPool);
           remainingPreguntas = masterPreguntasPool.slice();
 
-          const progreso = cargarProgresoSiExiste();
+          const progreso = await cargarProgresoSiExiste();
           if (progreso && progreso.preguntasActualesIds && progreso.preguntasActualesIds.length > 0) {
-            const quiereContinuar = confirm('Se ha encontrado progreso guardado para esta categoría. ¿Deseas continuar donde lo dejaste?');
+            const quiereContinuar = confirm('Se ha encontrado progreso guardado en la nube para esta categoría. ¿Deseas continuar donde lo dejaste?');
             if (quiereContinuar) {
               const idToQuestion = {};
               masterPreguntasPool.forEach(p => idToQuestion[p.id] = p);
@@ -2235,7 +2286,15 @@
               failedPreguntas = (progreso.failedIds || []).map(id => idToQuestion[id]).filter(Boolean);
               remainingPreguntas = (progreso.remainingIds || []).map(id => idToQuestion[id]).filter(Boolean);
               preguntasActuales = (progreso.preguntasActualesIds || []).map(id => idToQuestion[id]).filter(Boolean);
-              respuestasUsuario = progreso.respuestasUsuario || new Array(preguntasActuales.length).fill(null);
+              
+              // IMPORTANTE: Asegurar que respuestasUsuario tiene el tamaño correcto
+              const respuestasGuardadas = progreso.respuestasUsuario || [];
+              respuestasUsuario = new Array(preguntasActuales.length).fill(null);
+              // Copiar solo las respuestas que corresponden al tamaño actual
+              for (let i = 0; i < Math.min(respuestasGuardadas.length, preguntasActuales.length); i++) {
+                respuestasUsuario[i] = respuestasGuardadas[i];
+              }
+              
               indicePreguntaActual = progreso.indicePreguntaActual || 0;
               numeroTanda = progreso.numeroTanda || 1;
 
@@ -2278,6 +2337,9 @@
         return;
       }
 
+      // Debug: verificar estado de respuestas
+      console.log(`📝 Mostrando pregunta ${indicePreguntaActual + 1}. Respuesta actual:`, respuestasUsuario[indicePreguntaActual]);
+
       document.getElementById('preguntaNumero').textContent = `Pregunta ${indicePreguntaActual + 1} de ${total} (Tanda ${numeroTanda})`;
 
       const progreso = ((indicePreguntaActual + 1) / total) * 100;
@@ -2298,7 +2360,12 @@
         letras.forEach((letra) => {
           const textoOpcion = pregunta.opciones[letra];
           if(textoOpcion) {
-            const seleccionada = respuestasUsuario[indicePreguntaActual] === letra ? 'selected' : '';
+            // Solo marcar como seleccionada si realmente fue respondida antes
+            const respuestaActual = respuestasUsuario[indicePreguntaActual];
+            const seleccionada = (respuestaActual !== null && respuestaActual === letra) ? 'selected' : '';
+            
+            // IMPORTANTE: No agregar clases correcta/incorrecta al mostrar pregunta
+            // Solo mostrar la clase 'selected' si ya fue respondida antes
             opcionesHtml += `
               <div class="opcion ${seleccionada}" onclick="seleccionarOpcion('${letra}')">
                 <div class="opcion-letra">${letra}</div>
@@ -2309,13 +2376,9 @@
         });
       }
 
-      opcionesHtml += `
-        <button class="btn btn-secondary" style="margin-top: 16px;" onclick="explicarPreguntaConChatGPT()">
-          💬 Explicar con IA
-        </button>
-      `;
-
-      document.getElementById('opcionesContainer').innerHTML = opcionesHtml;
+      // Limpiar y establecer nuevo HTML - esto elimina todas las clases CSS previas
+      const contenedor = document.getElementById('opcionesContainer');
+      contenedor.innerHTML = opcionesHtml;
       document.getElementById('feedbackContainer').style.display = 'none';
 
       const btnAnterior = document.getElementById('btnAnterior');
@@ -2361,8 +2424,7 @@
 
       const porcentajeTemp = respondidas > 0 ? Math.round((correctasTemp / respondidas) * 100) : 0;
 
-      // Calcular preguntas restantes correctamente: total del JSON menos las respondidas en toda la sesión
-      const totalPreguntas = masterPreguntasPool.length;
+      // Usar totalPreguntas del JSON (metadato correcto de la categoría)
       const preguntasRealizadasTotal = preguntasRealizadasGlobal || 0;
       const restantesGlobal = Math.max(0, totalPreguntas - preguntasRealizadasTotal);
 
@@ -2425,6 +2487,9 @@
 
       const prev = respuestasUsuario[indicePreguntaActual];
       const correcto = pregunta.respuestaCorrecta;
+
+      // Debug
+      console.log(`✅ Selección: ${letra} en pregunta ${indicePreguntaActual + 1}. Anterior: ${prev}, Correcta: ${correcto}`);
 
       const fueNullAntes = prev === null;
       if (fueNullAntes) {
@@ -2496,6 +2561,12 @@
     }
 
     function siguientePregunta() {
+      // Limpiar timeout si existe
+      if (autoAdvanceTimeout) {
+        clearTimeout(autoAdvanceTimeout);
+        autoAdvanceTimeout = null;
+      }
+      
       if(indicePreguntaActual < preguntasActuales.length - 1) {
         indicePreguntaActual++;
         mostrarPregunta();
@@ -2503,6 +2574,12 @@
     }
 
     function preguntaAnterior() {
+      // Limpiar timeout si existe
+      if (autoAdvanceTimeout) {
+        clearTimeout(autoAdvanceTimeout);
+        autoAdvanceTimeout = null;
+      }
+      
       if(indicePreguntaActual > 0) {
         indicePreguntaActual--;
         mostrarPregunta();
@@ -2847,6 +2924,22 @@
       const encoded = encodeURIComponent(texto);
       window.open(`https://chat.openai.com/?q=${encoded}`, '_blank');
     }
+
+    // Hacer globales las funciones que se usan en los botones
+    window.volverCategorias = volverCategorias;
+    window.repetirFallos = repetirFallos;
+    window.saltarTanda = saltarTanda;
+    window.preguntaAnterior = preguntaAnterior;
+    window.siguientePregunta = siguientePregunta;
+    window.finalizarTest = finalizarTest;
+    window.nuevoTest = nuevoTest;
+    window.consultarChatGPT = consultarChatGPT;
+    window.toggleStats = toggleStats;
+    window.explicarPreguntaConChatGPT = explicarPreguntaConChatGPT;
+    window.seleccionarOpcion = seleccionarOpcion;
+    window.seleccionarCategoria = seleccionarCategoria;
+    window.toggleTheme = toggleTheme;
+    window.toggleStatsVisibility = toggleStatsVisibility;
 
     window.onload = function() {
       console.log('🔄 Página cargada, inicializando...');
