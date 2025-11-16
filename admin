@@ -1,1 +1,1364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Panel de Administración - Multitest</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #0f1113;
+      color: #e9eef2;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: #34c3ff;
+      margin-bottom: 10px;
+      font-size: 32px;
+    }
+    
+    .subtitle {
+      color: #aab3b8;
+      margin-bottom: 30px;
+    }
+    
+    .card {
+      background: #1f2225;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .card h2 {
+      color: #34c3ff;
+      margin-bottom: 15px;
+      font-size: 20px;
+    }
+    
+    button {
+      background: #34c3ff;
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px;
+      transition: all 0.3s ease;
+    }
+    
+    button:hover {
+      background: #2ab3e8;
+      transform: translateY(-2px);
+    }
+    
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    button.danger {
+      background: #b22222;
+      color: white;
+    }
+    
+    button.danger:hover {
+      background: #8b1a1a;
+    }
+    
+    button.success {
+      background: #2e8b57;
+      color: white;
+    }
+    
+    button.success:hover {
+      background: #267a4a;
+    }
+    
+    button.warning {
+      background: #ffc107;
+      color: #000;
+    }
+    
+    button.warning:hover {
+      background: #e0a800;
+    }
+    
+    .log {
+      background: #26292d;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 15px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+    
+    .log-item {
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 4px;
+      border-left: 3px solid #34c3ff;
+    }
+    
+    .log-item.success {
+      background: rgba(46, 139, 87, 0.1);
+      border-left-color: #2e8b57;
+      color: #5dff9a;
+    }
+    
+    .log-item.error {
+      background: rgba(178, 34, 34, 0.1);
+      border-left-color: #b22222;
+      color: #ff6b6b;
+    }
+    
+    .log-item.warning {
+      background: rgba(255, 193, 7, 0.1);
+      border-left-color: #ffc107;
+      color: #ffd54f;
+    }
+    
+    .log-item.info {
+      background: rgba(52, 195, 255, 0.1);
+      border-left-color: #34c3ff;
+      color: #34c3ff;
+    }
+    
+    .user-info {
+      background: rgba(52, 195, 255, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(52, 195, 255, 0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .user-info .email {
+      color: #34c3ff;
+      font-weight: 600;
+    }
+    
+    textarea {
+      width: 100%;
+      min-height: 300px;
+      background: #26292d;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 15px;
+      color: #e9eef2;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      resize: vertical;
+      margin: 10px 0;
+    }
+    
+    textarea:focus {
+      outline: none;
+      border-color: #34c3ff;
+    }
+    
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      padding: 12px;
+      background: #26292d;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #e9eef2;
+      font-size: 15px;
+      margin: 8px 0;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #34c3ff;
+    }
+    
+    select {
+      width: 100%;
+      padding: 12px;
+      background: #26292d;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #e9eef2;
+      font-size: 15px;
+      margin: 10px 0;
+      cursor: pointer;
+    }
+    
+    select:focus {
+      outline: none;
+      border-color: #34c3ff;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    
+    .stat-box {
+      background: #26292d;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .stat-box .number {
+      font-size: 36px;
+      font-weight: 700;
+      color: #34c3ff;
+      margin-bottom: 5px;
+    }
+    
+    .stat-box .label {
+      color: #aab3b8;
+      font-size: 14px;
+    }
 
+    .info-box {
+      background: rgba(52, 195, 255, 0.1);
+      border: 1px solid rgba(52, 195, 255, 0.3);
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      color: #34c3ff;
+    }
+
+    .warning-box {
+      background: rgba(255, 193, 7, 0.1);
+      border: 1px solid rgba(255, 193, 7, 0.3);
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      color: #ffc107;
+    }
+
+    .categoria-selected {
+      background: rgba(52, 195, 255, 0.15);
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      border: 2px solid #34c3ff;
+    }
+
+    .categoria-selected h3 {
+      color: #34c3ff;
+      margin-bottom: 10px;
+    }
+
+    .categoria-selected .info {
+      color: #aab3b8;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      color: #34c3ff;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .form-group small {
+      display: block;
+      color: #aab3b8;
+      font-size: 13px;
+      margin-top: 5px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .checkbox-group label {
+      color: #e9eef2;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      overflow-y: auto;
+    }
+
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: #1f2225;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 600px;
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.1);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .modal-header h3 {
+      color: #34c3ff;
+      font-size: 22px;
+    }
+
+    .modal-close {
+      background: transparent;
+      color: #aab3b8;
+      font-size: 28px;
+      padding: 0;
+      margin: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .modal-close:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+
+    .categoria-list-item {
+      background: #26292d;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .categoria-list-item:hover {
+      border-color: #34c3ff;
+    }
+
+    .categoria-list-item .info {
+      flex: 1;
+    }
+
+    .categoria-list-item .nombre {
+      color: #34c3ff;
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+
+    .categoria-list-item .detalles {
+      color: #aab3b8;
+      font-size: 13px;
+    }
+
+    .categoria-list-item .acciones {
+      display: flex;
+      gap: 5px;
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Panel de Administración</h1>
+    <p class="subtitle">Gestión de categorías y preguntas para Multitest</p>
+
+    <div id="userInfo" class="user-info" style="display:none;">
+      <div>
+        <div style="font-size: 14px; color: #aab3b8; margin-bottom: 5px;">Conectado como:</div>
+        <div class="email" id="userEmail"></div>
+      </div>
+      <button onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+
+    <div id="loginCard" class="card">
+      <h2>🔐 Iniciar Sesión</h2>
+      <p style="color: #aab3b8; margin-bottom: 15px;">Debes iniciar sesión para gestionar datos en Firestore</p>
+      <button onclick="iniciarSesion()">🔐 Iniciar sesión con Google</button>
+    </div>
+
+    <div id="adminPanel" style="display:none;">
+      
+      <!-- CATEGORÍAS -->
+      <div class="card">
+        <h2>📚 Gestión de Categorías</h2>
+        <div class="stats" id="statsCategories">
+          <div class="stat-box">
+            <div class="number" id="catCount">0</div>
+            <div class="label">Categorías en BD</div>
+          </div>
+        </div>
+        <div style="margin-top: 15px;">
+          <button onclick="subirCategorias()" class="success">📤 Subir Categorías Iniciales</button>
+          <button onclick="listarCategoriasEditable()">✏️ Ver/Editar Categorías</button>
+          <button onclick="crearNuevaCategoria()" style="background: #2e8b57; color: white;">➕ Nueva Categoría</button>
+          <button onclick="borrarCategorias()" class="danger">🗑️ Borrar Todas</button>
+        </div>
+        <div id="logCategorias" class="log"></div>
+      </div>
+
+      <!-- PREGUNTAS POR CATEGORÍA -->
+      <div class="card">
+        <h2>❓ Gestión de Preguntas por Categoría</h2>
+        
+        <div class="info-box">
+          💡 <strong>Tip:</strong> El número total de preguntas de la categoría se actualizará automáticamente al subir el JSON
+        </div>
+
+        <label style="color: #34c3ff; font-weight: 600; display: block; margin-bottom: 10px;">
+          1️⃣ Selecciona la categoría:
+        </label>
+        <select id="categoriaSelect" onchange="categoriaSeleccionada()">
+          <option value="">-- Selecciona una categoría --</option>
+        </select>
+
+        <div id="categoriaInfo" style="display:none;" class="categoria-selected">
+          <h3 id="categoriaNombre"></h3>
+          <div class="info">
+            <div>📝 Total de preguntas registradas: <strong id="categoriaTotalPreguntas"></strong></div>
+            <div>🎯 Preguntas por tanda: <strong id="categoriaPorTanda"></strong></div>
+            <div>📊 Preguntas actuales en BD: <strong id="categoriaPreguntasActuales">0</strong></div>
+          </div>
+        </div>
+
+        <label style="color: #34c3ff; font-weight: 600; display: block; margin: 20px 0 10px 0;">
+          2️⃣ Carga el archivo JSON o pega el contenido:
+        </label>
+        
+        <!-- Input de archivo -->
+        <div style="margin-bottom: 15px;">
+          <input type="file" id="archivoJSON" accept=".json" onchange="cargarArchivoJSON()" 
+                 style="display: none;">
+          <button onclick="document.getElementById('archivoJSON').click()" 
+                  style="background: #2e8b57; color: white;">
+            📁 Seleccionar archivo .json
+          </button>
+          <span id="nombreArchivo" style="margin-left: 15px; color: #aab3b8; font-size: 14px;"></span>
+        </div>
+
+        <!-- Textarea para pegar manualmente (opcional) -->
+        <textarea id="preguntasJSON" placeholder='O pega aquí el contenido JSON:
+[
+  {
+    "id": 1,
+    "pregunta": "¿Texto de la pregunta?",
+    "opciones": {
+      "A": "Opción A",
+      "B": "Opción B",
+      "C": "Opción C",
+      "D": "Opción D"
+    },
+    "respuestaCorrecta": "A"
+  }
+]'></textarea>
+        
+        <div style="margin-top: 15px;">
+          <button onclick="validarJSON()" style="background: #ffc107; color: #000;">✓ Validar JSON</button>
+          <button onclick="subirPreguntasCategoria()" class="success" id="btnSubirPreguntas" disabled>
+            📤 Subir Preguntas
+          </button>
+          <button onclick="limpiarJSON()" style="background: #555; color: white;">
+            🗑️ Limpiar
+          </button>
+          <button onclick="borrarPreguntasCategoria()" class="danger" id="btnBorrarPreguntas" disabled>
+            🗑️ Borrar Preguntas de esta Categoría
+          </button>
+        </div>
+        
+        <div id="logPreguntas" class="log"></div>
+      </div>
+
+      <!-- ESTADÍSTICAS GENERALES -->
+      <div class="card">
+        <h2>📊 Estadísticas Generales</h2>
+        <button onclick="actualizarEstadisticas()">🔄 Actualizar</button>
+        <button onclick="limpiarTodo()" class="danger">🗑️ BORRAR TODO (Categorías + Preguntas)</button>
+        <div class="stats">
+          <div class="stat-box">
+            <div class="number" id="totalCategorias">0</div>
+            <div class="label">Categorías</div>
+          </div>
+          <div class="stat-box">
+            <div class="number" id="totalPreguntas">0</div>
+            <div class="label">Total Preguntas</div>
+          </div>
+        </div>
+        <div id="statsGeneral" class="log"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL EDITAR/CREAR CATEGORÍA -->
+  <div id="modalCategoria" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitulo">✏️ Editar Categoría</h3>
+        <button class="modal-close" onclick="cerrarModal()">×</button>
+      </div>
+      
+      <form id="formCategoria" onsubmit="guardarCategoria(event)">
+        <input type="hidden" id="categoriaId">
+        
+        <div class="form-group">
+          <label>ID de la categoría:</label>
+          <input type="text" id="categoriaIdInput" placeholder="matematicas-basicas" required>
+          <small>Sin espacios, solo letras minúsculas, números y guiones</small>
+        </div>
+
+        <div class="form-group">
+          <label>Nombre de la categoría:</label>
+          <input type="text" id="categoriaNombreInput" placeholder="Matemáticas Básicas" required>
+        </div>
+
+        <div class="form-group">
+          <label>Descripción:</label>
+          <input type="text" id="categoriaDescripcionInput" placeholder="Test de matemáticas nivel básico">
+        </div>
+
+        <div class="form-group">
+          <label>Total de preguntas:</label>
+          <input type="number" id="categoriaTotalPreguntasInput" placeholder="100" min="0" required>
+          <small>Se actualizará automáticamente al subir preguntas</small>
+        </div>
+
+        <div class="form-group">
+          <label>Preguntas por tanda:</label>
+          <input type="number" id="categoriaPorTandaInput" placeholder="30" min="1" required>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="categoriaActivaInput" checked>
+          <label for="categoriaActivaInput">Categoría activa (visible para los usuarios)</label>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+          <button type="submit" class="success" style="flex: 1;">💾 Guardar</button>
+          <button type="button" onclick="cerrarModal()" style="flex: 1; background: #555; color: white;">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL LISTAR CATEGORÍAS -->
+  <div id="modalListaCategorias" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <h3>📚 Categorías en Base de Datos</h3>
+        <button class="modal-close" onclick="cerrarModalLista()">×</button>
+      </div>
+      
+      <div id="listaCategorias"></div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // CONFIGURACIÓN FIREBASE
+    const firebaseConfig = {
+      apiKey: "AIzaSyCQ5u2bs7kv7KNsS7HQ_T2HYNNnhI-KbG4",
+      authDomain: "multitest-gobcan.firebaseapp.com",
+      projectId: "multitest-gobcan",
+      storageBucket: "multitest-gobcan.firebasestorage.app",
+      messagingSenderId: "1039579449781",
+      appId: "1:1039579449781:web:f0709e9515a19184a3f1fc",
+      measurementId: "G-D3PN7H340S"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // DEFINICIÓN DE CATEGORÍAS INICIALES (para subir la primera vez)
+    const CATEGORIAS_INICIALES = {
+      'matematicas-basicas': {
+        nombre: 'Matemáticas Básicas',
+        totalPreguntas: 100,
+        preguntasPorTanda: 30,
+        activa: true,
+        descripcion: 'Test de matemáticas nivel básico'
+      },
+      'lengua-espanola': {
+        nombre: 'Lengua Española',
+        totalPreguntas: 150,
+        preguntasPorTanda: 25,
+        activa: true,
+        descripcion: 'Gramática, ortografía y literatura'
+      },
+      'historia-espana': {
+        nombre: 'Historia de España',
+        totalPreguntas: 200,
+        preguntasPorTanda: 30,
+        activa: true,
+        descripcion: 'Historia de España desde la antigüedad hasta la actualidad'
+      },
+      'cultura-general': {
+        nombre: 'Cultura General',
+        totalPreguntas: 250,
+        preguntasPorTanda: 40,
+        activa: true,
+        descripcion: 'Conocimientos generales variados'
+      },
+      'informatica-basica': {
+        nombre: 'Informática Básica',
+        totalPreguntas: 120,
+        preguntasPorTanda: 30,
+        activa: true,
+        descripcion: 'Conceptos básicos de informática y ofimática'
+      },
+      'ingles-b1': {
+        nombre: 'Inglés Nivel B1',
+        totalPreguntas: 180,
+        preguntasPorTanda: 35,
+        activa: true,
+        descripcion: 'Test de inglés nivel intermedio'
+      },
+      'ciencias-naturales': {
+        nombre: 'Ciencias Naturales',
+        totalPreguntas: 140,
+        preguntasPorTanda: 30,
+        activa: true,
+        descripcion: 'Biología, física y química básicas'
+      }
+    };
+
+    let categoriaActual = null;
+    let modoEdicion = false;
+
+    // SISTEMA DE LOGS
+    function log(containerId, message, type = 'info') {
+      const container = document.getElementById(containerId);
+      const div = document.createElement('div');
+      div.className = `log-item ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+      console.log(message);
+    }
+
+    function clearLog(containerId) {
+      document.getElementById(containerId).innerHTML = '';
+    }
+
+    // AUTENTICACIÓN
+    function iniciarSesion() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider)
+        .then((result) => {
+          console.log('✅ Sesión iniciada:', result.user.email);
+        })
+        .catch((error) => {
+          alert('❌ Error al iniciar sesión: ' + error.message);
+        });
+    }
+
+    function cerrarSesion() {
+      auth.signOut().then(() => {
+        console.log('✅ Sesión cerrada');
+        location.reload();
+      });
+    }
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        document.getElementById('loginCard').style.display = 'none';
+        document.getElementById('userInfo').style.display = 'flex';
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('userEmail').textContent = user.email;
+        cargarSelectCategorias();
+        actualizarEstadisticas();
+      } else {
+        document.getElementById('loginCard').style.display = 'block';
+        document.getElementById('userInfo').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'none';
+      }
+    });
+
+    // CARGAR SELECT DE CATEGORÍAS (desde BD)
+    async function cargarSelectCategorias() {
+      const select = document.getElementById('categoriaSelect');
+      select.innerHTML = '<option value="">-- Selecciona una categoría --</option>';
+      
+      try {
+        const snapshot = await db.collection('categorias').get();
+        
+        snapshot.forEach(doc => {
+          const cat = doc.data();
+          const option = document.createElement('option');
+          option.value = doc.id;
+          option.textContent = cat.nombre;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error cargando categorías:', error);
+      }
+    }
+
+    // CATEGORÍA SELECCIONADA
+    async function categoriaSeleccionada() {
+      const select = document.getElementById('categoriaSelect');
+      categoriaActual = select.value;
+      
+      if (!categoriaActual) {
+        document.getElementById('categoriaInfo').style.display = 'none';
+        document.getElementById('btnSubirPreguntas').disabled = true;
+        document.getElementById('btnBorrarPreguntas').disabled = true;
+        return;
+      }
+
+      // Obtener datos de la BD
+      const doc = await db.collection('categorias').doc(categoriaActual).get();
+      if (!doc.exists) return;
+      
+      const cat = doc.data();
+      document.getElementById('categoriaNombre').textContent = cat.nombre;
+      document.getElementById('categoriaTotalPreguntas').textContent = cat.totalPreguntas || 0;
+      document.getElementById('categoriaPorTanda').textContent = cat.preguntasPorTanda || 30;
+      
+      // Contar preguntas actuales
+      const count = await contarPreguntasCategoria(categoriaActual);
+      document.getElementById('categoriaPreguntasActuales').textContent = count;
+      
+      document.getElementById('categoriaInfo').style.display = 'block';
+      document.getElementById('btnSubirPreguntas').disabled = false;
+      document.getElementById('btnBorrarPreguntas').disabled = false;
+      
+      clearLog('logPreguntas');
+      log('logPreguntas', `📂 Categoría seleccionada: ${cat.nombre}`, 'info');
+      log('logPreguntas', `📊 Preguntas actuales en BD: ${count}`, 'info');
+    }
+
+    async function contarPreguntasCategoria(categoria) {
+      try {
+        const snapshot = await db.collection('preguntas')
+          .where('categoria', '==', categoria)
+          .get();
+        return snapshot.size;
+      } catch (error) {
+        console.error('Error contando preguntas:', error);
+        return 0;
+      }
+    }
+
+    // CATEGORÍAS - SUBIR INICIALES
+    async function subirCategorias() {
+      clearLog('logCategorias');
+      log('logCategorias', '🚀 Subiendo categorías iniciales...', 'info');
+      
+      let exitosas = 0;
+      let errores = 0;
+
+      for (const [id, datos] of Object.entries(CATEGORIAS_INICIALES)) {
+        try {
+          await db.collection('categorias').doc(id).set({
+            ...datos,
+            creadaEn: firebase.firestore.FieldValue.serverTimestamp(),
+            actualizadaEn: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          
+          log('logCategorias', `✓ "${datos.nombre}" subida`, 'success');
+          exitosas++;
+        } catch (error) {
+          log('logCategorias', `✗ Error en "${datos.nombre}": ${error.message}`, 'error');
+          errores++;
+        }
+      }
+
+      log('logCategorias', `✅ Completado: ${exitosas} exitosas, ${errores} errores`, exitosas > 0 ? 'success' : 'error');
+      await cargarSelectCategorias();
+      await actualizarEstadisticas();
+    }
+
+    // MODAL - CREAR NUEVA CATEGORÍA
+    function crearNuevaCategoria() {
+      modoEdicion = false;
+      document.getElementById('modalTitulo').textContent = '➕ Nueva Categoría';
+      document.getElementById('categoriaId').value = '';
+      document.getElementById('categoriaIdInput').value = '';
+      document.getElementById('categoriaIdInput').disabled = false;
+      document.getElementById('categoriaNombreInput').value = '';
+      document.getElementById('categoriaDescripcionInput').value = '';
+      document.getElementById('categoriaTotalPreguntasInput').value = '0';
+      document.getElementById('categoriaPorTandaInput').value = '30';
+      document.getElementById('categoriaActivaInput').checked = true;
+      
+      document.getElementById('modalCategoria').classList.add('show');
+    }
+
+    // MODAL - EDITAR CATEGORÍA
+    async function editarCategoria(id) {
+      modoEdicion = true;
+      document.getElementById('modalTitulo').textContent = '✏️ Editar Categoría';
+      
+      try {
+        const doc = await db.collection('categorias').doc(id).get();
+        if (!doc.exists) {
+          alert('Categoría no encontrada');
+          return;
+        }
+        
+        const data = doc.data();
+        document.getElementById('categoriaId').value = id;
+        document.getElementById('categoriaIdInput').value = id;
+        document.getElementById('categoriaIdInput').disabled = true;
+        document.getElementById('categoriaNombreInput').value = data.nombre || '';
+        document.getElementById('categoriaDescripcionInput').value = data.descripcion || '';
+        document.getElementById('categoriaTotalPreguntasInput').value = data.totalPreguntas || 0;
+        document.getElementById('categoriaPorTandaInput').value = data.preguntasPorTanda || 30;
+        document.getElementById('categoriaActivaInput').checked = data.activa !== false;
+        
+        document.getElementById('modalCategoria').classList.add('show');
+      } catch (error) {
+        alert('Error al cargar categoría: ' + error.message);
+      }
+    }
+
+    // MODAL - GUARDAR CATEGORÍA
+    async function guardarCategoria(event) {
+      event.preventDefault();
+      
+      const id = modoEdicion ? document.getElementById('categoriaId').value : document.getElementById('categoriaIdInput').value;
+      const nombre = document.getElementById('categoriaNombreInput').value;
+      const descripcion = document.getElementById('categoriaDescripcionInput').value;
+      const totalPreguntas = parseInt(document.getElementById('categoriaTotalPreguntasInput').value);
+      const preguntasPorTanda = parseInt(document.getElementById('categoriaPorTandaInput').value);
+      const activa = document.getElementById('categoriaActivaInput').checked;
+      
+      // Validar ID
+      if (!/^[a-z0-9\-]+$/.test(id)) {
+        alert('El ID solo puede contener letras minúsculas, números y guiones');
+        return;
+      }
+      
+      try {
+        const datos = {
+          nombre,
+          descripcion,
+          totalPreguntas,
+          preguntasPorTanda,
+          activa,
+          actualizadaEn: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        if (!modoEdicion) {
+          datos.creadaEn = firebase.firestore.FieldValue.serverTimestamp();
+        }
+        
+        await db.collection('categorias').doc(id).set(datos, { merge: true });
+        
+        alert(`✅ Categoría "${nombre}" ${modoEdicion ? 'actualizada' : 'creada'} correctamente`);
+        cerrarModal();
+        await cargarSelectCategorias();
+        await actualizarEstadisticas();
+        
+        clearLog('logCategorias');
+        log('logCategorias', `✅ Categoría "${nombre}" ${modoEdicion ? 'actualizada' : 'creada'}`, 'success');
+        
+      } catch (error) {
+        alert('Error al guardar: ' + error.message);
+      }
+    }
+
+    // MODAL - CERRAR
+    function cerrarModal() {
+      document.getElementById('modalCategoria').classList.remove('show');
+    }
+
+    function cerrarModalLista() {
+      document.getElementById('modalListaCategorias').classList.remove('show');
+    }
+
+    // LISTAR CATEGORÍAS EDITABLE
+    async function listarCategoriasEditable() {
+      try {
+        const snapshot = await db.collection('categorias').get();
+        
+        if (snapshot.empty) {
+          alert('No hay categorías en la base de datos');
+          return;
+        }
+
+        let html = '';
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const estado = data.activa !== false ? '✅ Activa' : '❌ Inactiva';
+          
+          html += `
+            <div class="categoria-list-item">
+              <div class="info">
+                <div class="nombre">${data.nombre}</div>
+                <div class="detalles">
+                  ID: ${doc.id} | ${estado} | ${data.totalPreguntas || 0} preguntas | ${data.preguntasPorTanda || 30} por tanda
+                </div>
+              </div>
+              <div class="acciones">
+                <button onclick="editarCategoria('${doc.id}')" class="btn-small warning">✏️ Editar</button>
+                <button onclick="eliminarCategoria('${doc.id}', '${data.nombre}')" class="btn-small danger">🗑️</button>
+              </div>
+            </div>
+          `;
+        });
+        
+        document.getElementById('listaCategorias').innerHTML = html;
+        document.getElementById('modalListaCategorias').classList.add('show');
+        
+      } catch (error) {
+        alert('Error al listar categorías: ' + error.message);
+      }
+    }
+
+    // ELIMINAR CATEGORÍA
+    async function eliminarCategoria(id, nombre) {
+      if (!confirm(`⚠️ ¿Eliminar la categoría "${nombre}"?\n\nEsto NO eliminará las preguntas asociadas.`)) return;
+      
+      try {
+        await db.collection('categorias').doc(id).delete();
+        alert(`✅ Categoría "${nombre}" eliminada`);
+        
+        await listarCategoriasEditable();
+        await cargarSelectCategorias();
+        await actualizarEstadisticas();
+        
+      } catch (error) {
+        alert('Error al eliminar: ' + error.message);
+      }
+    }
+
+    async function borrarCategorias() {
+      if (!confirm('⚠️ ¿BORRAR TODAS LAS CATEGORÍAS? Esto NO borrará las preguntas.')) return;
+      
+      clearLog('logCategorias');
+      log('logCategorias', '🗑️ Borrando categorías...', 'warning');
+      
+      try {
+        const snapshot = await db.collection('categorias').get();
+        let borradas = 0;
+        
+        for (const doc of snapshot.docs) {
+          await doc.ref.delete();
+          log('logCategorias', `✓ Borrada: ${doc.id}`, 'success');
+          borradas++;
+        }
+        
+        log('logCategorias', `✅ ${borradas} categorías borradas`, 'success');
+        await cargarSelectCategorias();
+        await actualizarEstadisticas();
+      } catch (error) {
+        log('logCategorias', `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    // CARGAR ARCHIVO JSON
+    function cargarArchivoJSON() {
+      const input = document.getElementById('archivoJSON');
+      const file = input.files[0];
+      
+      if (!file) {
+        return;
+      }
+
+      document.getElementById('nombreArchivo').textContent = `📄 ${file.name}`;
+      
+      clearLog('logPreguntas');
+      log('logPreguntas', `📂 Cargando archivo: ${file.name}...`, 'info');
+
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        try {
+          const contenido = e.target.result;
+          document.getElementById('preguntasJSON').value = contenido;
+          
+          const preguntas = JSON.parse(contenido);
+          log('logPreguntas', `✅ Archivo cargado: ${preguntas.length} preguntas detectadas`, 'success');
+          log('logPreguntas', 'ℹ️ Haz clic en "Validar JSON" para verificar o "Subir Preguntas" para guardar', 'info');
+          
+        } catch (error) {
+          log('logPreguntas', `❌ Error al leer el archivo: ${error.message}`, 'error');
+          document.getElementById('preguntasJSON').value = '';
+        }
+      };
+      
+      reader.onerror = function() {
+        log('logPreguntas', '❌ Error al leer el archivo', 'error');
+      };
+      
+      reader.readAsText(file);
+    }
+
+    function limpiarJSON() {
+      document.getElementById('preguntasJSON').value = '';
+      document.getElementById('archivoJSON').value = '';
+      document.getElementById('nombreArchivo').textContent = '';
+      clearLog('logPreguntas');
+      log('logPreguntas', '🧹 Campos limpiados', 'info');
+    }
+
+    // PREGUNTAS - VALIDAR
+    function validarJSON() {
+      clearLog('logPreguntas');
+      const texto = document.getElementById('preguntasJSON').value.trim();
+      
+      if (!texto) {
+        log('logPreguntas', '⚠️ El campo está vacío', 'warning');
+        return;
+      }
+
+      if (!categoriaActual) {
+        log('logPreguntas', '⚠️ Selecciona primero una categoría', 'warning');
+        return;
+      }
+
+      try {
+        const preguntas = JSON.parse(texto);
+        
+        if (!Array.isArray(preguntas)) {
+          log('logPreguntas', '❌ El JSON debe ser un array []', 'error');
+          return;
+        }
+
+        log('logPreguntas', `✓ JSON válido con ${preguntas.length} preguntas`, 'success');
+        
+        let errores = 0;
+        let sinId = 0;
+        
+        preguntas.forEach((p, i) => {
+          const numPregunta = p.id || (i + 1);
+          
+          if (!p.id) {
+            sinId++;
+          }
+          
+          if (!p.pregunta) {
+            log('logPreguntas', `⚠️ Pregunta ${numPregunta}: falta "pregunta"`, 'warning');
+            errores++;
+          }
+          if (!p.opciones || typeof p.opciones !== 'object') {
+            log('logPreguntas', `⚠️ Pregunta ${numPregunta}: falta "opciones"`, 'warning');
+            errores++;
+          } else {
+            const letras = ['A', 'B', 'C', 'D'];
+            letras.forEach(letra => {
+              if (!p.opciones[letra]) {
+                log('logPreguntas', `⚠️ Pregunta ${numPregunta}: falta opción "${letra}"`, 'warning');
+                errores++;
+              }
+            });
+          }
+          if (!p.respuestaCorrecta) {
+            log('logPreguntas', `⚠️ Pregunta ${numPregunta}: falta "respuestaCorrecta"`, 'warning');
+            errores++;
+          } else if (!['A', 'B', 'C', 'D'].includes(p.respuestaCorrecta)) {
+            log('logPreguntas', `⚠️ Pregunta ${numPregunta}: respuestaCorrecta debe ser A, B, C o D`, 'warning');
+            errores++;
+          }
+        });
+
+        if (sinId > 0) {
+          log('logPreguntas', `ℹ️ ${sinId} preguntas sin campo "id" (se procesarán igual)`, 'info');
+        }
+
+        log('logPreguntas', `ℹ️ Se auto-asignará la categoría "${categoriaActual}"`, 'info');
+        log('logPreguntas', `ℹ️ El totalPreguntas de la categoría se actualizará a ${preguntas.length}`, 'info');
+
+        if (errores === 0) {
+          log('logPreguntas', '✅ Todo correcto. Listo para subir.', 'success');
+        } else {
+          log('logPreguntas', `⚠️ ${errores} advertencias encontradas`, 'warning');
+        }
+        
+      } catch (error) {
+        log('logPreguntas', `❌ JSON inválido: ${error.message}`, 'error');
+      }
+    }
+
+    // PREGUNTAS - SUBIR (CON AUTO-ACTUALIZACIÓN DE CATEGORÍA)
+    async function subirPreguntasCategoria() {
+      if (!categoriaActual) {
+        alert('⚠️ Selecciona una categoría primero');
+        return;
+      }
+
+      clearLog('logPreguntas');
+      const texto = document.getElementById('preguntasJSON').value.trim();
+      
+      if (!texto) {
+        log('logPreguntas', '⚠️ Pega el JSON de preguntas o carga un archivo', 'warning');
+        return;
+      }
+
+      try {
+        const preguntas = JSON.parse(texto);
+        
+        if (!Array.isArray(preguntas)) {
+          log('logPreguntas', '❌ El JSON debe ser un array', 'error');
+          return;
+        }
+
+        const totalPreguntasJSON = preguntas.length;
+
+        log('logPreguntas', `📝 Procesando ${totalPreguntasJSON} preguntas...`, 'info');
+        log('logPreguntas', `🔄 Auto-asignando categoría: "${categoriaActual}"`, 'info');
+        
+        let exitosas = 0;
+        let errores = 0;
+
+        for (const pregunta of preguntas) {
+          try {
+            const preguntaData = {
+              id: pregunta.id,
+              pregunta: pregunta.pregunta,
+              opciones: pregunta.opciones,
+              respuestaCorrecta: pregunta.respuestaCorrecta,
+              categoria: categoriaActual,
+              activa: pregunta.activa !== false,
+              creadaEn: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (!preguntaData.pregunta || !preguntaData.opciones || !preguntaData.respuestaCorrecta) {
+              log('logPreguntas', `⚠️ Pregunta ${pregunta.id || exitosas+1} tiene campos faltantes, omitida`, 'warning');
+              errores++;
+              continue;
+            }
+
+            await db.collection('preguntas').add(preguntaData);
+            exitosas++;
+            
+            if (exitosas % 25 === 0) {
+              log('logPreguntas', `⏳ ${exitosas} preguntas subidas...`, 'info');
+            }
+          } catch (error) {
+            log('logPreguntas', `✗ Error en pregunta ${pregunta.id || 'N/A'}: ${error.message}`, 'error');
+            errores++;
+          }
+        }
+
+        log('logPreguntas', `✅ Preguntas subidas: ${exitosas} exitosas, ${errores} errores`, 'success');
+        
+        // ⭐ ACTUALIZAR AUTOMÁTICAMENTE EL TOTAL DE PREGUNTAS EN LA CATEGORÍA
+        try {
+          await db.collection('categorias').doc(categoriaActual).update({
+            totalPreguntas: totalPreguntasJSON,
+            actualizadaEn: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          log('logPreguntas', `✅ Categoría actualizada: totalPreguntas = ${totalPreguntasJSON}`, 'success');
+        } catch (error) {
+          log('logPreguntas', `⚠️ No se pudo actualizar la categoría: ${error.message}`, 'warning');
+        }
+        
+        // Actualizar vista
+        const nuevoCount = await contarPreguntasCategoria(categoriaActual);
+        document.getElementById('categoriaPreguntasActuales').textContent = nuevoCount;
+        document.getElementById('categoriaTotalPreguntas').textContent = totalPreguntasJSON;
+        
+        await actualizarEstadisticas();
+        
+      } catch (error) {
+        log('logPreguntas', `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    // PREGUNTAS - BORRAR
+    async function borrarPreguntasCategoria() {
+      if (!categoriaActual) {
+        alert('⚠️ Selecciona una categoría primero');
+        return;
+      }
+
+      // Obtener nombre de la categoría
+      const doc = await db.collection('categorias').doc(categoriaActual).get();
+      const catNombre = doc.exists ? doc.data().nombre : categoriaActual;
+      
+      if (!confirm(`⚠️ ¿BORRAR TODAS las preguntas de "${catNombre}"?`)) return;
+      
+      clearLog('logPreguntas');
+      log('logPreguntas', `🗑️ Borrando preguntas de "${catNombre}"...`, 'warning');
+      
+      try {
+        const snapshot = await db.collection('preguntas')
+          .where('categoria', '==', categoriaActual)
+          .get();
+        
+        if (snapshot.empty) {
+          log('logPreguntas', '⚠️ No hay preguntas para borrar', 'warning');
+          return;
+        }
+
+        let borradas = 0;
+        
+        for (const doc of snapshot.docs) {
+          await doc.ref.delete();
+          borradas++;
+          
+          if (borradas % 50 === 0) {
+            log('logPreguntas', `⏳ ${borradas} preguntas borradas...`, 'info');
+          }
+        }
+        
+        log('logPreguntas', `✅ ${borradas} preguntas borradas de "${catNombre}"`, 'success');
+        
+        // Actualizar vista
+        document.getElementById('categoriaPreguntasActuales').textContent = '0';
+        
+        await actualizarEstadisticas();
+      } catch (error) {
+        log('logPreguntas', `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    // ESTADÍSTICAS
+    async function actualizarEstadisticas() {
+      try {
+        const catSnap = await db.collection('categorias').get();
+        const pregSnap = await db.collection('preguntas').get();
+        
+        document.getElementById('catCount').textContent = catSnap.size;
+        document.getElementById('pregCount').textContent = pregSnap.size;
+        document.getElementById('totalCategorias').textContent = catSnap.size;
+        document.getElementById('totalPreguntas').textContent = pregSnap.size;
+        
+        clearLog('statsGeneral');
+        log('statsGeneral', `📚 Categorías en BD: ${catSnap.size}`, 'info');
+        log('statsGeneral', `❓ Total de preguntas: ${pregSnap.size}`, 'info');
+        log('statsGeneral', '---', 'info');
+        
+        // Preguntas por categoría
+        const porCategoria = {};
+        pregSnap.forEach(doc => {
+          const cat = doc.data().categoria;
+          porCategoria[cat] = (porCategoria[cat] || 0) + 1;
+        });
+        
+        log('statsGeneral', '📊 Preguntas por categoría:', 'info');
+        
+        // Obtener info de cada categoría
+        const categoriasInfo = {};
+        catSnap.forEach(doc => {
+          categoriasInfo[doc.id] = doc.data();
+        });
+        
+        Object.entries(porCategoria).forEach(([id, count]) => {
+          const catInfo = categoriasInfo[id];
+          if (catInfo) {
+            const esperadas = catInfo.totalPreguntas || 0;
+            const progreso = esperadas > 0 ? Math.round((count / esperadas) * 100) : 0;
+            log('statsGeneral', `  ${catInfo.nombre}: ${count}/${esperadas} (${progreso}%)`, 'info');
+          } else {
+            log('statsGeneral', `  ${id}: ${count} preguntas (categoría no encontrada)`, 'warning');
+          }
+        });
+        
+      } catch (error) {
+        console.error('Error actualizando estadísticas:', error);
+      }
+    }
+
+    // LIMPIAR TODO
+    async function limpiarTodo() {
+      if (!confirm('⚠️⚠️⚠️ ¿BORRAR TODO? (Categorías + TODAS las Preguntas)\n\nEsto NO se puede deshacer.')) return;
+      if (!confirm('¿Estás COMPLETAMENTE seguro? Esta acción es IRREVERSIBLE.')) return;
+      
+      clearLog('statsGeneral');
+      log('statsGeneral', '🗑️ Borrando TODO...', 'warning');
+      
+      try {
+        // Borrar preguntas
+        const pregSnap = await db.collection('preguntas').get();
+        let pregBorradas = 0;
+        for (const doc of pregSnap.docs) {
+          await doc.ref.delete();
+          pregBorradas++;
+          if (pregBorradas % 100 === 0) {
+            log('statsGeneral', `⏳ ${pregBorradas} preguntas borradas...`, 'info');
+          }
+        }
+        
+        // Borrar categorías
+        const catSnap = await db.collection('categorias').get();
+        let catBorradas = 0;
+        for (const doc of catSnap.docs) {
+          await doc.ref.delete();
+          catBorradas++;
+        }
+        
+        log('statsGeneral', `✅ Borrado completo: ${catBorradas} categorías y ${pregBorradas} preguntas`, 'success');
+        
+        categoriaActual = null;
+        document.getElementById('categoriaSelect').value = '';
+        document.getElementById('categoriaInfo').style.display = 'none';
+        
+        await cargarSelectCategorias();
+        await actualizarEstadisticas();
+        
+      } catch (error) {
+        log('statsGeneral', `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Cerrar modales al hacer clic fuera
+    window.onclick = function(event) {
+      if (event.target.classList.contains('modal')) {
+        event.target.classList.remove('show');
+      }
+    }
+  </script>
+</body>
+</html>
