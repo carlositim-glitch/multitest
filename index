@@ -1,5 +1,4 @@
-echo "# multitest" >> README.md
-git init<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8">  
@@ -10,7 +9,6 @@ git init<!DOCTYPE html>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
-
 
   <script>
     // Configuración Firebase
@@ -24,7 +22,6 @@ git init<!DOCTYPE html>
       measurementId: "G-D3PN7H340S"
     };
     
-    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -34,14 +31,52 @@ git init<!DOCTYPE html>
   </script>
 
   <style>
+    /* ==================== VARIABLES CSS - MODO OSCURO ==================== */
     :root {
       --bg: #0f1113;
       --card: #1f2225;
       --card-2: #26292d;
       --muted: #aab3b8;
+      --text: #e9eef2;
       --accent: #34c3ff;
       --success: #2e8b57;
       --danger: #b22222;
+      --shadow: rgba(0,0,0,0.4);
+      --border: rgba(255,255,255,0.05);
+      --border-hover: rgba(255,255,255,0.1);
+      --accent-bg: rgba(52, 195, 255, 0.1);
+      --accent-border: rgba(52, 195, 255, 0.2);
+      --success-bg: rgba(46, 139, 87, 0.1);
+      --success-border: rgba(46, 139, 87, 0.3);
+      --danger-bg: rgba(178, 34, 34, 0.1);
+      --danger-border: rgba(178, 34, 34, 0.3);
+      --opcion-bg-hover: rgba(52, 195, 255, 0.05);
+      --input-bg: rgba(255,255,255,0.05);
+      --input-bg-focus: rgba(255,255,255,0.08);
+    }
+
+    /* ==================== VARIABLES CSS - MODO CLARO ==================== */
+    [data-theme="light"] {
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --card-2: #f8f9fb;
+      --muted: #6b7280;
+      --text: #1f2937;
+      --accent: #0ea5e9;
+      --success: #10b981;
+      --danger: #ef4444;
+      --shadow: rgba(0,0,0,0.1);
+      --border: rgba(0,0,0,0.08);
+      --border-hover: rgba(0,0,0,0.15);
+      --accent-bg: rgba(14, 165, 233, 0.1);
+      --accent-border: rgba(14, 165, 233, 0.3);
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --success-border: rgba(16, 185, 129, 0.3);
+      --danger-bg: rgba(239, 68, 68, 0.1);
+      --danger-border: rgba(239, 68, 68, 0.3);
+      --opcion-bg-hover: rgba(14, 165, 233, 0.05);
+      --input-bg: rgba(0,0,0,0.03);
+      --input-bg-focus: rgba(0,0,0,0.05);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -49,13 +84,140 @@ git init<!DOCTYPE html>
     body {
       background: var(--bg);
       font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-      color: #e9eef2;
+      color: var(--text);
       line-height: 1.6;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* ==================== TOGGLES CONTAINER ==================== */
+    .toggles-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 12px;
+      z-index: 1000;
+    }
+
+    .toggle-wrapper {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 50px;
+      padding: 8px;
+      cursor: pointer;
+      display: flex;
+      gap: 4px;
+      box-shadow: 0 4px 12px var(--shadow);
+      transition: all 0.3s ease;
+    }
+
+    .toggle-wrapper:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px var(--shadow);
+      border-color: var(--accent);
+    }
+
+    /* THEME TOGGLE */
+    .theme-option {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+      user-select: none;
+    }
+
+    .theme-option.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: scale(1.1);
+    }
+
+    .theme-option:not(.active):hover {
+      background: var(--card-2);
+      transform: scale(1.05);
+    }
+
+    /* STATS TOGGLE */
+    .stats-switch {
+      position: relative;
+      width: 88px;
+      height: 40px;
+      background: var(--card-2);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid var(--border-hover);
+    }
+
+    .stats-switch:hover {
+      border-color: var(--accent);
+    }
+
+    .stats-switch-slider {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 32px;
+      height: 32px;
+      background: var(--muted);
+      border-radius: 50%;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .stats-switch.active {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .stats-switch.active .stats-switch-slider {
+      left: calc(100% - 35px);
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .stats-switch::before,
+    .stats-switch::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      font-weight: 700;
+      transition: opacity 0.3s ease;
+    }
+
+    .stats-switch::before {
+      content: '1';
+      right: 10px;
+      color: white;
+      opacity: 0;
+    }
+
+    .stats-switch::after {
+      content: '0';
+      left: 10px;
+      color: var(--muted);
+      opacity: 1;
+    }
+
+    .stats-switch.active::before {
+      opacity: 1;
+    }
+
+    .stats-switch.active::after {
+      opacity: 0;
     }
 
     .container {
@@ -81,8 +243,9 @@ git init<!DOCTYPE html>
       background: var(--card);
       border-radius: 16px;
       padding: 40px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-      border: 1px solid rgba(255,255,255,0.05);
+      box-shadow: 0 8px 32px var(--shadow);
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
     }
 
     .logo {
@@ -94,11 +257,13 @@ git init<!DOCTYPE html>
       font-size: 36px;
       color: var(--accent);
       margin-bottom: 10px;
+      transition: color 0.3s ease;
     }
 
     .logo p {
       color: var(--muted);
       font-size: 16px;
+      transition: color 0.3s ease;
     }
 
     .btn {
@@ -118,17 +283,21 @@ git init<!DOCTYPE html>
 
     .btn-primary {
       background: var(--accent);
+      color: #ffffff;
+    }
+
+    [data-theme="dark"] .btn-primary {
       color: #02131a;
     }
 
     .btn-primary:hover {
-      background: #2ab3e8;
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(52, 195, 255, 0.4);
+      box-shadow: 0 6px 20px var(--accent-bg);
+      filter: brightness(1.1);
     }
 
     .btn-primary:disabled {
-      background: rgba(52, 195, 255, 0.3);
+      opacity: 0.4;
       cursor: not-allowed;
       transform: none;
     }
@@ -139,24 +308,25 @@ git init<!DOCTYPE html>
     }
 
     .btn-success:hover {
-      background: #267a4a;
       transform: translateY(-2px);
+      filter: brightness(1.1);
     }
 
     .btn-success:disabled {
-      background: rgba(46, 139, 87, 0.3);
+      opacity: 0.4;
       cursor: not-allowed;
       transform: none;
     }
 
     .btn-secondary {
       background: transparent;
-      border: 2px solid rgba(255,255,255,0.1);
+      border: 2px solid var(--border-hover);
       color: var(--muted);
+      transition: all 0.3s ease;
     }
 
     .btn-secondary:hover {
-      background: rgba(255,255,255,0.05);
+      background: var(--card-2);
       border-color: var(--accent);
       color: var(--accent);
     }
@@ -171,14 +341,14 @@ git init<!DOCTYPE html>
       background: var(--card-2);
       padding: 24px;
       border-radius: 12px;
-      border: 2px solid rgba(255,255,255,0.05);
+      border: 2px solid var(--border);
       cursor: pointer;
       transition: all 0.3s ease;
     }
 
     .categoria-card:hover {
       border-color: var(--accent);
-      background: rgba(52, 195, 255, 0.05);
+      background: var(--opcion-bg-hover);
       transform: translateX(5px);
     }
 
@@ -186,11 +356,13 @@ git init<!DOCTYPE html>
       color: var(--accent);
       margin-bottom: 8px;
       font-size: 20px;
+      transition: color 0.3s ease;
     }
 
     .categoria-card p {
       color: var(--muted);
       font-size: 14px;
+      transition: color 0.3s ease;
     }
 
     .categoria-card .info {
@@ -202,27 +374,30 @@ git init<!DOCTYPE html>
 
     .categoria-card .info span {
       color: var(--muted);
+      transition: color 0.3s ease;
     }
 
     .user-info {
-      background: rgba(52, 195, 255, 0.1);
+      background: var(--accent-bg);
       padding: 16px;
       border-radius: 10px;
       margin-bottom: 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border: 1px solid rgba(52, 195, 255, 0.2);
+      border: 1px solid var(--accent-border);
+      transition: all 0.3s ease;
     }
 
     .user-info .email {
       color: var(--accent);
       font-weight: 600;
+      transition: color 0.3s ease;
     }
 
     .user-info .logout {
       background: transparent;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid var(--border-hover);
       color: var(--muted);
       padding: 8px 16px;
       border-radius: 6px;
@@ -232,7 +407,7 @@ git init<!DOCTYPE html>
     }
 
     .user-info .logout:hover {
-      background: rgba(255,255,255,0.05);
+      background: var(--card-2);
       border-color: var(--danger);
       color: var(--danger);
     }
@@ -247,20 +422,23 @@ git init<!DOCTYPE html>
       align-items: center;
       margin-bottom: 20px;
       padding-bottom: 16px;
-      border-bottom: 2px solid rgba(255,255,255,0.05);
+      border-bottom: 2px solid var(--border);
+      transition: border-color 0.3s ease;
     }
 
     .pregunta-numero {
       font-size: 14px;
       color: var(--muted);
       font-weight: 600;
+      transition: color 0.3s ease;
     }
 
     .pregunta-texto {
       font-size: 20px;
-      color: #e9eef2;
+      color: var(--text);
       margin-bottom: 24px;
       line-height: 1.6;
+      transition: color 0.3s ease;
     }
 
     .opciones {
@@ -273,7 +451,7 @@ git init<!DOCTYPE html>
       background: var(--card-2);
       padding: 16px 20px;
       border-radius: 10px;
-      border: 2px solid rgba(255,255,255,0.05);
+      border: 2px solid var(--border);
       cursor: pointer;
       transition: all 0.3s ease;
       display: flex;
@@ -283,28 +461,28 @@ git init<!DOCTYPE html>
 
     .opcion:hover {
       border-color: var(--accent);
-      background: rgba(52, 195, 255, 0.05);
+      background: var(--opcion-bg-hover);
     }
 
     .opcion.selected {
       border-color: var(--accent);
-      background: rgba(52, 195, 255, 0.1);
+      background: var(--accent-bg);
     }
 
     .opcion.correcta {
       border-color: var(--success);
-      background: rgba(46, 139, 87, 0.1);
+      background: var(--success-bg);
     }
 
     .opcion.incorrecta {
       border-color: var(--danger);
-      background: rgba(178, 34, 34, 0.1);
+      background: var(--danger-bg);
     }
 
     .opcion-letra {
       width: 32px;
       height: 32px;
-      background: rgba(255,255,255,0.05);
+      background: var(--card);
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -312,11 +490,12 @@ git init<!DOCTYPE html>
       font-weight: 700;
       color: var(--accent);
       flex-shrink: 0;
+      transition: all 0.3s ease;
     }
 
     .opcion.selected .opcion-letra {
       background: var(--accent);
-      color: #02131a;
+      color: white;
     }
 
     .opcion.correcta .opcion-letra {
@@ -331,7 +510,8 @@ git init<!DOCTYPE html>
 
     .opcion-texto {
       flex: 1;
-      color: #e9eef2;
+      color: var(--text);
+      transition: color 0.3s ease;
     }
 
     .botones-navegacion {
@@ -342,17 +522,19 @@ git init<!DOCTYPE html>
     }
 
     .progress-bar {
-      background: rgba(255,255,255,0.05);
+      background: var(--card-2);
       height: 8px;
       border-radius: 10px;
       overflow: hidden;
       margin-bottom: 24px;
+      transition: background 0.3s ease;
     }
 
     .progress-fill {
-      background: linear-gradient(90deg, var(--accent), #2ab3e8);
+      background: linear-gradient(90deg, var(--accent), var(--accent));
       height: 100%;
       transition: width 0.3s ease;
+      filter: brightness(1.2);
     }
 
     .resultado-card {
@@ -365,6 +547,7 @@ git init<!DOCTYPE html>
       font-weight: 700;
       color: var(--accent);
       margin: 20px 0;
+      transition: color 0.3s ease;
     }
 
     .resultado-stats {
@@ -378,24 +561,27 @@ git init<!DOCTYPE html>
       background: var(--card-2);
       padding: 20px;
       border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
     }
 
     .stat-item .label {
       color: var(--muted);
       font-size: 14px;
       margin-bottom: 8px;
+      transition: color 0.3s ease;
     }
 
     .stat-item .value {
       font-size: 28px;
       font-weight: 700;
       color: var(--accent);
+      transition: color 0.3s ease;
     }
 
     .stats-toggle {
       background: var(--card-2);
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid var(--border-hover);
       border-radius: 10px;
       margin-top: 24px;
       overflow: hidden;
@@ -412,7 +598,7 @@ git init<!DOCTYPE html>
     }
 
     .stats-toggle-header:hover {
-      background: rgba(52, 195, 255, 0.05);
+      background: var(--opcion-bg-hover);
     }
 
     .stats-toggle-title {
@@ -422,10 +608,11 @@ git init<!DOCTYPE html>
       display: flex;
       align-items: center;
       gap: 10px;
+      transition: color 0.3s ease;
     }
 
     .stats-toggle-icon {
-      transition: transform 0.3s ease;
+      transition: transform 0.3s ease, color 0.3s ease;
       color: var(--muted);
       font-size: 18px;
     }
@@ -446,7 +633,8 @@ git init<!DOCTYPE html>
 
     .stats-toggle-body {
       padding: 20px;
-      border-top: 1px solid rgba(255,255,255,0.05);
+      border-top: 1px solid var(--border);
+      transition: border-color 0.3s ease;
     }
 
     .stats-section {
@@ -465,6 +653,7 @@ git init<!DOCTYPE html>
       display: flex;
       align-items: center;
       gap: 8px;
+      transition: color 0.3s ease;
     }
 
     .stats-row {
@@ -472,7 +661,8 @@ git init<!DOCTYPE html>
       justify-content: space-between;
       align-items: center;
       padding: 10px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+      border-bottom: 1px solid var(--border);
+      transition: border-color 0.3s ease;
     }
 
     .stats-row:last-child {
@@ -482,12 +672,14 @@ git init<!DOCTYPE html>
     .stats-label {
       color: var(--muted);
       font-size: 14px;
+      transition: color 0.3s ease;
     }
 
     .stats-value {
       color: var(--accent);
       font-weight: 600;
       font-size: 16px;
+      transition: color 0.3s ease;
     }
 
     .stats-value.success {
@@ -506,31 +698,35 @@ git init<!DOCTYPE html>
     }
 
     .stats-mini-card {
-      background: rgba(255,255,255,0.02);
+      background: var(--card);
       padding: 12px;
       border-radius: 8px;
       text-align: center;
-      border: 1px solid rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
     }
 
     .stats-mini-card .mini-label {
       color: var(--muted);
       font-size: 12px;
       margin-bottom: 6px;
+      transition: color 0.3s ease;
     }
 
     .stats-mini-card .mini-value {
       color: var(--accent);
       font-size: 20px;
       font-weight: 700;
+      transition: color 0.3s ease;
     }
 
     .progress-bar-mini {
-      background: rgba(255,255,255,0.05);
+      background: var(--card-2);
       height: 6px;
       border-radius: 10px;
       overflow: hidden;
       margin-top: 8px;
+      transition: background 0.3s ease;
     }
 
     .progress-bar-mini .fill {
@@ -546,23 +742,24 @@ git init<!DOCTYPE html>
       display: flex;
       align-items: center;
       gap: 12px;
+      transition: all 0.3s ease;
     }
 
     .alert-danger {
-      background: rgba(178, 34, 34, 0.1);
-      border: 1px solid rgba(178, 34, 34, 0.3);
-      color: #ff6b6b;
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      color: var(--danger);
     }
 
     .alert-info {
-      background: rgba(52, 195, 255, 0.1);
-      border: 1px solid rgba(52, 195, 255, 0.3);
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
       color: var(--accent);
     }
 
     .alert-success {
-      background: rgba(46, 139, 87, 0.1);
-      border: 1px solid rgba(46, 139, 87, 0.3);
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
       color: var(--success);
     }
 
@@ -572,13 +769,14 @@ git init<!DOCTYPE html>
     }
 
     .spinner {
-      border: 4px solid rgba(255,255,255,0.1);
+      border: 4px solid var(--card-2);
       border-top: 4px solid var(--accent);
       border-radius: 50%;
       width: 50px;
       height: 50px;
       animation: spin 1s linear infinite;
       margin: 0 auto 20px;
+      transition: border-color 0.3s ease;
     }
 
     @keyframes spin {
@@ -603,10 +801,11 @@ git init<!DOCTYPE html>
       font-size: 12px;
       font-weight: 600;
       margin-left: 8px;
+      transition: all 0.3s ease;
     }
 
     .badge-success {
-      background: rgba(46, 139, 87, 0.2);
+      background: var(--success-bg);
       color: var(--success);
     }
 
@@ -616,7 +815,7 @@ git init<!DOCTYPE html>
     }
 
     .badge-danger {
-      background: rgba(178, 34, 34, 0.2);
+      background: var(--danger-bg);
       color: var(--danger);
     }
 
@@ -626,6 +825,7 @@ git init<!DOCTYPE html>
       color: var(--muted);
       font-size: 14px;
       position: relative;
+      transition: color 0.3s ease;
     }
 
     .login-divider::before {
@@ -635,22 +835,24 @@ git init<!DOCTYPE html>
       left: 0;
       right: 0;
       height: 1px;
-      background: rgba(255,255,255,0.1);
+      background: var(--border-hover);
+      transition: background 0.3s ease;
     }
 
     .login-divider span {
       background: var(--card);
       padding: 0 15px;
       position: relative;
+      transition: background 0.3s ease;
     }
 
     .form-input {
       width: 100%;
       padding: 12px 16px;
       border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.05);
-      color: white;
+      border: 1px solid var(--border-hover);
+      background: var(--input-bg);
+      color: var(--text);
       font-size: 14px;
       margin-bottom: 12px;
       transition: all 0.3s ease;
@@ -659,7 +861,7 @@ git init<!DOCTYPE html>
     .form-input:focus {
       outline: none;
       border-color: var(--accent);
-      background: rgba(255,255,255,0.08);
+      background: var(--input-bg-focus);
     }
 
     .small-text {
@@ -667,17 +869,19 @@ git init<!DOCTYPE html>
       color: var(--muted);
       text-align: center;
       margin-top: 8px;
+      transition: color 0.3s ease;
     }
 
     .error-message {
-      background: rgba(178, 34, 34, 0.15);
-      border: 1px solid rgba(178, 34, 34, 0.4);
-      color: #ff6b6b;
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      color: var(--danger);
       padding: 12px 16px;
       border-radius: 8px;
       margin-bottom: 16px;
       font-size: 14px;
       display: none;
+      transition: all 0.3s ease;
     }
 
     .error-message.show {
@@ -685,34 +889,247 @@ git init<!DOCTYPE html>
       animation: fadeIn 0.3s ease;
     }
 
+    /* ==================== STATS EN TIEMPO REAL ==================== */
+    #statsRealTime {
+      background: var(--card-2);
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border-hover);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      transition: all 0.3s ease;
+    }
+
+    #statsRealTime.hidden {
+      display: none;
+    }
+
+    /* ==================== RESPONSIVE - OPTIMIZADO ==================== */
     @media (max-width: 768px) {
+      body {
+        padding: 12px; /* Reducido de 20px */
+      }
+
+      /* TOGGLES REDUCIDOS 30% */
+      .toggles-container {
+        top: 10px;
+        right: 10px;
+        gap: 8px;
+      }
+
+      .toggle-wrapper {
+        padding: 5px; /* Reducido */
+      }
+
+      .theme-option {
+        width: 28px; /* Reducido 30%: 40px × 0.7 = 28px */
+        height: 28px;
+        font-size: 14px; /* Reducido proporcionalmente */
+      }
+
+      .stats-switch {
+        width: 62px; /* Reducido 30%: 88px × 0.7 = 61.6px ≈ 62px */
+        height: 28px; /* Igual que theme-option */
+        border-radius: 14px;
+      }
+
+      .stats-switch-slider {
+        width: 22px; /* Proporcional */
+        height: 22px;
+        top: 2px;
+        left: 2px;
+      }
+
+      .stats-switch.active .stats-switch-slider {
+        left: calc(100% - 24px);
+      }
+
+      .stats-switch::before,
+      .stats-switch::after {
+        font-size: 10px; /* Reducido */
+      }
+
+      .stats-switch::before {
+        right: 6px;
+      }
+
+      .stats-switch::after {
+        left: 6px;
+      }
+
+      /* CARD OPTIMIZADO */
       .card {
-        padding: 24px;
+        padding: 16px; /* Reducido de 24px - ahorro 16px */
+        border-radius: 12px;
+      }
+
+      /* LOGO COMPACTO */
+      .logo {
+        margin-bottom: 20px; /* Reducido de 30px */
       }
 
       .logo h1 {
-        font-size: 28px;
+        font-size: 24px; /* Reducido de 28px */
+        margin-bottom: 6px;
+      }
+
+      .logo p {
+        font-size: 14px; /* Reducido de 16px */
+      }
+
+      /* USER INFO COMPACTO */
+      .user-info {
+        padding: 12px; /* Reducido de 16px */
+        margin-bottom: 16px; /* Reducido de 24px */
+        font-size: 13px;
+      }
+
+      .user-info .logout {
+        padding: 6px 12px; /* Reducido */
+        font-size: 12px;
+      }
+
+      /* PREGUNTA OPTIMIZADA */
+      .pregunta-container {
+        margin-bottom: 20px; /* Reducido de 30px */
+      }
+
+      .pregunta-header {
+        margin-bottom: 12px; /* Reducido de 20px */
+        padding-bottom: 10px; /* Reducido de 16px */
       }
 
       .pregunta-texto {
-        font-size: 18px;
+        font-size: 16px; /* Reducido de 18px */
+        margin-bottom: 16px; /* Reducido de 24px */
       }
 
-      .resultado-score {
-        font-size: 56px;
+      /* STATS EN TIEMPO REAL - ULTRA COMPACTO */
+      #statsRealTime {
+        grid-template-columns: repeat(4, 1fr); /* FORZAR 4 COLUMNAS */
+        gap: 6px; /* Reducido de 12px */
+        padding: 10px; /* Reducido de 16px */
+        margin-bottom: 12px; /* Reducido de 20px */
+      }
+
+      #statsRealTime > div {
+        padding: 8px 4px; /* Muy compacto */
+      }
+
+      #statsRealTime > div > div:first-child {
+        font-size: 9px; /* Label muy pequeño */
+        margin-bottom: 3px;
+      }
+
+      #statsRealTime > div > div:last-child {
+        font-size: 16px; /* Valor reducido de 20px */
+        font-weight: 700;
+      }
+
+      /* OPCIONES COMPACTAS */
+      .opciones {
+        gap: 10px; /* Reducido de 12px */
+        margin-bottom: 16px; /* Reducido de 24px */
+      }
+
+      .opcion {
+        padding: 12px 14px; /* Reducido de 16px 20px */
+        gap: 10px;
+      }
+
+      .opcion-letra {
+        width: 28px; /* Reducido de 32px */
+        height: 28px;
+        font-size: 14px;
+      }
+
+      .opcion-texto {
+        font-size: 14px;
+      }
+
+      /* BOTONES COMPACTOS */
+      .btn {
+        padding: 12px 16px; /* Reducido de 16px 24px */
+        font-size: 14px; /* Reducido de 16px */
       }
 
       .botones-navegacion {
         grid-template-columns: 1fr;
+        gap: 10px; /* Reducido de 12px */
+        margin-top: 16px; /* Reducido de 24px */
+      }
+
+      /* CATEGORÍAS */
+      .categoria-card {
+        padding: 16px; /* Reducido de 24px */
+      }
+
+      .categoria-card h3 {
+        font-size: 18px; /* Reducido de 20px */
+      }
+
+      .categoria-card .info {
+        font-size: 12px;
+        gap: 12px;
+      }
+
+      /* RESULTADOS */
+      .resultado-score {
+        font-size: 48px; /* Reducido de 56px */
+        margin: 16px 0; /* Reducido de 20px 0 */
+      }
+
+      .resultado-stats {
+        gap: 12px; /* Reducido de 16px */
+        margin: 20px 0; /* Reducido de 30px 0 */
+      }
+
+      .stat-item {
+        padding: 14px; /* Reducido de 20px */
+      }
+
+      .stat-item .value {
+        font-size: 24px; /* Reducido de 28px */
       }
 
       .stats-grid {
         grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      /* INPUTS */
+      .form-input {
+        padding: 10px 14px; /* Reducido de 12px 16px */
+        font-size: 14px;
+        margin-bottom: 10px;
+      }
+
+      /* PROGRESS BAR */
+      .progress-bar {
+        height: 6px; /* Reducido de 8px */
+        margin-bottom: 16px; /* Reducido de 24px */
       }
     }
   </style>
 </head>
 <body>
+  
+  <!-- TOGGLES -->
+  <div class="toggles-container">
+    <div class="toggle-wrapper" onclick="toggleTheme()" title="Cambiar tema">
+      <div class="theme-option" id="lightIcon">☀️</div>
+      <div class="theme-option active" id="darkIcon">🌙</div>
+    </div>
+    
+    <div class="toggle-wrapper" title="Mostrar/Ocultar estadísticas">
+      <div class="stats-switch active" id="statsSwitch" onclick="toggleStatsVisibility()">
+        <div class="stats-switch-slider"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="container">
     <!-- PANTALLA 1: LOGIN CON FIREBASE -->
     <div id="screenLogin" class="screen active">  
@@ -724,17 +1141,14 @@ git init<!DOCTYPE html>
 
         <div id="errorMessage" class="error-message"></div>
 
-        <!-- Login con Google -->
         <button class="btn btn-primary" onclick="loginWithGoogle()" id="btnGoogleLogin">
           🔐 Continuar con Google
         </button>
         
-        <!-- Divider -->
         <div class="login-divider">
           <span>── o ──</span>
         </div>
 
-        <!-- Login con Email -->
         <div id="emailLoginSection">
           <input type="email" id="emailInput" class="form-input" placeholder="tu@email.com">
           <input type="password" id="passwordInput" class="form-input" placeholder="Contraseña">
@@ -751,7 +1165,6 @@ git init<!DOCTYPE html>
           </div>
         </div>
 
-        <!-- Estado de carga -->
         <div id="loginLoading" style="display: none; text-align: center; margin-top: 15px;">
           <div class="spinner" style="width: 20px; height: 20px; margin: 0 auto 10px;"></div>
           <p style="color: var(--muted); font-size: 14px;">Iniciando sesión...</p>
@@ -865,7 +1278,6 @@ git init<!DOCTYPE html>
             </div>
           </div>
 
-          <!-- ESTADÍSTICAS DESPLEGABLES MEJORADAS -->
           <div class="stats-toggle" id="statsToggle">
             <div class="stats-toggle-header" onclick="toggleStats()">
               <div class="stats-toggle-title">
@@ -901,11 +1313,103 @@ git init<!DOCTYPE html>
   </div>
 
   <script>
-    // ==================== CONFIG LOCAL / RUTAS ====================
+    // ==================== THEME TOGGLE ====================
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const lightIcon = document.getElementById('lightIcon');
+      const darkIcon = document.getElementById('darkIcon');
+      
+      if (currentTheme === 'light') {
+        html.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+        lightIcon.classList.remove('active');
+        darkIcon.classList.add('active');
+      } else {
+        html.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+        darkIcon.classList.remove('active');
+        lightIcon.classList.add('active');
+      }
+    }
+
+    function loadSavedTheme() {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      const html = document.documentElement;
+      const lightIcon = document.getElementById('lightIcon');
+      const darkIcon = document.getElementById('darkIcon');
+      
+      html.setAttribute('data-theme', savedTheme);
+      
+      if (savedTheme === 'light') {
+        darkIcon.classList.remove('active');
+        lightIcon.classList.add('active');
+      } else {
+        lightIcon.classList.remove('active');
+        darkIcon.classList.add('active');
+      }
+    }
+
+    // ==================== STATS VISIBILITY TOGGLE ====================
+    function toggleStatsVisibility() {
+      const statsSwitch = document.getElementById('statsSwitch');
+      const statsPanel = document.getElementById('statsRealTime');
+      
+      statsSwitch.classList.toggle('active');
+      
+      if(statsPanel) {
+        statsPanel.classList.toggle('hidden');
+      }
+      
+      const isVisible = statsSwitch.classList.contains('active');
+      localStorage.setItem('statsVisible', isVisible ? '1' : '0');
+      
+      console.log('Stats visible:', isVisible ? 'SI (1)' : 'NO (0)');
+    }
+
+    function loadStatsPreference() {
+      const saved = localStorage.getItem('statsVisible');
+      const isVisible = saved === null ? true : saved === '1';
+      
+      const statsSwitch = document.getElementById('statsSwitch');
+      
+      if (isVisible) {
+        statsSwitch.classList.add('active');
+      } else {
+        statsSwitch.classList.remove('active');
+      }
+    }
+
+    function forceShowStats() {
+      const statsSwitch = document.getElementById('statsSwitch');
+      const statsPanel = document.getElementById('statsRealTime');
+      
+      statsSwitch.classList.add('active');
+      if(statsPanel) {
+        statsPanel.classList.remove('hidden');
+      }
+    }
+
+    function restoreStatsPreference() {
+      const saved = localStorage.getItem('statsVisible');
+      const isVisible = saved === null ? true : saved === '1';
+      
+      const statsSwitch = document.getElementById('statsSwitch');
+      const statsPanel = document.getElementById('statsRealTime');
+      
+      if (isVisible) {
+        statsSwitch.classList.add('active');
+        if(statsPanel) statsPanel.classList.remove('hidden');
+      } else {
+        statsSwitch.classList.remove('active');
+        if(statsPanel) statsPanel.classList.add('hidden');
+      }
+    }
+
+    // ==================== CONFIG ====================
     const useLocalData = false;
     const preguntasFolder = 'preguntas';
 
-    // CONFIG para mostrar/ocultar métricas específicas
     const CONFIG = {
       mostrarProgresoTanda: false,
       mostrarRestantesGlobal: false
@@ -914,8 +1418,6 @@ git init<!DOCTYPE html>
     // ==================== VARIABLES GLOBALES ====================
     let usuarioActual = null;
     let categoriaActual = null;
-
-    // Pools y estado para gestion de tandas
     let masterPreguntasPool = [];
     let preguntasRealizadasGlobal = 0;
     let remainingPreguntas = [];
@@ -929,13 +1431,12 @@ git init<!DOCTYPE html>
     let aciertosGlobal = 0;
     let inicioTestTimestamp = null;
 
-    // Key de localStorage para progreso
     function progresoKey() {
       if (!usuarioActual || !categoriaActual) return null;
       return `progreso_${usuarioActual.uid}_${categoriaActual}`;
     }
 
-    // ==================== FUNCIONES FIREBASE AUTH (REPARADAS) ====================
+    // ==================== FUNCIONES FIREBASE AUTH ====================
     function loginWithGoogle() {
       console.log('🔵 Iniciando login con Google...');
       
@@ -959,8 +1460,6 @@ git init<!DOCTYPE html>
         })
         .catch((error) => {
           console.error('❌ Error login Google:', error);
-          console.error('Código:', error.code);
-          console.error('Mensaje:', error.message);
           
           let errorMsg = 'Error en login con Google';
           
@@ -1194,7 +1693,6 @@ git init<!DOCTYPE html>
       }
     });
 
-    // ==================== FUNCIONES AUXILIARES ====================
     function mostrarPantalla(screenId) {
       console.log('🔄 Mostrando pantalla:', screenId);
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1205,7 +1703,7 @@ git init<!DOCTYPE html>
       return String(id).replace(/[^a-z0-9\\-_.]/gi, '_');
     }
 
-    // ==================== CATEGORÍAS (LOCAL O FIRESTORE) ====================
+    // ==================== CATEGORÍAS ====================
     async function cargarCategoriasDisponibles() {
       console.log('📚 Cargando categorías disponibles...');
 
@@ -1315,7 +1813,7 @@ git init<!DOCTYPE html>
       mostrarPantalla('screenCategorias');
     }
 
-    // ==================== GESTIÓN DE TANDAS Y PROGRESO ====================
+    // ==================== GESTIÓN DE TANDAS ====================
     function prepararTanda() {
       const panel = document.getElementById('tandaOptions');
       if (panel) panel.style.display = 'none';
@@ -1345,6 +1843,7 @@ git init<!DOCTYPE html>
       console.log(`🔢 Preparada tanda #${numeroTanda} con ${preguntasActuales.length} preguntas`);
 
       guardarProgreso();
+      restoreStatsPreference();
       mostrarPregunta();
     }
 
@@ -1380,6 +1879,7 @@ git init<!DOCTYPE html>
       });
 
       guardarProgreso();
+      forceShowStats();
 
       const feedback = document.getElementById('feedbackContainer');
       feedback.style.display = 'block';
@@ -1502,7 +2002,7 @@ git init<!DOCTYPE html>
       } catch (e) {}
     }
 
-    // ==================== TEST (LOCAL O FIRESTORE) ====================
+    // ==================== TEST ====================
     function iniciarTest() {
       console.log('🚀 Iniciando test para categoría:', categoriaActual);
       mostrarPantalla('screenTest');
@@ -1678,7 +2178,6 @@ git init<!DOCTYPE html>
       return newArray;
     }
 
-    // ==================== MOSTRAR PREGUNTA ====================
     function mostrarPregunta() {
       const pregunta = preguntasActuales[indicePreguntaActual];
       const total = preguntasActuales.length;
@@ -1690,8 +2189,6 @@ git init<!DOCTYPE html>
       }
 
       document.getElementById('preguntaNumero').textContent = `Pregunta ${indicePreguntaActual + 1} de ${total} (Tanda ${numeroTanda})`;
-
-      console.log('Mostrando pregunta:', pregunta);
 
       const progreso = ((indicePreguntaActual + 1) / total) * 100;
       const progressBarContainer = document.querySelector('.progress-bar');
@@ -1777,16 +2274,6 @@ git init<!DOCTYPE html>
       if(!statsPanel) {
         statsPanel = document.createElement('div');
         statsPanel.id = 'statsRealTime';
-        statsPanel.style.cssText = `
-          background: var(--card-2);
-          padding: 16px;
-          border-radius: 10px;
-          margin-bottom: 20px;
-          border: 1px solid rgba(255,255,255,0.1);
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-          gap: 12px;
-        `;
         document.querySelector('.pregunta-container').insertBefore(
           statsPanel, 
           document.querySelector('.pregunta-header')
@@ -1804,7 +2291,7 @@ git init<!DOCTYPE html>
 
       bloques.push(`
         <div style="text-align: center;">
-          <div style="color: var(--muted); font-size: 12px;">Respondidas (tanda)</div>
+          <div style="color: var(--muted); font-size: 12px;">Respondidas</div>
           <div style="color: var(--accent); font-size: 20px; font-weight: 700;">${respondidas}/${totalTanda}</div>
         </div>
       `);
@@ -1812,7 +2299,7 @@ git init<!DOCTYPE html>
       if (CONFIG.mostrarProgresoTanda) {
         bloques.push(`
           <div style="text-align: center;">
-            <div style="color: var(--muted); font-size: 12px;">Progreso (tanda)</div>
+            <div style="color: var(--muted); font-size: 12px;">Progreso</div>
             <div style="color: var(--accent); font-size: 20px; font-weight: 700;">${progreso}%</div>
           </div>
         `);
@@ -1820,28 +2307,26 @@ git init<!DOCTYPE html>
 
       bloques.push(`
         <div style="text-align: center;">
-          <div style="color: var(--muted); font-size: 12px;">Acierto (tanda)</div>
+          <div style="color: var(--muted); font-size: 12px;">Acierto</div>
           <div style="color: ${porcentajeTemp >= 70 ? 'var(--success)' : 'var(--danger)'}; font-size: 20px; font-weight: 700;">${porcentajeTemp}%</div>
         </div>
       `);
 
       bloques.push(`
         <div style="text-align: center;">
-          <div style="color: var(--muted); font-size: 12px;">Realizadas (global)</div>
-          <div style="color: var(--accent); font-size: 20px; font-weight: 700;">${realizadas}/${totalMaster}</div>
+          <div style="color: var(--muted); font-size: 12px;">Correctas</div>
+          <div style="color: var(--success); font-size: 20px; font-weight: 700;">${correctasTemp}</div>
         </div>
       `);
 
-      if (CONFIG.mostrarRestantesGlobal) {
-        bloques.push(`
-          <div style="text-align: center;">
-            <div style="color: var(--muted); font-size: 12px;">Restantes (global)</div>
-            <div style="color: var(--accent); font-size: 20px; font-weight: 700;">${restantesGlobal}</div>
-          </div>
-        `);
-      }
-
       statsPanel.innerHTML = bloques.join('\n');
+      
+      const isVisible = document.getElementById('statsSwitch').classList.contains('active');
+      if (!isVisible) {
+        statsPanel.classList.add('hidden');
+      } else {
+        statsPanel.classList.remove('hidden');
+      }
     }
 
     let autoAdvanceTimeout = null;
@@ -2016,7 +2501,6 @@ git init<!DOCTYPE html>
       }
     }
 
-    // ==================== ESTADÍSTICAS ====================
     function obtenerEstadisticasUsuario() {
       return db.collection('resultados')
         .where('usuarioId', '==', usuarioActual.uid)
@@ -2063,9 +2547,6 @@ git init<!DOCTYPE html>
     }
 
     function mostrarEstadisticasDetalladas(stats, correctas, incorrectas, total, porcentaje) {
-      console.log('=== MOSTRANDO ESTADÍSTICAS ===');
-      console.log('Stats recibidas:', stats);
-
       if(!stats || !stats.success) {
         document.getElementById('statsBody').innerHTML = `
           <div class="alert alert-info">
@@ -2212,7 +2693,6 @@ git init<!DOCTYPE html>
       }
 
       document.getElementById('statsBody').innerHTML = statsHtml;
-      console.log('✓ Estadísticas mostradas correctamente');
     }
 
     function getColorClass(porcentaje) {
@@ -2285,9 +2765,10 @@ git init<!DOCTYPE html>
       window.open(`https://chat.openai.com/?q=${encoded}`, '_blank');
     }
 
-    // ==================== INICIALIZACIÓN ====================
     window.onload = function() {
-      console.log('🔄 Página cargada, verificando autenticación Firebase...');
+      console.log('🔄 Página cargada, inicializando...');
+      loadSavedTheme();
+      loadStatsPreference();
       
       window.addEventListener('beforeunload', function() {
         guardarProgreso();
@@ -2296,8 +2777,3 @@ git init<!DOCTYPE html>
   </script>
 </body>
 </html>
-git add README.md
-git commit -m "first commit"
-git branch -M main
-git remote add origin https://github.com/carlositim-glitch/multitest.git
-git push -u origin main
