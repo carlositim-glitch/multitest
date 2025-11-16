@@ -1,0 +1,2303 @@
+echo "# multitest" >> README.md
+git init<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">  
+  <title>Sistema de Tests</title>  
+  <meta name="viewport" content="width=device-width,initial-scale=1">  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+
+
+  <script>
+    // Configuración Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCQ5u2bs7kv7KNsS7HQ_T2HYNNnhI-KbG4",
+      authDomain: "multitest-gobcan.firebaseapp.com",
+      projectId: "multitest-gobcan",
+      storageBucket: "multitest-gobcan.firebasestorage.app",
+      messagingSenderId: "1039579449781",
+      appId: "1:1039579449781:web:f0709e9515a19184a3f1fc",
+      measurementId: "G-D3PN7H340S"
+    };
+    
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const analytics = firebase.analytics();
+
+    console.log('🔥 Firebase configurado correctamente');
+  </script>
+
+  <style>
+    :root {
+      --bg: #0f1113;
+      --card: #1f2225;
+      --card-2: #26292d;
+      --muted: #aab3b8;
+      --accent: #34c3ff;
+      --success: #2e8b57;
+      --danger: #b22222;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      color: #e9eef2;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .logo h1 {
+      font-size: 36px;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    .logo p {
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #02131a;
+    }
+
+    .btn-primary:hover {
+      background: #2ab3e8;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(52, 195, 255, 0.4);
+    }
+
+    .btn-primary:disabled {
+      background: rgba(52, 195, 255, 0.3);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #267a4a;
+      transform: translateY(-2px);
+    }
+
+    .btn-success:disabled {
+      background: rgba(46, 139, 87, 0.3);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 2px solid rgba(255,255,255,0.1);
+      color: var(--muted);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .categoria-grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .categoria-card {
+      background: var(--card-2);
+      padding: 24px;
+      border-radius: 12px;
+      border: 2px solid rgba(255,255,255,0.05);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .categoria-card:hover {
+      border-color: var(--accent);
+      background: rgba(52, 195, 255, 0.05);
+      transform: translateX(5px);
+    }
+
+    .categoria-card h3 {
+      color: var(--accent);
+      margin-bottom: 8px;
+      font-size: 20px;
+    }
+
+    .categoria-card p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .categoria-card .info {
+      display: flex;
+      gap: 20px;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+
+    .categoria-card .info span {
+      color: var(--muted);
+    }
+
+    .user-info {
+      background: rgba(52, 195, 255, 0.1);
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid rgba(52, 195, 255, 0.2);
+    }
+
+    .user-info .email {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .user-info .logout {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--muted);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .user-info .logout:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .pregunta-container {
+      margin-bottom: 30px;
+    }
+
+    .pregunta-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid rgba(255,255,255,0.05);
+    }
+
+    .pregunta-numero {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .pregunta-texto {
+      font-size: 20px;
+      color: #e9eef2;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .opciones {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .opcion {
+      background: var(--card-2);
+      padding: 16px 20px;
+      border-radius: 10px;
+      border: 2px solid rgba(255,255,255,0.05);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .opcion:hover {
+      border-color: var(--accent);
+      background: rgba(52, 195, 255, 0.05);
+    }
+
+    .opcion.selected {
+      border-color: var(--accent);
+      background: rgba(52, 195, 255, 0.1);
+    }
+
+    .opcion.correcta {
+      border-color: var(--success);
+      background: rgba(46, 139, 87, 0.1);
+    }
+
+    .opcion.incorrecta {
+      border-color: var(--danger);
+      background: rgba(178, 34, 34, 0.1);
+    }
+
+    .opcion-letra {
+      width: 32px;
+      height: 32px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .opcion.selected .opcion-letra {
+      background: var(--accent);
+      color: #02131a;
+    }
+
+    .opcion.correcta .opcion-letra {
+      background: var(--success);
+      color: white;
+    }
+
+    .opcion.incorrecta .opcion-letra {
+      background: var(--danger);
+      color: white;
+    }
+
+    .opcion-texto {
+      flex: 1;
+      color: #e9eef2;
+    }
+
+    .botones-navegacion {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .progress-bar {
+      background: rgba(255,255,255,0.05);
+      height: 8px;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .progress-fill {
+      background: linear-gradient(90deg, var(--accent), #2ab3e8);
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+
+    .resultado-card {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .resultado-score {
+      font-size: 72px;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 20px 0;
+    }
+
+    .resultado-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin: 30px 0;
+    }
+
+    .stat-item {
+      background: var(--card-2);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .stat-item .label {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .stat-item .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .stats-toggle {
+      background: var(--card-2);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      margin-top: 24px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .stats-toggle-header {
+      padding: 16px 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+
+    .stats-toggle-header:hover {
+      background: rgba(52, 195, 255, 0.05);
+    }
+
+    .stats-toggle-title {
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stats-toggle-icon {
+      transition: transform 0.3s ease;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .stats-toggle-icon.open {
+      transform: rotate(180deg);
+    }
+
+    .stats-toggle-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+    }
+
+    .stats-toggle-content.open {
+      max-height: 1500px;
+    }
+
+    .stats-toggle-body {
+      padding: 20px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .stats-section {
+      margin-bottom: 24px;
+    }
+
+    .stats-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .stats-section-title {
+      color: var(--accent);
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .stats-row:last-child {
+      border-bottom: none;
+    }
+
+    .stats-label {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .stats-value {
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .stats-value.success {
+      color: var(--success);
+    }
+
+    .stats-value.danger {
+      color: var(--danger);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .stats-mini-card {
+      background: rgba(255,255,255,0.02);
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .stats-mini-card .mini-label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .stats-mini-card .mini-value {
+      color: var(--accent);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .progress-bar-mini {
+      background: rgba(255,255,255,0.05);
+      height: 6px;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-bar-mini .fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--success), var(--accent));
+      transition: width 0.3s ease;
+    }
+
+    .alert {
+      padding: 16px 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .alert-danger {
+      background: rgba(178, 34, 34, 0.1);
+      border: 1px solid rgba(178, 34, 34, 0.3);
+      color: #ff6b6b;
+    }
+
+    .alert-info {
+      background: rgba(52, 195, 255, 0.1);
+      border: 1px solid rgba(52, 195, 255, 0.3);
+      color: var(--accent);
+    }
+
+    .alert-success {
+      background: rgba(46, 139, 87, 0.1);
+      border: 1px solid rgba(46, 139, 87, 0.3);
+      color: var(--success);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .spinner {
+      border: 4px solid rgba(255,255,255,0.1);
+      border-top: 4px solid var(--accent);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .chatgpt-btn {
+      background: linear-gradient(135deg, #10a37f 0%, #0d8a6a 100%);
+      color: white;
+      margin-top: 16px;
+    }
+
+    .chatgpt-btn:hover {
+      background: linear-gradient(135deg, #0d8a6a 0%, #0a6f55 100%);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .badge-success {
+      background: rgba(46, 139, 87, 0.2);
+      color: var(--success);
+    }
+
+    .badge-warning {
+      background: rgba(255, 193, 7, 0.2);
+      color: #ffc107;
+    }
+
+    .badge-danger {
+      background: rgba(178, 34, 34, 0.2);
+      color: var(--danger);
+    }
+
+    .login-divider {
+      margin: 20px 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      position: relative;
+    }
+
+    .login-divider::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .login-divider span {
+      background: var(--card);
+      padding: 0 15px;
+      position: relative;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
+      color: white;
+      font-size: 14px;
+      margin-bottom: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .small-text {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .error-message {
+      background: rgba(178, 34, 34, 0.15);
+      border: 1px solid rgba(178, 34, 34, 0.4);
+      color: #ff6b6b;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+      .card {
+        padding: 24px;
+      }
+
+      .logo h1 {
+        font-size: 28px;
+      }
+
+      .pregunta-texto {
+        font-size: 18px;
+      }
+
+      .resultado-score {
+        font-size: 56px;
+      }
+
+      .botones-navegacion {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- PANTALLA 1: LOGIN CON FIREBASE -->
+    <div id="screenLogin" class="screen active">  
+      <div class="card">  
+        <div class="logo">  
+          <h1>🎓 Sistema de Tests</h1>  
+          <p>Elige cómo quieres iniciar sesión</p>  
+        </div>  
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <!-- Login con Google -->
+        <button class="btn btn-primary" onclick="loginWithGoogle()" id="btnGoogleLogin">
+          🔐 Continuar con Google
+        </button>
+        
+        <!-- Divider -->
+        <div class="login-divider">
+          <span>── o ──</span>
+        </div>
+
+        <!-- Login con Email -->
+        <div id="emailLoginSection">
+          <input type="email" id="emailInput" class="form-input" placeholder="tu@email.com">
+          <input type="password" id="passwordInput" class="form-input" placeholder="Contraseña">
+          
+          <button class="btn btn-primary" onclick="loginWithEmail()" style="margin-bottom: 8px;">
+            📧 Iniciar Sesión
+          </button>
+          <button class="btn btn-secondary" onclick="registerWithEmail()">
+            📝 Crear Cuenta
+          </button>
+          
+          <div class="small-text">
+            La contraseña debe tener al menos 6 caracteres
+          </div>
+        </div>
+
+        <!-- Estado de carga -->
+        <div id="loginLoading" style="display: none; text-align: center; margin-top: 15px;">
+          <div class="spinner" style="width: 20px; height: 20px; margin: 0 auto 10px;"></div>
+          <p style="color: var(--muted); font-size: 14px;">Iniciando sesión...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 2: SELECCIÓN DE CATEGORÍA -->
+    <div id="screenCategorias" class="screen">
+      <div class="card">
+        <div class="user-info">
+          <div>
+            <div style="color: var(--muted); font-size: 14px; margin-bottom: 4px;">Conectado como:</div>
+            <div class="email" id="userEmail"></div>
+          </div>
+          <button class="logout" onclick="cerrarSesion()">Cerrar sesión</button>
+        </div>
+
+        <div class="logo">
+          <h1>📚 Selecciona un Test</h1>
+          <p>Elige la categoría que deseas practicar</p>
+        </div>
+
+        <div id="loadingCategorias" class="loading">
+          <div class="spinner"></div>
+          <p style="color: var(--muted);">Cargando categorías disponibles...</p>
+        </div>
+
+        <div id="listaCategorias" class="categoria-grid" style="display:none;"></div>
+
+        <div id="sinAcceso" style="display:none;">
+          <div class="alert alert-danger">
+            <span>⚠️</span>
+            <span>No tienes acceso a ninguna categoría. Contacta al administrador.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 3: TEST -->
+    <div id="screenTest" class="screen">
+      <div class="card">
+        <div class="user-info">
+          <div>
+            <div style="color: var(--muted); font-size: 14px; margin-bottom: 4px;">Test:</div>
+            <div class="email" id="testCategoriaNombre"></div>
+          </div>
+          <button class="logout" onclick="volverCategorias()">← Volver</button>
+        </div>
+
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+        </div>
+
+        <div class="pregunta-container">
+          <div class="pregunta-header">
+            <div class="pregunta-numero" id="preguntaNumero">Pregunta 1 de 30</div>
+          </div>
+
+          <div class="pregunta-texto" id="preguntaTexto"></div>
+
+          <div class="opciones" id="opcionesContainer"></div>
+
+          <div id="feedbackContainer" style="display:none; margin-top: 20px;"></div>
+        </div>
+
+        <div id="tandaOptions" style="display:none; margin-top: 16px; gap:12px; display:flex;">  
+          <button class="btn btn-primary" id="btnRepetirFallos" onclick="repetirFallos()">  
+            🔁 Repetir preguntas falladas  
+          </button>  
+          <button class="btn btn-secondary" id="btnSaltarTanda" onclick="saltarTanda()">  
+            ⏭️ Saltar / Continuar  
+          </button>  
+        </div>
+
+        <div class="botones-navegacion">
+          <button class="btn btn-secondary" id="btnAnterior" onclick="preguntaAnterior()">
+            ← Anterior
+          </button>
+          <button class="btn btn-primary" id="btnSiguiente" onclick="siguientePregunta()" disabled>
+            Siguiente →
+          </button>
+          <button class="btn btn-success" id="btnFinalizar" onclick="finalizarTest()" style="display:none;">
+            ✓ Finalizar Test
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 4: RESULTADOS -->
+    <div id="screenResultado" class="screen">
+      <div class="card">
+        <div class="resultado-card">
+          <h1 style="color: var(--accent); margin-bottom: 10px;">🎉 Test Completado</h1>
+          <p style="color: var(--muted); margin-bottom: 20px;">Has finalizado el test</p>
+
+          <div class="resultado-score" id="resultadoPorcentaje">0%</div>
+
+          <div class="resultado-stats">
+            <div class="stat-item">
+              <div class="label">Correctas</div>
+              <div class="value" id="resultadoCorrectas" style="color: var(--success);">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="label">Incorrectas</div>
+              <div class="value" id="resultadoIncorrectas" style="color: var(--danger);">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="label">Total</div>
+              <div class="value" id="resultadoTotal">0</div>
+            </div>
+          </div>
+
+          <!-- ESTADÍSTICAS DESPLEGABLES MEJORADAS -->
+          <div class="stats-toggle" id="statsToggle">
+            <div class="stats-toggle-header" onclick="toggleStats()">
+              <div class="stats-toggle-title">
+                <span>📊</span>
+                <span>Ver estadísticas detalladas</span>
+              </div>
+              <div class="stats-toggle-icon" id="statsIcon">▼</div>
+            </div>
+            <div class="stats-toggle-content" id="statsContent">
+              <div class="stats-toggle-body" id="statsBody">
+                <div class="loading">
+                  <div class="spinner"></div>
+                  <p style="color: var(--muted);">Cargando estadísticas...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 12px;">
+            <button class="btn btn-primary" onclick="nuevoTest()">
+              🔄 Hacer otro test
+            </button>
+            <button class="btn btn-secondary" onclick="volverCategorias()">
+              📚 Cambiar categoría
+            </button>
+            <button class="btn chatgpt-btn" onclick="consultarChatGPT()">
+              💬 Consultar dudas con ChatGPT
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== CONFIG LOCAL / RUTAS ====================
+    const useLocalData = false;
+    const preguntasFolder = 'preguntas';
+
+    // CONFIG para mostrar/ocultar métricas específicas
+    const CONFIG = {
+      mostrarProgresoTanda: false,
+      mostrarRestantesGlobal: false
+    };
+
+    // ==================== VARIABLES GLOBALES ====================
+    let usuarioActual = null;
+    let categoriaActual = null;
+
+    // Pools y estado para gestion de tandas
+    let masterPreguntasPool = [];
+    let preguntasRealizadasGlobal = 0;
+    let remainingPreguntas = [];
+    let failedPreguntas = [];
+    let preguntasActuales = [];
+    let indicePreguntaActual = 0;
+    let respuestasUsuario = [];
+    let numeroTanda = 0;
+    let totalPreguntas = 0;
+    let preguntasPorTanda = 30;
+    let aciertosGlobal = 0;
+    let inicioTestTimestamp = null;
+
+    // Key de localStorage para progreso
+    function progresoKey() {
+      if (!usuarioActual || !categoriaActual) return null;
+      return `progreso_${usuarioActual.uid}_${categoriaActual}`;
+    }
+
+    // ==================== FUNCIONES FIREBASE AUTH (REPARADAS) ====================
+    function loginWithGoogle() {
+      console.log('🔵 Iniciando login con Google...');
+      
+      showLoginLoading(true);
+      hideErrorMessage();
+
+      const btnGoogle = document.getElementById('btnGoogleLogin');
+      if (btnGoogle) btnGoogle.disabled = true;
+
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.addScope('profile');
+      provider.addScope('email');
+      provider.setCustomParameters({
+        'prompt': 'select_account'
+      });
+
+      firebase.auth().signInWithPopup(provider)
+        .then((result) => {
+          console.log('✅ Login Google exitoso:', result.user);
+          handleLoginSuccess(result.user);
+        })
+        .catch((error) => {
+          console.error('❌ Error login Google:', error);
+          console.error('Código:', error.code);
+          console.error('Mensaje:', error.message);
+          
+          let errorMsg = 'Error en login con Google';
+          
+          switch(error.code) {
+            case 'auth/popup-blocked':
+              errorMsg = 'El navegador bloqueó la ventana emergente. Por favor, permite las ventanas emergentes.';
+              break;
+            case 'auth/popup-closed-by-user':
+              errorMsg = 'Cerraste la ventana de login antes de completar el proceso.';
+              break;
+            case 'auth/cancelled-popup-request':
+              errorMsg = 'Se canceló la solicitud de login.';
+              break;
+            case 'auth/unauthorized-domain':
+              errorMsg = 'Este dominio no está autorizado. Verifica la configuración en Firebase Console.';
+              break;
+            case 'auth/operation-not-allowed':
+              errorMsg = 'El login con Google no está habilitado. Actívalo en Firebase Console.';
+              break;
+            case 'auth/network-request-failed':
+              errorMsg = 'Error de red. Verifica tu conexión a internet.';
+              break;
+            default:
+              errorMsg = `Error: ${error.message}`;
+          }
+          
+          showErrorMessage(errorMsg);
+          showLoginLoading(false);
+          if (btnGoogle) btnGoogle.disabled = false;
+        });
+    }
+
+    function loginWithEmail() {
+      const email = document.getElementById('emailInput').value.trim();
+      const password = document.getElementById('passwordInput').value;
+
+      if (!email || !password) {
+        showErrorMessage('Por favor completa ambos campos');
+        return;
+      }
+
+      if (!validateEmail(email)) {
+        showErrorMessage('Por favor ingresa un email válido');
+        return;
+      }
+
+      showLoginLoading(true);
+      hideErrorMessage();
+
+      firebase.auth().signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          console.log('✅ Login email exitoso:', userCredential.user);
+          handleLoginSuccess(userCredential.user);
+        })
+        .catch((error) => {
+          console.error('❌ Error login email:', error);
+          
+          let errorMsg = 'Error al iniciar sesión';
+          
+          switch(error.code) {
+            case 'auth/user-not-found':
+              errorMsg = 'No existe una cuenta con este email';
+              break;
+            case 'auth/wrong-password':
+              errorMsg = 'Contraseña incorrecta';
+              break;
+            case 'auth/invalid-email':
+              errorMsg = 'Email inválido';
+              break;
+            case 'auth/user-disabled':
+              errorMsg = 'Esta cuenta ha sido deshabilitada';
+              break;
+            case 'auth/too-many-requests':
+              errorMsg = 'Demasiados intentos fallidos. Intenta más tarde';
+              break;
+            default:
+              errorMsg = error.message;
+          }
+          
+          showErrorMessage(errorMsg);
+          showLoginLoading(false);
+        });
+    }
+
+    function registerWithEmail() {
+      const email = document.getElementById('emailInput').value.trim();
+      const password = document.getElementById('passwordInput').value;
+
+      if (!email || !password) {
+        showErrorMessage('Por favor completa ambos campos');
+        return;
+      }
+
+      if (!validateEmail(email)) {
+        showErrorMessage('Por favor ingresa un email válido');
+        return;
+      }
+
+      if (password.length < 6) {
+        showErrorMessage('La contraseña debe tener al menos 6 caracteres');
+        return;
+      }
+
+      showLoginLoading(true);
+      hideErrorMessage();
+
+      firebase.auth().createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          console.log('✅ Registro exitoso:', userCredential.user);
+          handleLoginSuccess(userCredential.user);
+        })
+        .catch((error) => {
+          console.error('❌ Error al registrarse:', error);
+          
+          let errorMsg = 'Error al crear la cuenta';
+          
+          switch(error.code) {
+            case 'auth/email-already-in-use':
+              errorMsg = 'Este email ya está registrado. Intenta iniciar sesión';
+              break;
+            case 'auth/invalid-email':
+              errorMsg = 'Email inválido';
+              break;
+            case 'auth/weak-password':
+              errorMsg = 'La contraseña es muy débil';
+              break;
+            default:
+              errorMsg = error.message;
+          }
+          
+          showErrorMessage(errorMsg);
+          showLoginLoading(false);
+        });
+    }
+
+    function handleLoginSuccess(user) {
+      usuarioActual = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || user.email
+      };
+
+      document.getElementById('userEmail').textContent = usuarioActual.email;
+      showLoginLoading(false);
+      mostrarPantalla('screenCategorias');
+
+      crearPerfilUsuario();
+      cargarCategoriasDisponibles();
+
+      if (typeof analytics !== 'undefined') {
+        firebase.analytics().setUserId(user.uid);
+        firebase.analytics().logEvent('login', {
+          method: user.providerData[0]?.providerId || 'unknown'
+        });
+      }
+    }
+
+    function crearPerfilUsuario() {
+      const userRef = db.collection('usuarios').doc(usuarioActual.uid);
+
+      userRef.set({
+        email: usuarioActual.email,
+        displayName: usuarioActual.displayName,
+        fechaRegistro: firebase.firestore.FieldValue.serverTimestamp(),
+        ultimoAcceso: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }).catch(error => {
+        console.error('Error creando perfil:', error);
+      });
+    }
+
+    function validateEmail(email) {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return re.test(email);
+    }
+
+    function showErrorMessage(message) {
+      const errorDiv = document.getElementById('errorMessage');
+      if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.classList.add('show');
+      }
+    }
+
+    function hideErrorMessage() {
+      const errorDiv = document.getElementById('errorMessage');
+      if (errorDiv) {
+        errorDiv.classList.remove('show');
+      }
+    }
+
+    function showLoginLoading(show) {
+      document.getElementById('loginLoading').style.display = show ? 'block' : 'none';
+    }
+
+    function cerrarSesion() {
+      firebase.auth().signOut()
+        .then(() => {
+          console.log('✅ Sesión cerrada correctamente');
+          usuarioActual = null;
+          categoriaActual = null;
+          masterPreguntasPool = [];
+          remainingPreguntas = [];
+          preguntasActuales = [];
+          indicePreguntaActual = 0;
+          respuestasUsuario = [];
+          numeroTanda = 0;
+
+          if (analytics) {
+            firebase.analytics().setUserId(null);
+          }
+
+          document.getElementById('emailInput').value = '';
+          document.getElementById('passwordInput').value = '';
+          hideErrorMessage();
+
+          mostrarPantalla('screenLogin');
+        })
+        .catch((error) => {
+          console.error('❌ Error cerrando sesión:', error);
+          showErrorMessage('Error al cerrar sesión');
+        });
+    }
+
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        console.log('✅ Usuario ya autenticado:', user);
+        handleLoginSuccess(user);
+      } else {
+        console.log('🔐 Usuario no autenticado');
+        mostrarPantalla('screenLogin');
+      }
+    });
+
+    // ==================== FUNCIONES AUXILIARES ====================
+    function mostrarPantalla(screenId) {
+      console.log('🔄 Mostrando pantalla:', screenId);
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    function sanitizeForFilename(id) {
+      return String(id).replace(/[^a-z0-9\\-_.]/gi, '_');
+    }
+
+    // ==================== CATEGORÍAS (LOCAL O FIRESTORE) ====================
+    async function cargarCategoriasDisponibles() {
+      console.log('📚 Cargando categorías disponibles...');
+
+      document.getElementById('loadingCategorias').style.display = 'block';
+      document.getElementById('listaCategorias').style.display = 'none';
+      document.getElementById('sinAcceso').style.display = 'none';
+
+      if (useLocalData && typeof window.CATEGORIAS !== 'undefined') {
+        try {
+          const categoriasObj = window.CATEGORIAS;
+          const keys = Object.keys(categoriasObj || {});
+
+          const categoriasMostrables = keys
+            .map(k => ({ id: k, ...categoriasObj[k] }))
+            .filter(cat => cat && (cat.activa !== false))
+            .filter(cat => {
+              if (cat.emailsAutorizados && Array.isArray(cat.emailsAutorizados) && cat.emailsAutorizados.length > 0) {
+                if (!usuarioActual || !usuarioActual.email) return false;
+                return cat.emailsAutorizados.includes(usuarioActual.email);
+              }
+              return true;
+            });
+
+          document.getElementById('loadingCategorias').style.display = 'none';
+
+          if (!categoriasMostrables || categoriasMostrables.length === 0) {
+            document.getElementById('sinAcceso').style.display = 'block';
+            return;
+          }
+
+          let html = '';
+          categoriasMostrables.forEach((cat) => {
+            html += `
+              <div class="categoria-card" onclick="seleccionarCategoria('${cat.id}')">
+                <h3>${cat.nombre}</h3>
+                <div class="info">
+                  <span>📝 ${cat.totalPreguntas || 0} preguntas</span>
+                  <span>🎯 ${cat.preguntasPorTanda || 30} por tanda</span>
+                </div>
+              </div>
+            `;
+          });
+
+          document.getElementById('listaCategorias').innerHTML = html;
+          document.getElementById('listaCategorias').style.display = 'grid';
+          return;
+        } catch (error) {
+          console.error('❌ Error procesando categorias locales:', error);
+          document.getElementById('loadingCategorias').style.display = 'none';
+          alert('Error al procesar categorías locales: ' + error.message);
+          return;
+        }
+      }
+
+      db.collection('categorias')
+        .where('activa', '==', true)
+        .get()
+        .then((querySnapshot) => {
+          console.log('✅ Categorías recibidas:', querySnapshot.size);
+          document.getElementById('loadingCategorias').style.display = 'none';
+
+          if (querySnapshot.empty) {
+            document.getElementById('sinAcceso').style.display = 'block';
+            return;
+          }
+
+          let html = '';
+          querySnapshot.forEach((doc) => {
+            const cat = doc.data();
+            html += `
+              <div class="categoria-card" onclick="seleccionarCategoria('${doc.id}')">
+                <h3>${cat.nombre}</h3>
+                <div class="info">
+                  <span>📝 ${cat.totalPreguntas || 0} preguntas</span>
+                  <span>🎯 ${cat.preguntasPorTanda || 30} por tanda</span>
+                </div>
+              </div>
+            `;
+          });
+
+          document.getElementById('listaCategorias').innerHTML = html;
+          document.getElementById('listaCategorias').style.display = 'grid';
+        })
+        .catch((error) => {
+          console.error('❌ Error cargando categorías:', error);
+          document.getElementById('loadingCategorias').style.display = 'none';
+          alert('Error al cargar categorías: ' + error.message);
+        });
+    }
+
+    function seleccionarCategoria(catId) {
+      console.log('🎯 Seleccionando categoría:', catId);
+      categoriaActual = catId;
+      iniciarTest();
+    }
+
+    function volverCategorias() {
+      console.log('↩️ Volviendo a categorías');
+      categoriaActual = null;
+      masterPreguntasPool = [];
+      remainingPreguntas = [];
+      preguntasActuales = [];
+      indicePreguntaActual = 0;
+      respuestasUsuario = [];
+      numeroTanda = 0;
+      cargarCategoriasDisponibles();
+      mostrarPantalla('screenCategorias');
+    }
+
+    // ==================== GESTIÓN DE TANDAS Y PROGRESO ====================
+    function prepararTanda() {
+      const panel = document.getElementById('tandaOptions');
+      if (panel) panel.style.display = 'none';
+      const feedback = document.getElementById('feedbackContainer');
+      if (feedback) feedback.style.display = 'none';
+
+      preguntasActuales = [];
+      const capacidad = Math.min(preguntasPorTanda, remainingPreguntas.length + failedPreguntas.length);
+
+      while (preguntasActuales.length < capacidad && failedPreguntas.length > 0) {
+        preguntasActuales.push(failedPreguntas.shift());
+      }
+
+      while (preguntasActuales.length < capacidad && remainingPreguntas.length > 0) {
+        preguntasActuales.push(remainingPreguntas.shift());
+      }
+
+      preguntasActuales = mezclarArray(preguntasActuales);
+
+      preguntasActuales.forEach((p, idx) => {
+        if (!p.id) p.id = `q_${Date.now()}_${idx}_${Math.random().toString(36).substring(2,6)}`;
+      });
+
+      indicePreguntaActual = 0;
+      respuestasUsuario = new Array(preguntasActuales.length).fill(null);
+      numeroTanda++;
+      console.log(`🔢 Preparada tanda #${numeroTanda} con ${preguntasActuales.length} preguntas`);
+
+      guardarProgreso();
+      mostrarPregunta();
+    }
+
+    function finalizarTanda() {
+      let correctas = 0;
+      let incorrectas = 0;
+      const preguntasFalladasEstaTanda = [];
+      const sinResponder = [];
+
+      respuestasUsuario.forEach((respuesta, index) => {
+        const pregunta = preguntasActuales[index];
+        if (!pregunta) return;
+        if (respuesta === pregunta.respuestaCorrecta) {
+          correctas++;
+        } else if (respuesta !== null) {
+          incorrectas++;
+          preguntasFalladasEstaTanda.push(pregunta);
+        } else {
+          sinResponder.push(pregunta);
+        }
+      });
+
+      preguntasFalladasEstaTanda.forEach(p => {
+        if (!failedPreguntas.find(x => x.id === p.id)) {
+          failedPreguntas.push(p);
+        }
+      });
+
+      sinResponder.forEach(p => {
+        if (!remainingPreguntas.find(r => r.id === p.id) && !failedPreguntas.find(f => f.id === p.id)) {
+          remainingPreguntas.push(p);
+        }
+      });
+
+      guardarProgreso();
+
+      const feedback = document.getElementById('feedbackContainer');
+      feedback.style.display = 'block';
+      feedback.innerHTML = `
+        <div class="alert alert-info">
+          <strong>Tanda finalizada:</strong> ${correctas} correctas, ${incorrectas} incorrectas.
+        </div>
+      `;
+
+      if (failedPreguntas.length > 0) {
+        const panel = document.getElementById('tandaOptions');
+        if (panel) panel.style.display = 'flex';
+        return;
+      }
+
+      if (remainingPreguntas.length > 0) {
+        setTimeout(() => {
+          prepararTanda();
+        }, 500);
+        return;
+      }
+
+      finalizarTest();
+    }
+
+    function repetirFallos() {
+      if (failedPreguntas.length === 0) return;
+
+      const panel = document.getElementById('tandaOptions');
+      if (panel) panel.style.display = 'none';
+      const feedback = document.getElementById('feedbackContainer');
+      if (feedback) feedback.style.display = 'none';
+
+      remainingPreguntas = failedPreguntas.slice();
+      failedPreguntas = [];
+
+      prepararTanda();
+    }
+
+    function saltarTanda() {
+      const panel = document.getElementById('tandaOptions');
+      if (panel) panel.style.display = 'none';
+      const feedback = document.getElementById('feedbackContainer');
+      if (feedback) feedback.style.display = 'none';
+
+      if (remainingPreguntas.length > 0) {
+        prepararTanda();
+        return;
+      }
+
+      finalizarTest();
+    }
+
+    function guardarProgreso() {
+      const key = progresoKey();
+      if (!key) return;
+
+      const estado = {
+        masterIds: masterPreguntasPool.map(p => p.id || null),
+        remainingIds: remainingPreguntas.map(p => p.id || null),
+        failedIds: failedPreguntas.map(p => p.id || null),
+        preguntasActualesIds: preguntasActuales.map(p => p.id || null),
+        respuestasUsuario,
+        indicePreguntaActual,
+        numeroTanda,
+        preguntasPorTanda,
+        preguntasRealizadasGlobal,
+        timestamp: Date.now()
+      };
+
+      try {
+        localStorage.setItem(key, JSON.stringify(estado));
+      } catch (e) {
+        console.warn('No se pudo guardar en localStorage:', e);
+      }
+
+      try {
+        const docId = `${usuarioActual.uid}_${categoriaActual}`;
+        db.collection('progresos').doc(docId).set({
+          ...estado,
+          usuarioId: usuarioActual.uid,
+          categoria: categoriaActual,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(err => console.warn('No se pudo guardar progreso en Firestore:', err));
+      } catch (e) {
+        console.warn('Error guardando progreso en Firestore:', e);
+      }
+
+      console.log('💾 Progreso guardado');
+    }
+
+    function cargarProgresoSiExiste() {
+      const key = progresoKey();
+      if (!key) return null;
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const estado = JSON.parse(raw);
+        if (typeof estado.preguntasRealizadasGlobal === 'number') {
+          preguntasRealizadasGlobal = estado.preguntasRealizadasGlobal;
+        } else {
+          preguntasRealizadasGlobal = 0;
+        }
+        return estado;
+      } catch (e) {
+        console.warn('Error leyendo progreso en localStorage:', e);
+        return null;
+      }
+    }
+
+    function eliminarProgreso() {
+      const key = progresoKey();
+      if (!key) return;
+      try {
+        localStorage.removeItem(key);
+      } catch (e) {}
+      try {
+        const docId = `${usuarioActual.uid}_${categoriaActual}`;
+        db.collection('progresos').doc(docId).delete().catch(()=>{});
+      } catch (e) {}
+    }
+
+    // ==================== TEST (LOCAL O FIRESTORE) ====================
+    function iniciarTest() {
+      console.log('🚀 Iniciando test para categoría:', categoriaActual);
+      mostrarPantalla('screenTest');
+
+      masterPreguntasPool = [];
+      remainingPreguntas = [];
+      failedPreguntas = [];
+      preguntasActuales = [];
+      indicePreguntaActual = 0;
+      respuestasUsuario = [];
+      numeroTanda = 0;
+      preguntasRealizadasGlobal = 0;
+      aciertosGlobal = 0;
+      inicioTestTimestamp = Date.now();
+
+      if (useLocalData && typeof window.CATEGORIAS !== 'undefined') {
+        const catData = window.CATEGORIAS[categoriaActual];
+        if (!catData) {
+          alert('Categoría local no encontrada: ' + categoriaActual);
+          volverCategorias();
+          return;
+        }
+
+        document.getElementById('testCategoriaNombre').textContent = catData.nombre;
+        preguntasPorTanda = catData.preguntasPorTanda || 30;
+        totalPreguntas = catData.totalPreguntas || 0;
+
+        const fileName = sanitizeForFilename(categoriaActual) + '.json';
+        const preguntasPath = `${preguntasFolder}/${fileName}`;
+
+        fetch(preguntasPath)
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP ' + res.status + ' al cargar ' + preguntasPath);
+            return res.json();
+          })
+          .then(allPreguntas => {
+            let preguntasFiltradas = Array.isArray(allPreguntas) ? allPreguntas : [];
+
+            preguntasFiltradas = preguntasFiltradas.filter((p, idx) => {
+              if (p.activa === false) return false;
+              if (!p.categoria) {
+                p.categoria = categoriaActual;
+                if (!p.id) p.id = `q_local_${idx}`;
+                return true;
+              }
+              return String(p.categoria) === String(categoriaActual);
+            });
+
+            if (!preguntasFiltradas || preguntasFiltradas.length === 0) {
+              alert('No se encontraron preguntas para esta categoría (local). Ruta: ' + preguntasPath);
+              volverCategorias();
+              return;
+            }
+
+            preguntasFiltradas.forEach((p, i) => {
+              if (!p.id) p.id = `q_${i}_${Math.random().toString(36).substring(2,8)}`;
+            });
+
+            masterPreguntasPool = mezclarArray(preguntasFiltradas.slice());
+            remainingPreguntas = masterPreguntasPool.slice();
+
+            const progreso = cargarProgresoSiExiste();
+            if (progreso && progreso.preguntasActualesIds && progreso.preguntasActualesIds.length > 0) {
+              const quiereContinuar = confirm('Se ha encontrado progreso guardado para esta categoría. ¿Deseas continuar donde lo dejaste?');
+              if (quiereContinuar) {
+                const idToQuestion = {};
+                masterPreguntasPool.forEach(p => idToQuestion[p.id] = p);
+
+                failedPreguntas = (progreso.failedIds || []).map(id => idToQuestion[id]).filter(Boolean);
+                remainingPreguntas = (progreso.remainingIds || []).map(id => idToQuestion[id]).filter(Boolean);
+                preguntasActuales = (progreso.preguntasActualesIds || []).map(id => idToQuestion[id]).filter(Boolean);
+                respuestasUsuario = progreso.respuestasUsuario || new Array(preguntasActuales.length).fill(null);
+                indicePreguntaActual = progreso.indicePreguntaActual || 0;
+                numeroTanda = progreso.numeroTanda || 1;
+
+                if (!preguntasActuales || preguntasActuales.length === 0) {
+                  prepararTanda();
+                } else {
+                  mostrarPregunta();
+                }
+                return;
+              } else {
+                eliminarProgreso();
+                remainingPreguntas = masterPreguntasPool.slice();
+              }
+            }
+
+            prepararTanda();
+          })
+          .catch(error => {
+            console.error('❌ Error cargando preguntas locales:', error);
+            alert('Error al cargar preguntas locales: ' + error.message);
+            volverCategorias();
+          });
+
+        return;
+      }
+
+      db.collection('categorias').doc(categoriaActual).get()
+        .then((doc) => {
+          if (!doc.exists) {
+            throw new Error('Categoría no encontrada');
+          }
+          
+          const categoriaData = doc.data();
+          document.getElementById('testCategoriaNombre').textContent = categoriaData.nombre;
+          preguntasPorTanda = categoriaData.preguntasPorTanda || 30;
+          totalPreguntas = categoriaData.totalPreguntas || 0;
+          
+          return db.collection('preguntas')
+            .where('categoria', '==', categoriaActual)
+            .where('activa', '==', true)
+            .get();
+        })
+        .then((querySnapshot) => {
+          console.log('✅ Preguntas recibidas:', querySnapshot.size);
+
+          if(querySnapshot.empty) {
+            alert('No se encontraron preguntas para esta categoría');
+            volverCategorias();
+            return;
+          }
+
+          masterPreguntasPool = [];
+          querySnapshot.forEach((doc, idx) => {
+            const data = { id: doc.id, ...doc.data() };
+            masterPreguntasPool.push(data);
+          });
+
+          masterPreguntasPool = mezclarArray(masterPreguntasPool);
+          remainingPreguntas = masterPreguntasPool.slice();
+
+          const progreso = cargarProgresoSiExiste();
+          if (progreso && progreso.preguntasActualesIds && progreso.preguntasActualesIds.length > 0) {
+            const quiereContinuar = confirm('Se ha encontrado progreso guardado para esta categoría. ¿Deseas continuar donde lo dejaste?');
+            if (quiereContinuar) {
+              const idToQuestion = {};
+              masterPreguntasPool.forEach(p => idToQuestion[p.id] = p);
+
+              failedPreguntas = (progreso.failedIds || []).map(id => idToQuestion[id]).filter(Boolean);
+              remainingPreguntas = (progreso.remainingIds || []).map(id => idToQuestion[id]).filter(Boolean);
+              preguntasActuales = (progreso.preguntasActualesIds || []).map(id => idToQuestion[id]).filter(Boolean);
+              respuestasUsuario = progreso.respuestasUsuario || new Array(preguntasActuales.length).fill(null);
+              indicePreguntaActual = progreso.indicePreguntaActual || 0;
+              numeroTanda = progreso.numeroTanda || 1;
+
+              if (!preguntasActuales || preguntasActuales.length === 0) {
+                prepararTanda();
+              } else {
+                mostrarPregunta();
+              }
+              return;
+            } else {
+              eliminarProgreso();
+              remainingPreguntas = masterPreguntasPool.slice();
+            }
+          }
+
+          prepararTanda();
+        })
+        .catch((error) => {
+          console.error('❌ Error cargando preguntas:', error);
+          alert('Error al cargar preguntas: ' + error.message);
+        });
+    }
+
+    function mezclarArray(array) {
+      const newArray = [...array];
+      for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+      }
+      return newArray;
+    }
+
+    // ==================== MOSTRAR PREGUNTA ====================
+    function mostrarPregunta() {
+      const pregunta = preguntasActuales[indicePreguntaActual];
+      const total = preguntasActuales.length;
+
+      if (!pregunta) {
+        console.warn('No hay pregunta en el índice actual, finalizando tanda...');
+        finalizarTanda();
+        return;
+      }
+
+      document.getElementById('preguntaNumero').textContent = `Pregunta ${indicePreguntaActual + 1} de ${total} (Tanda ${numeroTanda})`;
+
+      console.log('Mostrando pregunta:', pregunta);
+
+      const progreso = ((indicePreguntaActual + 1) / total) * 100;
+      const progressBarContainer = document.querySelector('.progress-bar');
+      if (CONFIG.mostrarProgresoTanda) {
+        if (progressBarContainer) progressBarContainer.style.display = 'block';
+        document.getElementById('progressBar').style.width = progreso + '%';
+      } else {
+        if (progressBarContainer) progressBarContainer.style.display = 'none';
+      }
+
+      document.getElementById('preguntaTexto').textContent = pregunta.pregunta;
+
+      const letras = ['A', 'B', 'C', 'D'];
+      let opcionesHtml = '';
+
+      if(pregunta.opciones) {
+        letras.forEach((letra) => {
+          const textoOpcion = pregunta.opciones[letra];
+          if(textoOpcion) {
+            const seleccionada = respuestasUsuario[indicePreguntaActual] === letra ? 'selected' : '';
+            opcionesHtml += `
+              <div class="opcion ${seleccionada}" onclick="seleccionarOpcion('${letra}')">
+                <div class="opcion-letra">${letra}</div>
+                <div class="opcion-texto">${textoOpcion}</div>
+              </div>
+            `;
+          }
+        });
+      }
+
+      opcionesHtml += `
+        <button class="btn btn-secondary" style="margin-top: 16px;" onclick="explicarPreguntaConChatGPT()">
+          💬 Explicar con IA
+        </button>
+      `;
+
+      document.getElementById('opcionesContainer').innerHTML = opcionesHtml;
+      document.getElementById('feedbackContainer').style.display = 'none';
+
+      const btnAnterior = document.getElementById('btnAnterior');
+      const btnSiguiente = document.getElementById('btnSiguiente');
+      const btnFinalizar = document.getElementById('btnFinalizar');
+
+      if(indicePreguntaActual > 0) {
+        btnAnterior.style.display = 'block';
+      } else {
+        btnAnterior.style.display = 'none';
+      }
+
+      if(indicePreguntaActual < total - 1) {
+        btnSiguiente.style.display = 'block';
+        btnFinalizar.style.display = 'none';
+      } else {
+        btnSiguiente.style.display = 'none';
+        btnFinalizar.style.display = 'block';
+      }
+
+      const tieneRespuesta = respuestasUsuario[indicePreguntaActual] !== null;
+      btnSiguiente.disabled = !tieneRespuesta;
+      btnFinalizar.disabled = !tieneRespuesta;
+      mostrarStatsEnTiempoReal();
+    }
+
+    function mostrarStatsEnTiempoReal() {
+      const respondidas = respuestasUsuario.filter(r => r !== null).length;
+      const totalTanda = preguntasActuales.length;
+      const progreso = Math.round((respondidas / totalTanda) * 100);
+
+      let correctasTemp = 0;
+      respuestasUsuario.forEach((resp, idx) => {
+        if(resp && preguntasActuales[idx] && resp === preguntasActuales[idx].respuestaCorrecta) {
+          correctasTemp++;
+        }
+      });
+
+      const porcentajeTemp = respondidas > 0 ? Math.round((correctasTemp / respondidas) * 100) : 0;
+
+      const totalMaster = masterPreguntasPool.length || (remainingPreguntas.length + preguntasActuales.length + failedPreguntas.length);
+      const realizadas = preguntasRealizadasGlobal || 0;
+      const restantesGlobal = Math.max(0, totalMaster - realizadas);
+
+      let statsPanel = document.getElementById('statsRealTime');
+      if(!statsPanel) {
+        statsPanel = document.createElement('div');
+        statsPanel.id = 'statsRealTime';
+        statsPanel.style.cssText = `
+          background: var(--card-2);
+          padding: 16px;
+          border-radius: 10px;
+          margin-bottom: 20px;
+          border: 1px solid rgba(255,255,255,0.1);
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+          gap: 12px;
+        `;
+        document.querySelector('.pregunta-container').insertBefore(
+          statsPanel, 
+          document.querySelector('.pregunta-header')
+        );
+      }
+
+      const bloques = [];
+
+      bloques.push(`
+        <div style="text-align: center;">
+          <div style="color: var(--muted); font-size: 12px;">Tanda</div>
+          <div style="color: var(--accent); font-size: 20px; font-weight: 700;">${numeroTanda}</div>
+        </div>
+      `);
+
+      bloques.push(`
+        <div style="text-align: center;">
+          <div style="color: var(--muted); font-size: 12px;">Respondidas (tanda)</div>
+          <div style="color: var(--accent); font-size: 20px; font-weight: 700;">${respondidas}/${totalTanda}</div>
+        </div>
+      `);
+
+      if (CONFIG.mostrarProgresoTanda) {
+        bloques.push(`
+          <div style="text-align: center;">
+            <div style="color: var(--muted); font-size: 12px;">Progreso (tanda)</div>
+            <div style="color: var(--accent); font-size: 20px; font-weight: 700;">${progreso}%</div>
+          </div>
+        `);
+      }
+
+      bloques.push(`
+        <div style="text-align: center;">
+          <div style="color: var(--muted); font-size: 12px;">Acierto (tanda)</div>
+          <div style="color: ${porcentajeTemp >= 70 ? 'var(--success)' : 'var(--danger)'}; font-size: 20px; font-weight: 700;">${porcentajeTemp}%</div>
+        </div>
+      `);
+
+      bloques.push(`
+        <div style="text-align: center;">
+          <div style="color: var(--muted); font-size: 12px;">Realizadas (global)</div>
+          <div style="color: var(--accent); font-size: 20px; font-weight: 700;">${realizadas}/${totalMaster}</div>
+        </div>
+      `);
+
+      if (CONFIG.mostrarRestantesGlobal) {
+        bloques.push(`
+          <div style="text-align: center;">
+            <div style="color: var(--muted); font-size: 12px;">Restantes (global)</div>
+            <div style="color: var(--accent); font-size: 20px; font-weight: 700;">${restantesGlobal}</div>
+          </div>
+        `);
+      }
+
+      statsPanel.innerHTML = bloques.join('\n');
+    }
+
+    let autoAdvanceTimeout = null;
+    
+    function seleccionarOpcion(letra) {
+      if (autoAdvanceTimeout) {
+        clearTimeout(autoAdvanceTimeout);
+        autoAdvanceTimeout = null;
+      }
+
+      const pregunta = preguntasActuales[indicePreguntaActual];
+      if (!pregunta) return;
+
+      const prev = respuestasUsuario[indicePreguntaActual];
+      const correcto = pregunta.respuestaCorrecta;
+
+      const fueNullAntes = prev === null;
+      if (fueNullAntes) {
+        preguntasRealizadasGlobal = (preguntasRealizadasGlobal || 0) + 1;
+      }
+
+      respuestasUsuario[indicePreguntaActual] = letra;
+
+      const antesEraCorrecta = prev === correcto;
+      const ahoraEsCorrecta = letra === correcto;
+
+      if (!antesEraCorrecta && ahoraEsCorrecta) {
+        aciertosGlobal = (aciertosGlobal || 0) + 1;
+        const idx = failedPreguntas.findIndex(p => p.id === pregunta.id);
+        if (idx !== -1) failedPreguntas.splice(idx, 1);
+      } else if (antesEraCorrecta && !ahoraEsCorrecta) {
+        aciertosGlobal = Math.max(0, (aciertosGlobal || 0) - 1);
+        if (!failedPreguntas.find(p => p.id === pregunta.id)) {
+          failedPreguntas.push(pregunta);
+        }
+      } else {
+        if (!ahoraEsCorrecta) {
+          if (!failedPreguntas.find(p => p.id === pregunta.id)) {
+            failedPreguntas.push(pregunta);
+          }
+        }
+      }
+
+      document.querySelectorAll('.opcion').forEach((el) => {
+        const letraOpcion = el.querySelector('.opcion-letra').textContent;
+        if (letraOpcion === letra) {
+          el.classList.add('selected');
+        } else {
+          el.classList.remove('selected');
+        }
+      });
+
+      document.getElementById('btnSiguiente').disabled = false;
+      document.getElementById('btnFinalizar').disabled = false;
+      mostrarStatsEnTiempoReal();
+
+      guardarProgreso();
+
+      if (ahoraEsCorrecta) {
+        const opcionesEls = document.querySelectorAll('.opcion');
+        opcionesEls.forEach(el => {
+          const letraOpcion = el.querySelector('.opcion-letra').textContent;
+          if (letraOpcion === letra) el.classList.add('correcta');
+          if (letraOpcion === pregunta.respuestaCorrecta) el.classList.add('correcta');
+        });
+
+        autoAdvanceTimeout = setTimeout(() => {
+          if (indicePreguntaActual < preguntasActuales.length - 1) {
+            indicePreguntaActual++;
+            mostrarPregunta();
+          } else {
+            finalizarTanda();
+          }
+          autoAdvanceTimeout = null;
+        }, 650);
+      } else {
+        const opcionesEls = document.querySelectorAll('.opcion');
+        opcionesEls.forEach(el => {
+          const letraOpcion = el.querySelector('.opcion-letra').textContent;
+          if (letraOpcion === letra) el.classList.add('incorrecta');
+          if (letraOpcion === pregunta.respuestaCorrecta) el.classList.add('correcta');
+        });
+      }
+    }
+
+    function siguientePregunta() {
+      if(indicePreguntaActual < preguntasActuales.length - 1) {
+        indicePreguntaActual++;
+        mostrarPregunta();
+      }
+    }
+
+    function preguntaAnterior() {
+      if(indicePreguntaActual > 0) {
+        indicePreguntaActual--;
+        mostrarPregunta();
+      }
+    }
+
+    function finalizarTest() {
+      const totalMaster = (masterPreguntasPool && masterPreguntasPool.length) ?
+        masterPreguntasPool.length :
+        (preguntasActuales.length + remainingPreguntas.length + failedPreguntas.length);
+
+      const totalRealizadas = preguntasRealizadasGlobal || 0;
+      const correctas = aciertosGlobal || 0;
+      const incorrectas = Math.max(0, totalRealizadas - correctas);
+      const fallosRestantes = failedPreguntas.length || 0;
+
+      const duracionSegundos = inicioTestTimestamp ? Math.round((Date.now() - inicioTestTimestamp) / 1000) : null;
+      const porcentaje = totalMaster > 0 ? Math.round((correctas / totalMaster) * 100) : null;
+
+      const resultado = {
+        usuarioId: (usuarioActual && usuarioActual.uid) ? usuarioActual.uid : null,
+        categoria: categoriaActual || null,
+        fecha: Date.now(),
+        totalPreguntas: totalMaster,
+        realizadas: totalRealizadas,
+        correctas,
+        incorrectas,
+        fallosRestantes,
+        porcentajeAcierto: porcentaje,
+        duracionSegundos,
+        numeroTanda,
+      };
+
+      guardarProgreso();
+      guardarResultadoFinal(resultado);
+
+      document.getElementById('resultadoPorcentaje').textContent = (porcentaje !== null ? porcentaje : 0) + '%';
+      document.getElementById('resultadoCorrectas').textContent = correctas;
+      document.getElementById('resultadoIncorrectas').textContent = incorrectas;
+      document.getElementById('resultadoTotal').textContent = totalMaster;
+
+      obtenerEstadisticasUsuario().then(stats => {
+        mostrarEstadisticasDetalladas(stats, correctas, incorrectas, totalMaster, porcentaje || 0);
+      });
+
+      mostrarPantalla('screenResultado');
+
+      console.log('✅ Resultado final guardado:', resultado);
+    }
+
+    function guardarResultadoFinal(resultado) {
+      try {
+        const key = `resultados_${resultado.usuarioId || 'anon'}_${resultado.categoria || 'general'}`;
+        let lista = [];
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          lista = JSON.parse(raw);
+          if (!Array.isArray(lista)) lista = [];
+        }
+        lista.push(resultado);
+        localStorage.setItem(key, JSON.stringify(lista));
+      } catch (e) {
+        console.warn('No se pudo guardar resultado en localStorage:', e);
+      }
+
+      try {
+        if (typeof db !== 'undefined' && db.collection) {
+          db.collection('resultados').add({
+            ...resultado,
+            savedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }).then(() => {
+            console.log('Resultado guardado en Firestore');
+          }).catch(err => {
+            console.warn('No se pudo guardar resultado en Firestore:', err);
+          });
+        }
+      } catch (e) {
+        console.warn('Error guardando resultado en Firestore:', e);
+      }
+    }
+
+    // ==================== ESTADÍSTICAS ====================
+    function obtenerEstadisticasUsuario() {
+      return db.collection('resultados')
+        .where('usuarioId', '==', usuarioActual.uid)
+        .where('categoria', '==', categoriaActual)
+        .orderBy('fecha', 'desc')
+        .limit(10)
+        .get()
+        .then((querySnapshot) => {
+          const resultados = [];
+          querySnapshot.forEach(doc => {
+            resultados.push(doc.data());
+          });
+
+          if (resultados.length === 0) {
+            return {
+              success: false,
+              message: 'No hay resultados previos'
+            };
+          }
+
+          const porcentajes = resultados.map(r => r.porcentajeAcierto || r.porcentaje || 0);
+          const promedio = Math.round(porcentajes.reduce((a, b) => a + b, 0) / porcentajes.length);
+          const mejor = Math.max(...porcentajes);
+          const peor = Math.min(...porcentajes);
+          const ultimos5 = porcentajes.slice(0, 5);
+
+          return {
+            success: true,
+            promedio: promedio,
+            mejor: mejor,
+            peor: peor,
+            intentos: resultados.length,
+            ultimos5: ultimos5,
+            totalResultados: resultados.length
+          };
+        })
+        .catch((error) => {
+          console.error('Error obteniendo estadísticas:', error);
+          return {
+            success: false,
+            error: error.message
+          };
+        });
+    }
+
+    function mostrarEstadisticasDetalladas(stats, correctas, incorrectas, total, porcentaje) {
+      console.log('=== MOSTRANDO ESTADÍSTICAS ===');
+      console.log('Stats recibidas:', stats);
+
+      if(!stats || !stats.success) {
+        document.getElementById('statsBody').innerHTML = `
+          <div class="alert alert-info">
+            <span>ℹ️</span>
+            <span>No hay estadísticas disponibles todavía</span>
+          </div>
+        `;
+        return;
+      }
+
+      let statsHtml = '';
+
+      statsHtml += `
+        <div class="stats-section">
+          <div class="stats-section-title">
+            <span>📋</span>
+            <span>Resumen del Test Actual</span>
+          </div>
+          <div class="stats-grid">
+            <div class="stats-mini-card">
+              <div class="mini-label">Aciertos</div>
+              <div class="mini-value" style="color: var(--success);">${correctas}</div>
+            </div>
+            <div class="stats-mini-card">
+              <div class="mini-label">Errores</div>
+              <div class="mini-value" style="color: var(--danger);">${incorrectas}</div>
+            </div>
+            <div class="stats-mini-card">
+              <div class="mini-label">Porcentaje</div>
+              <div class="mini-value">${porcentaje}%</div>
+            </div>
+            <div class="stats-mini-card">
+              <div class="mini-label">Total</div>
+              <div class="mini-value">${total}</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      statsHtml += `
+        <div class="stats-section">
+          <div class="stats-section-title">
+            <span>📈</span>
+            <span>Estadísticas Históricas</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">Promedio en esta categoría</span>
+            <span class="stats-value ${getColorClass(stats.promedio || 0)}">${stats.promedio || 0}%</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">Mejor resultado obtenido</span>
+            <span class="stats-value success">${stats.mejor || 0}%</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">Peor resultado obtenido</span>
+            <span class="stats-value danger">${stats.peor || 0}%</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">Total de intentos realizados</span>
+            <span class="stats-value">${stats.intentos || 1}</span>
+          </div>
+        </div>
+      `;
+
+      if(stats.ultimos5 && stats.ultimos5.length > 0) {
+        const promedioReciente = Math.round(stats.ultimos5.reduce((a, b) => a + b, 0) / stats.ultimos5.length);
+        const tendencia = calcularTendencia(stats.ultimos5);
+
+        statsHtml += `
+          <div class="stats-section">
+            <div class="stats-section-title">
+              <span>📊</span>
+              <span>Evolución Reciente</span>
+            </div>
+            <div class="stats-row">
+              <span class="stats-label">Promedio últimos ${stats.ultimos5.length} tests</span>
+              <span class="stats-value">${promedioReciente}%</span>
+            </div>
+            <div class="stats-row">
+              <span class="stats-label">Tendencia</span>
+              <span class="stats-value">${tendencia.icono} ${tendencia.texto}</span>
+            </div>
+            <div class="stats-row">
+              <span class="stats-label">Últimos resultados</span>
+              <span class="stats-value">${stats.ultimos5.join('%, ')}%</span>
+            </div>
+            <div class="progress-bar-mini">
+              <div class="fill" style="width: ${promedioReciente}%"></div>
+            </div>
+          </div>
+        `;
+      }
+
+      const tasaAcierto = Math.round((correctas / total) * 100);
+      const rendimiento = getRendimiento(tasaAcierto);
+
+      statsHtml += `
+        <div class="stats-section">
+          <div class="stats-section-title">
+            <span>🎯</span>
+            <span>Análisis de Rendimiento</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">Tasa de acierto</span>
+            <span class="stats-value ${getColorClass(tasaAcierto)}">${tasaAcierto}%</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">Evaluación</span>
+            <span class="stats-value">${rendimiento.icono} ${rendimiento.texto}</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">Preguntas acertadas</span>
+            <span class="stats-value success">${correctas} de ${total}</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">Preguntas falladas</span>
+            <span class="stats-value danger">${incorrectas} de ${total}</span>
+          </div>
+        </div>
+      `;
+
+      if(stats.promedio && stats.promedio > 0) {
+        const diferencia = porcentaje - stats.promedio;
+        const comparativa = diferencia >= 0 ? 
+          { icono: '📈', texto: `+${diferencia.toFixed(1)}% sobre tu promedio`, color: 'success' } :
+          { icono: '📉', texto: `${diferencia.toFixed(1)}% bajo tu promedio`, color: 'danger' };
+
+        statsHtml += `
+          <div class="stats-section">
+            <div class="stats-section-title">
+              <span>⚖️</span>
+              <span>Comparativa</span>
+            </div>
+            <div class="stats-row">
+              <span class="stats-label">Respecto a tu promedio</span>
+              <span class="stats-value ${comparativa.color}">${comparativa.icono} ${comparativa.texto}</span>
+            </div>
+            <div class="stats-row">
+              <span class="stats-label">Respecto a tu mejor resultado</span>
+              <span class="stats-value">${porcentaje >= stats.mejor ? '🏆 ¡Nuevo récord!' : `${stats.mejor - porcentaje}% por debajo`}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      document.getElementById('statsBody').innerHTML = statsHtml;
+      console.log('✓ Estadísticas mostradas correctamente');
+    }
+
+    function getColorClass(porcentaje) {
+      if(porcentaje >= 80) return 'success';
+      if(porcentaje >= 60) return '';
+      return 'danger';
+    }
+
+    function calcularTendencia(ultimos) {
+      if(ultimos.length < 2) return { icono: '➡️', texto: 'Sin datos suficientes' };
+
+      const mitad = Math.floor(ultimos.length / 2);
+      const primeraMedia = ultimos.slice(0, mitad).reduce((a, b) => a + b, 0) / mitad;
+      const segundaMedia = ultimos.slice(mitad).reduce((a, b) => a + b, 0) / (ultimos.length - mitad);
+
+      const diferencia = segundaMedia - primeraMedia;
+
+      if(diferencia > 5) return { icono: '📈', texto: 'Mejorando' };
+      if(diferencia < -5) return { icono: '📉', texto: 'Descendiendo' };
+      return { icono: '➡️', texto: 'Estable' };
+    }
+
+    function getRendimiento(porcentaje) {
+      if(porcentaje >= 90) return { icono: '🏆', texto: 'Excelente' };
+      if(porcentaje >= 80) return { icono: '⭐', texto: 'Muy Bueno' };
+      if(porcentaje >= 70) return { icono: '👍', texto: 'Bueno' };
+      if(porcentaje >= 60) return { icono: '📚', texto: 'Aceptable' };
+      return { icono: '📖', texto: 'Necesita mejorar' };
+    }
+
+    function nuevoTest() {
+      iniciarTest();
+    }
+
+    function consultarChatGPT() {
+      const pregunta = encodeURIComponent('Tengo dudas sobre el test que acabo de realizar. ¿Puedes ayudarme a entender mejor los conceptos?');
+      window.open('https://chat.openai.com/?q=' + pregunta, '_blank');
+    }
+
+    function toggleStats() {
+      const content = document.getElementById('statsContent');
+      const icon = document.getElementById('statsIcon');
+
+      if(content.classList.contains('open')) {
+        content.classList.remove('open');
+        icon.classList.remove('open');
+      } else {
+        content.classList.add('open');
+        icon.classList.add('open');
+      }
+    }
+
+    function explicarPreguntaConChatGPT() {
+      const pregunta = preguntasActuales[indicePreguntaActual];
+      if (!pregunta) return;
+
+      let texto = `Tengo la siguiente pregunta tipo test:\n\n"${pregunta.pregunta}"\n\n`;
+      texto += "Opciones:\n";
+
+      if (pregunta.opciones) {
+        Object.entries(pregunta.opciones).forEach(([letra, opcion]) => {
+          texto += `- ${letra}: ${opcion}\n`;
+        });
+      }
+
+      texto += `\nLa respuesta correcta es: ${pregunta.respuestaCorrecta}\n\n`;
+      texto += "¿Me puedes explicar por qué esa es la opción correcta?";
+
+      const encoded = encodeURIComponent(texto);
+      window.open(`https://chat.openai.com/?q=${encoded}`, '_blank');
+    }
+
+    // ==================== INICIALIZACIÓN ====================
+    window.onload = function() {
+      console.log('🔄 Página cargada, verificando autenticación Firebase...');
+      
+      window.addEventListener('beforeunload', function() {
+        guardarProgreso();
+      });
+    };
+  </script>
+</body>
+</html>
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/carlositim-glitch/multitest.git
+git push -u origin main
