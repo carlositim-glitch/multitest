@@ -88,20 +88,21 @@
       line-height: 1.6;
       min-height: 100vh;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
-      padding: 20px;
+      padding: 12px; /* Reducido de 20px */
       transition: background 0.3s ease, color 0.3s ease;
     }
 
     /* ==================== TOGGLES CONTAINER ==================== */
     .toggles-container {
-      position: fixed;
-      top: 20px;
-      right: 20px;
       display: flex;
+      justify-content: flex-end;
+      align-items: center;
       gap: 12px;
-      z-index: 1000;
+      padding: 16px 12px; /* Reducido lateral de 20px a 12px */
+      max-width: 900px;
+      margin: 0 auto 8px auto;
     }
 
     .toggle-wrapper {
@@ -223,6 +224,7 @@
     .container {
       max-width: 900px;
       width: 100%;
+      padding-bottom: 20px;
     }
 
     .screen {
@@ -242,7 +244,7 @@
     .card {
       background: var(--card);
       border-radius: 16px;
-      padding: 40px;
+      padding: 32px 24px; /* Reducido lateral de 40px a 24px */
       box-shadow: 0 8px 32px var(--shadow);
       border: 1px solid var(--border);
       transition: all 0.3s ease;
@@ -382,11 +384,20 @@
       padding: 16px;
       border-radius: 10px;
       margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
       border: 1px solid var(--accent-border);
       transition: all 0.3s ease;
+    }
+
+    .user-info .user-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .user-info .user-label {
+      color: var(--muted);
+      font-size: 14px;
     }
 
     .user-info .email {
@@ -516,9 +527,50 @@
 
     .botones-navegacion {
       display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 12px;
+      grid-template-columns: 44px 1fr;
+      gap: 8px;
       margin-top: 24px;
+    }
+
+    .btn-icon-nav {
+      width: 44px;
+      height: 44px;
+      background: var(--card-2);
+      border: 2px solid var(--border-hover);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: var(--text);
+    }
+
+    .btn-icon-nav:hover {
+      border-color: var(--accent);
+      background: var(--opcion-bg-hover);
+      transform: translateY(-2px);
+    }
+
+    .btn-icon-nav:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* BOTONES DE TANDA - INLINE COMPACTOS */
+    #tandaOptions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    #tandaOptions .btn {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 13px;
+      white-space: nowrap;
     }
 
     .progress-bar {
@@ -539,7 +591,7 @@
 
     .resultado-card {
       text-align: center;
-      padding: 40px;
+      padding: 32px 20px; /* Reducido lateral de 40px a 20px */
     }
 
     .resultado-score {
@@ -897,7 +949,7 @@
       margin-bottom: 20px;
       border: 1px solid var(--border-hover);
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      grid-template-columns: repeat(3, 1fr); /* 3 columnas para Aciertos, Fallos, Restantes */
       gap: 12px;
       transition: all 0.3s ease;
     }
@@ -909,14 +961,18 @@
     /* ==================== RESPONSIVE - OPTIMIZADO ==================== */
     @media (max-width: 768px) {
       body {
-        padding: 12px; /* Reducido de 20px */
+        padding: 0; /* Sin padding en móvil para aprovechar todo el espacio */
+      }
+
+      .container {
+        padding: 0 8px 12px 8px; /* Reducido lateral de 12px a 8px */
       }
 
       /* TOGGLES REDUCIDOS 30% */
       .toggles-container {
-        top: 10px;
-        right: 10px;
+        padding: 8px; /* Reducido de 8px 12px */
         gap: 8px;
+        margin-bottom: 4px;
       }
 
       .toggle-wrapper {
@@ -961,7 +1017,7 @@
 
       /* CARD OPTIMIZADO */
       .card {
-        padding: 16px; /* Reducido de 24px - ahorro 16px */
+        padding: 16px 12px; /* Reducido lateral de 16px a 12px */
         border-radius: 12px;
       }
 
@@ -981,14 +1037,27 @@
 
       /* USER INFO COMPACTO */
       .user-info {
-        padding: 12px; /* Reducido de 16px */
-        margin-bottom: 16px; /* Reducido de 24px */
+        padding: 10px; /* Reducido de 12px */
+        margin-bottom: 12px; /* Reducido de 16px */
+      }
+
+      .user-info .user-content {
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+      }
+
+      .user-info .user-label {
+        font-size: 12px;
+      }
+
+      .user-info .email {
         font-size: 13px;
       }
 
       .user-info .logout {
         padding: 6px 12px; /* Reducido */
         font-size: 12px;
+        width: 100%;
       }
 
       /* PREGUNTA OPTIMIZADA */
@@ -1006,9 +1075,9 @@
         margin-bottom: 16px; /* Reducido de 24px */
       }
 
-      /* STATS EN TIEMPO REAL - ULTRA COMPACTO */
+      /* STATS EN TIEMPO REAL - 3 COLUMNAS */
       #statsRealTime {
-        grid-template-columns: repeat(4, 1fr); /* FORZAR 4 COLUMNAS */
+        grid-template-columns: repeat(3, 1fr); /* MANTENER 3 COLUMNAS */
         gap: 6px; /* Reducido de 12px */
         padding: 10px; /* Reducido de 16px */
         margin-bottom: 12px; /* Reducido de 20px */
@@ -1035,7 +1104,7 @@
       }
 
       .opcion {
-        padding: 12px 14px; /* Reducido de 16px 20px */
+        padding: 10px 12px; /* Reducido lateral de 14px a 12px */
         gap: 10px;
       }
 
@@ -1056,14 +1125,34 @@
       }
 
       .botones-navegacion {
-        grid-template-columns: 1fr;
-        gap: 10px; /* Reducido de 12px */
+        grid-template-columns: 40px 1fr; /* Botón anterior más pequeño en móvil */
+        gap: 6px; /* Reducido de 8px */
         margin-top: 16px; /* Reducido de 24px */
+      }
+
+      .btn-icon-nav {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+      }
+
+      #btnFinalizar {
+        margin-top: 6px; /* Reducido de 8px */
+      }
+
+      #tandaOptions {
+        gap: 6px;
+        margin-top: 12px;
+      }
+
+      #tandaOptions .btn {
+        padding: 10px;
+        font-size: 12px;
       }
 
       /* CATEGORÍAS */
       .categoria-card {
-        padding: 16px; /* Reducido de 24px */
+        padding: 14px; /* Reducido de 16px */
       }
 
       .categoria-card h3 {
@@ -1116,21 +1205,21 @@
 </head>
 <body>
   
-  <!-- TOGGLES -->
-  <div class="toggles-container">
-    <div class="toggle-wrapper" onclick="toggleTheme()" title="Cambiar tema">
-      <div class="theme-option" id="lightIcon">☀️</div>
-      <div class="theme-option active" id="darkIcon">🌙</div>
-    </div>
-    
-    <div class="toggle-wrapper" title="Mostrar/Ocultar estadísticas">
-      <div class="stats-switch active" id="statsSwitch" onclick="toggleStatsVisibility()">
-        <div class="stats-switch-slider"></div>
+  <div class="container">
+    <!-- TOGGLES -->
+    <div class="toggles-container">
+      <div class="toggle-wrapper" onclick="toggleTheme()" title="Cambiar tema">
+        <div class="theme-option" id="lightIcon">☀️</div>
+        <div class="theme-option active" id="darkIcon">🌙</div>
+      </div>
+      
+      <div class="toggle-wrapper" title="Mostrar/Ocultar estadísticas">
+        <div class="stats-switch active" id="statsSwitch" onclick="toggleStatsVisibility()">
+          <div class="stats-switch-slider"></div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="container">
     <!-- PANTALLA 1: LOGIN CON FIREBASE -->
     <div id="screenLogin" class="screen active">  
       <div class="card">  
@@ -1176,8 +1265,8 @@
     <div id="screenCategorias" class="screen">
       <div class="card">
         <div class="user-info">
-          <div>
-            <div style="color: var(--muted); font-size: 14px; margin-bottom: 4px;">Conectado como:</div>
+          <div class="user-content">
+            <div class="user-label">Conectado como:</div>
             <div class="email" id="userEmail"></div>
           </div>
           <button class="logout" onclick="cerrarSesion()">Cerrar sesión</button>
@@ -1208,8 +1297,8 @@
     <div id="screenTest" class="screen">
       <div class="card">
         <div class="user-info">
-          <div>
-            <div style="color: var(--muted); font-size: 14px; margin-bottom: 4px;">Test:</div>
+          <div class="user-content">
+            <div class="user-label">Test:</div>
             <div class="email" id="testCategoriaNombre"></div>
           </div>
           <button class="logout" onclick="volverCategorias()">← Volver</button>
@@ -1231,26 +1320,27 @@
           <div id="feedbackContainer" style="display:none; margin-top: 20px;"></div>
         </div>
 
-        <div id="tandaOptions" style="display:none; margin-top: 16px; gap:12px; display:flex;">  
+        <div id="tandaOptions" style="display:none;">  
           <button class="btn btn-primary" id="btnRepetirFallos" onclick="repetirFallos()">  
-            🔁 Repetir preguntas falladas  
+            🔁 Repetir Fallos
           </button>  
           <button class="btn btn-secondary" id="btnSaltarTanda" onclick="saltarTanda()">  
-            ⏭️ Saltar / Continuar  
+            ⏭️ Saltar
           </button>  
         </div>
 
         <div class="botones-navegacion">
-          <button class="btn btn-secondary" id="btnAnterior" onclick="preguntaAnterior()">
-            ← Anterior
+          <button class="btn-icon-nav" id="btnAnterior" onclick="preguntaAnterior()" style="display:none;">
+            ←
           </button>
           <button class="btn btn-primary" id="btnSiguiente" onclick="siguientePregunta()" disabled>
             Siguiente →
           </button>
-          <button class="btn btn-success" id="btnFinalizar" onclick="finalizarTest()" style="display:none;">
-            ✓ Finalizar Test
-          </button>
         </div>
+        
+        <button class="btn btn-success" id="btnFinalizar" onclick="finalizarTest()" style="display:none; margin-top:8px; width:100%;">
+          ✓ Finalizar Test
+        </button>
       </div>
     </div>
 
@@ -2233,13 +2323,13 @@
       const btnFinalizar = document.getElementById('btnFinalizar');
 
       if(indicePreguntaActual > 0) {
-        btnAnterior.style.display = 'block';
+        btnAnterior.style.display = 'flex';
       } else {
         btnAnterior.style.display = 'none';
       }
 
       if(indicePreguntaActual < total - 1) {
-        btnSiguiente.style.display = 'block';
+        btnSiguiente.style.display = 'flex';
         btnFinalizar.style.display = 'none';
       } else {
         btnSiguiente.style.display = 'none';
@@ -2258,17 +2348,23 @@
       const progreso = Math.round((respondidas / totalTanda) * 100);
 
       let correctasTemp = 0;
+      let incorrectasTemp = 0;
       respuestasUsuario.forEach((resp, idx) => {
-        if(resp && preguntasActuales[idx] && resp === preguntasActuales[idx].respuestaCorrecta) {
-          correctasTemp++;
+        if(resp !== null) {
+          if(resp && preguntasActuales[idx] && resp === preguntasActuales[idx].respuestaCorrecta) {
+            correctasTemp++;
+          } else {
+            incorrectasTemp++;
+          }
         }
       });
 
       const porcentajeTemp = respondidas > 0 ? Math.round((correctasTemp / respondidas) * 100) : 0;
 
-      const totalMaster = masterPreguntasPool.length || (remainingPreguntas.length + preguntasActuales.length + failedPreguntas.length);
-      const realizadas = preguntasRealizadasGlobal || 0;
-      const restantesGlobal = Math.max(0, totalMaster - realizadas);
+      // Calcular preguntas restantes correctamente: total del JSON menos las respondidas en toda la sesión
+      const totalPreguntas = masterPreguntasPool.length;
+      const preguntasRealizadasTotal = preguntasRealizadasGlobal || 0;
+      const restantesGlobal = Math.max(0, totalPreguntas - preguntasRealizadasTotal);
 
       let statsPanel = document.getElementById('statsRealTime');
       if(!statsPanel) {
@@ -2282,40 +2378,27 @@
 
       const bloques = [];
 
+      // ACIERTOS (Verde)
       bloques.push(`
         <div style="text-align: center;">
-          <div style="color: var(--muted); font-size: 12px;">Tanda</div>
-          <div style="color: var(--accent); font-size: 20px; font-weight: 700;">${numeroTanda}</div>
+          <div style="color: var(--muted); font-size: 12px;">Aciertos</div>
+          <div style="color: var(--success); font-size: 20px; font-weight: 700;">${aciertosGlobal || 0}</div>
         </div>
       `);
 
+      // FALLOS (Rojo)
       bloques.push(`
         <div style="text-align: center;">
-          <div style="color: var(--muted); font-size: 12px;">Respondidas</div>
-          <div style="color: var(--accent); font-size: 20px; font-weight: 700;">${respondidas}/${totalTanda}</div>
+          <div style="color: var(--muted); font-size: 12px;">Fallos</div>
+          <div style="color: var(--danger); font-size: 20px; font-weight: 700;">${(preguntasRealizadasTotal - (aciertosGlobal || 0))}</div>
         </div>
       `);
 
-      if (CONFIG.mostrarProgresoTanda) {
-        bloques.push(`
-          <div style="text-align: center;">
-            <div style="color: var(--muted); font-size: 12px;">Progreso</div>
-            <div style="color: var(--accent); font-size: 20px; font-weight: 700;">${progreso}%</div>
-          </div>
-        `);
-      }
-
+      // RESTANTES (Azul/Accent)
       bloques.push(`
         <div style="text-align: center;">
-          <div style="color: var(--muted); font-size: 12px;">Acierto</div>
-          <div style="color: ${porcentajeTemp >= 70 ? 'var(--success)' : 'var(--danger)'}; font-size: 20px; font-weight: 700;">${porcentajeTemp}%</div>
-        </div>
-      `);
-
-      bloques.push(`
-        <div style="text-align: center;">
-          <div style="color: var(--muted); font-size: 12px;">Correctas</div>
-          <div style="color: var(--success); font-size: 20px; font-weight: 700;">${correctasTemp}</div>
+          <div style="color: var(--muted); font-size: 12px;">Restantes</div>
+          <div style="color: var(--accent); font-size: 20px; font-weight: 700;">${restantesGlobal}</div>
         </div>
       `);
 
