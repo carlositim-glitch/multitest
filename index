@@ -10,8 +10,11 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
 
+  <!-- Stripe SDK -->
+  <script src="https://js.stripe.com/v3/"></script>
+
   <script>
-    // ==================== CONFIGURACIÓN FIREBASE ====================
+    // Configuración Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyCQ5u2bs7kv7KNsS7HQ_T2HYNNnhI-KbG4",
       authDomain: "multitest-gobcan.firebaseapp.com",
@@ -21,268 +24,13 @@
       appId: "1:1039579449781:web:f0709e9515a19184a3f1fc",
       measurementId: "G-D3PN7H340S"
     };
-    
-    // Inicializar Firebase
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
     const analytics = firebase.analytics();
 
     console.log('🔥 Firebase configurado correctamente');
-
-    // ==================== FUNCIONES GLOBALES PARA LOGIN ====================
-    window.loginWithGoogle = function() {
-      console.log('🔵 Iniciando login con Google...');
-      
-      showLoginLoading(true);
-      hideErrorMessage();
-
-      const btnGoogle = document.getElementById('btnGoogleLogin');
-      if (btnGoogle) btnGoogle.disabled = true;
-
-      const provider = new firebase.auth.GoogleAuthProvider();
-      provider.addScope('email');
-      provider.addScope('profile');
-
-      firebase.auth().signInWithPopup(provider)
-        .then((result) => {
-          console.log('✅ Login Google exitoso:', result.user);
-          handleLoginSuccess(result.user);
-        })
-        .catch((error) => {
-          console.error('❌ Error login Google:', error);
-          
-          let errorMsg = 'Error en login con Google';
-          
-          switch(error.code) {
-            case 'auth/popup-blocked':
-              errorMsg = 'El navegador bloqueó la ventana emergente. Por favor, permite las ventanas emergentes.';
-              break;
-            case 'auth/popup-closed-by-user':
-              errorMsg = 'Cerraste la ventana de login antes de completar el proceso.';
-              break;
-            case 'auth/unauthorized-domain':
-              errorMsg = 'Este dominio no está autorizado. Verifica la configuración en Firebase Console.';
-              break;
-            case 'auth/operation-not-allowed':
-              errorMsg = 'El login con Google no está habilitado. Actívalo en Firebase Console.';
-              break;
-            case 'auth/network-request-failed':
-              errorMsg = 'Error de red. Verifica tu conexión a internet.';
-              break;
-            default:
-              errorMsg = `Error: ${error.message}`;
-          }
-          
-          showErrorMessage(errorMsg);
-          showLoginLoading(false);
-          if (btnGoogle) btnGoogle.disabled = false;
-        });
-    };
-
-    window.loginWithEmail = function() {
-      const email = document.getElementById('emailInput').value.trim();
-      const password = document.getElementById('passwordInput').value;
-
-      if (!email || !password) {
-        showErrorMessage('Por favor completa ambos campos');
-        return;
-      }
-
-      if (!validateEmail(email)) {
-        showErrorMessage('Por favor ingresa un email válido');
-        return;
-      }
-
-      showLoginLoading(true);
-      hideErrorMessage();
-
-      firebase.auth().signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          console.log('✅ Login email exitoso:', userCredential.user);
-          handleLoginSuccess(userCredential.user);
-        })
-        .catch((error) => {
-          console.error('❌ Error login email:', error);
-          
-          let errorMsg = 'Error al iniciar sesión';
-          
-          switch(error.code) {
-            case 'auth/user-not-found':
-              errorMsg = 'No existe una cuenta con este email';
-              break;
-            case 'auth/wrong-password':
-              errorMsg = 'Contraseña incorrecta';
-              break;
-            case 'auth/invalid-email':
-              errorMsg = 'Email inválido';
-              break;
-            case 'auth/user-disabled':
-              errorMsg = 'Esta cuenta ha sido deshabilitada';
-              break;
-            case 'auth/too-many-requests':
-              errorMsg = 'Demasiados intentos fallidos. Intenta más tarde';
-              break;
-            default:
-              errorMsg = error.message;
-          }
-          
-          showErrorMessage(errorMsg);
-          showLoginLoading(false);
-        });
-    };
-
-    window.registerWithEmail = function() {
-      const email = document.getElementById('emailInput').value.trim();
-      const password = document.getElementById('passwordInput').value;
-
-      if (!email || !password) {
-        showErrorMessage('Por favor completa ambos campos');
-        return;
-      }
-
-      if (!validateEmail(email)) {
-        showErrorMessage('Por favor ingresa un email válido');
-        return;
-      }
-
-      if (password.length < 6) {
-        showErrorMessage('La contraseña debe tener al menos 6 caracteres');
-        return;
-      }
-
-      showLoginLoading(true);
-      hideErrorMessage();
-
-      firebase.auth().createUserWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          console.log('✅ Registro exitoso:', userCredential.user);
-          handleLoginSuccess(userCredential.user);
-        })
-        .catch((error) => {
-          console.error('❌ Error al registrarse:', error);
-          
-          let errorMsg = 'Error al crear la cuenta';
-          
-          switch(error.code) {
-            case 'auth/email-already-in-use':
-              errorMsg = 'Este email ya está registrado. Intenta iniciar sesión';
-              break;
-            case 'auth/invalid-email':
-              errorMsg = 'Email inválido';
-              break;
-            case 'auth/weak-password':
-              errorMsg = 'La contraseña es muy débil';
-              break;
-            default:
-              errorMsg = error.message;
-          }
-          
-          showErrorMessage(errorMsg);
-          showLoginLoading(false);
-        });
-    };
-
-    // Funciones auxiliares globales
-    window.showLoginLoading = function(show) {
-      document.getElementById('loginLoading').style.display = show ? 'block' : 'none';
-    };
-
-    window.hideErrorMessage = function() {
-      const errorDiv = document.getElementById('errorMessage');
-      if (errorDiv) {
-        errorDiv.classList.remove('show');
-      }
-    };
-
-    window.showErrorMessage = function(message) {
-      const errorDiv = document.getElementById('errorMessage');
-      if (errorDiv) {
-        errorDiv.textContent = message;
-        errorDiv.classList.add('show');
-      }
-    };
-
-    window.validateEmail = function(email) {
-      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return re.test(email);
-    };
-
-    window.handleLoginSuccess = function(user) {
-      usuarioActual = {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName || user.email
-      };
-
-      document.getElementById('userEmail').textContent = usuarioActual.email;
-      showLoginLoading(false);
-      mostrarPantalla('screenCategorias');
-
-      crearPerfilUsuario();
-      cargarCategoriasDisponibles();
-
-      if (typeof analytics !== 'undefined') {
-        firebase.analytics().setUserId(user.uid);
-        firebase.analytics().logEvent('login', {
-          method: user.providerData[0]?.providerId || 'unknown'
-        });
-      }
-    };
-
-    window.cerrarSesion = function() {
-      firebase.auth().signOut()
-        .then(() => {
-          console.log('✅ Sesión cerrada correctamente');
-          usuarioActual = null;
-          categoriaActual = null;
-          masterPreguntasPool = [];
-          remainingPreguntas = [];
-          preguntasActuales = [];
-          indicePreguntaActual = 0;
-          respuestasUsuario = [];
-          numeroTanda = 0;
-
-          if (analytics) {
-            firebase.analytics().setUserId(null);
-          }
-
-          document.getElementById('emailInput').value = '';
-          document.getElementById('passwordInput').value = '';
-          hideErrorMessage();
-
-          mostrarPantalla('screenLogin');
-        })
-        .catch((error) => {
-          console.error('❌ Error cerrando sesión:', error);
-          showErrorMessage('Error al cerrar sesión');
-        });
-    };
-
-    // ==================== VARIABLES GLOBALES ====================
-    let usuarioActual = null;
-    let categoriaActual = null;
-    let masterPreguntasPool = [];
-    let preguntasRealizadasGlobal = 0;
-    let remainingPreguntas = [];
-    let failedPreguntas = [];
-    let preguntasActuales = [];
-    let indicePreguntaActual = 0;
-    let respuestasUsuario = [];
-    let numeroTanda = 0;
-    let totalPreguntas = 0;
-    let preguntasPorTanda = 30;
-    let aciertosGlobal = 0;
-    let inicioTestTimestamp = null;
-
-    // ==================== CONFIG ====================
-    const useLocalData = false;
-    const preguntasFolder = 'preguntas';
-
-    const CONFIG = {
-      mostrarProgresoTanda: false,
-      mostrarRestantesGlobal: false
-    };
   </script>
 
   <style>
@@ -1479,10 +1227,234 @@
         margin-bottom: 16px; /* Reducido de 24px */
       }
     }
+
+    /* ==================== ESTILOS DE MONETIZACIÓN ==================== */
+
+    /* Variables adicionales para monetización */
+    :root {
+      --premium: #ffd700;
+      --premium-bg: rgba(255, 215, 0, 0.1);
+      --premium-border: rgba(255, 215, 0, 0.3);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --warning-border: rgba(245, 158, 11, 0.3);
+    }
+
+    [data-theme="light"] {
+      --premium: #d4af37;
+    }
+
+    /* LOGIN CON GOOGLE PROMINENTE */
+    .btn-google {
+      background: white;
+      color: #1f2937 !important;
+      border: 2px solid var(--border-hover);
+      font-size: 18px;
+      padding: 18px 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .btn-google:hover {
+      background: #f9fafb;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+
+    .btn-google svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .tests-contratados {
+      margin: 30px 0 20px 0;
+    }
+
+    .tests-contratados h3 {
+      color: var(--accent);
+      font-size: 18px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .test-card-quick {
+      background: var(--card-2);
+      padding: 16px 20px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .test-card-quick:hover {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+      transform: translateX(5px);
+    }
+
+    .test-card-quick.premium {
+      border-color: var(--premium);
+      background: var(--premium-bg);
+    }
+
+    .test-card-info h4 {
+      color: var(--text);
+      font-size: 16px;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .test-card-info p {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .test-badge {
+      background: var(--success);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .test-badge.premium {
+      background: var(--premium);
+      color: #1f2937;
+    }
+
+    .test-badge.free {
+      background: var(--warning);
+      color: white;
+    }
+
+    /* SELECTOR DE TESTS (AHORA: hidden select + dropdown visual) */
+    .test-selector {
+      margin: 24px 0;
+    }
+
+    .test-selector label {
+      display: block;
+      color: var(--text);
+      font-weight: 600;
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+
+    .select-wrapper {
+      position: relative;
+    }
+
+    /* keep native select styles for fallback (hidden) */
+    .select-wrapper select {
+      display: none; /* hidden for compatibility */
+    }
+
+    /* ---------- Custom dropdown visual (cards) ---------- */
+    .custom-dropdown { width:100%; position:relative; font-family:inherit; }
+    .dropdown-selected {
+      background: var(--card-2);
+      border: 2px solid var(--border);
+      padding: 14px;
+      border-radius: 12px;
+      color: var(--text);
+      cursor: pointer;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      box-shadow: 0 6px 20px var(--shadow);
+      transition: all .18s ease;
+    }
+    .dropdown-selected:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .dropdown-selected .title { font-weight:700; color:var(--accent); font-size:16px; }
+    .dropdown-selected .meta { color:var(--muted); font-size:13px; }
+
+    .dropdown-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 10px);
+  background: var(--card); /* Cambiado de transparente a color de fondo para mejor visibilidad */
+  z-index: 60;
+  max-height: 300px; /* Altura máxima para scroll */
+  overflow-y: auto; /* Scroll vertical */
+  border-radius: 10px;
+  box-shadow: 0 8px 24px var(--shadow);
+  transition: max-height 0.28s ease;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.custom-dropdown.open .dropdown-list {
+  max-height: 300px;
+  pointer-events: auto;
+  opacity: 1;
+}
+
+    .dropdown-item {
+      background: var(--card);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:14px 16px;
+      margin-bottom:10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      cursor:pointer;
+      transition: all .18s ease;
+    }
+    .dropdown-item:hover { transform: translateX(6px); border-color: var(--accent); background: var(--card-2); }
+
+    .dropdown-item .info { display:flex; flex-direction:column; gap:6px; }
+    .dropdown-item .info .name { color:var(--accent); font-weight:700; font-size:15px; }
+    .dropdown-item .info .sub { color:var(--muted); font-size:13px; display:flex; gap:12px; align-items:center; }
+
+    .badge-small {
+      background: var(--accent-bg);
+      border:1px solid var(--accent-border);
+      color:var(--accent);
+      padding:6px 10px;
+      border-radius:999px;
+      font-weight:700;
+      font-size:13px;
+      white-space:nowrap;
+    }
+
+    /* PLANES DE PAGO - ajustes */
+    .planes-container {
+      margin-top: 30px;
+      display: none;
+    }
+
+    .planes-container.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* BOTÓN PREMIUM */
+    .btn-premium {
+      background: linear-gradient(135deg, var(--premium) 0%, #ffa500 100%);
+      color: #1f2937 !important;
+      font-weight: 700;
+      box-shadow: 0 4px 12px var(--premium-bg);
+    }
+
+    .btn-premium:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--premium-bg);
+    }
   </style>
 </head>
 <body>
-  
+
   <div class="container">
     <!-- TOGGLES -->
     <div class="toggles-container">
@@ -1490,7 +1462,7 @@
         <div class="theme-option" id="lightIcon">☀️</div>
         <div class="theme-option active" id="darkIcon">🌙</div>
       </div>
-      
+
       <div class="toggle-wrapper" title="Mostrar/Ocultar estadísticas">
         <div class="stats-switch active" id="statsSwitch" onclick="toggleStatsVisibility()">
           <div class="stats-switch-slider"></div>
@@ -1502,34 +1474,40 @@
     <div id="screenLogin" class="screen active">  
       <div class="card">  
         <div class="logo">  
-          <h1>🎓 Sistema de Tests</h1>  
-          <p>Elige cómo quieres iniciar sesión</p>  
+          <h1>🎓 MultiTest</h1>  
+          <p>Tu plataforma de tests profesionales</p>  
         </div>  
 
         <div id="errorMessage" class="error-message"></div>
 
-        <button class="btn btn-primary" onclick="loginWithGoogle()" id="btnGoogleLogin">
-          🔐 Continuar con Google
+        <!-- Login Google prominente -->
+        <button class="btn btn-google" onclick="loginWithGoogle()" id="btnGoogleLogin">
+          <svg width="24" height="24" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Continuar con Google
         </button>
-        
+
+        <!-- Tests contratados (accesos rápidos) -->
+        <div id="testsContratados" class="tests-contratados" style="display:none;">
+          <h3>⚡ Acceso rápido a tus tests</h3>
+          <div id="testsContratadosList"></div>
+        </div>
+
         <div class="login-divider">
           <span>── o ──</span>
         </div>
 
-        <div id="emailLoginSection">
-          <input type="email" id="emailInput" class="form-input" placeholder="tu@email.com">
-          <input type="password" id="passwordInput" class="form-input" placeholder="Contraseña">
-          
-          <button class="btn btn-primary" onclick="loginWithEmail()" style="margin-bottom: 8px;">
-            📧 Iniciar Sesión
-          </button>
-          <button class="btn btn-secondary" onclick="registerWithEmail()">
-            📝 Crear Cuenta
-          </button>
-          
-          <div class="small-text">
-            La contraseña debe tener al menos 6 caracteres
-          </div>
+        <!-- Botón para ir a login con email -->
+        <button class="btn btn-secondary" onclick="irALoginEmail()">
+          📧 Iniciar sesión con email
+        </button>
+
+        <div class="small-text" style="margin-top: 20px;">
+          Al continuar, aceptas nuestros términos y condiciones
         </div>
 
         <div id="loginLoading" style="display: none; text-align: center; margin-top: 15px;">
@@ -1539,39 +1517,135 @@
       </div>
     </div>
 
-    <!-- PANTALLA 2: SELECCIÓN DE CATEGORÍA -->
-    <div id="screenCategorias" class="screen">
+    <!-- PANTALLA 2: LOGIN CON EMAIL (Separada) -->
+    <div id="screenEmailLogin" class="screen">
+      <div class="card">
+        <div class="logo">
+          <h1>📧 Acceso con Email</h1>
+          <p>Inicia sesión o crea una cuenta</p>
+        </div>
+
+        <div id="errorMessageEmail" class="error-message"></div>
+
+        <input type="email" id="emailInput" class="form-input" placeholder="tu@email.com">
+        <input type="password" id="passwordInput" class="form-input" placeholder="Contraseña (mín. 6 caracteres)">
+
+        <button class="btn btn-primary" onclick="loginWithEmail()" style="margin-bottom: 12px;">
+          Iniciar Sesión
+        </button>
+        <button class="btn btn-secondary" onclick="registerWithEmail()">
+          Crear Nueva Cuenta
+        </button>
+
+        <button class="btn btn-secondary" onclick="volverLoginPrincipal()" style="margin-top: 20px;">
+          ← Volver
+        </button>
+      </div>
+    </div>
+
+    <!-- PANTALLA 3: SELECCIONAR TEST Y PLAN -->
+    <div id="screenSeleccionTest" class="screen">
       <div class="card">
         <div class="user-info">
           <div class="user-content">
             <div class="user-label">Conectado como:</div>
-            <div class="email" id="userEmail"></div>
+            <div class="email" id="userEmailSeleccion"></div>
           </div>
           <button class="logout" onclick="cerrarSesion()">Cerrar sesión</button>
         </div>
 
         <div class="logo">
           <h1>📚 Selecciona un Test</h1>
-          <p>Elige la categoría que deseas practicar</p>
+          <p>Elige el test y tu plan de acceso</p>
         </div>
 
-        <div id="loadingCategorias" class="loading">
-          <div class="spinner"></div>
-          <p style="color: var(--muted);">Cargando categorías disponibles...</p>
-        </div>
+        <!-- Selector de test -->
+<div class="test-selector">
+  <label for="testSelect">¿Qué test quieres hacer?</label>
+  <div class="select-wrapper">
+    <select id="testSelect" onchange="mostrarPlanes()">
+      <option value="">Selecciona un test...</option>
+    </select>
+  </div>
+</div>
 
-        <div id="listaCategorias" class="categoria-grid" style="display:none;"></div>
-
-        <div id="sinAcceso" style="display:none;">
-          <div class="alert alert-danger">
-            <span>⚠️</span>
-            <span>No tienes acceso a ninguna categoría. Contacta al administrador.</span>
+            <!-- dropdown visual -->
+            <div class="custom-dropdown" id="customTestDropdown" role="listbox" aria-haspopup="true">
+              <div class="dropdown-selected" id="dropdownSelected">Selecciona un test...</div>
+              <div class="dropdown-list" id="dropdownList" aria-hidden="true"></div>
+            </div>
           </div>
+        </div>
+
+        <!-- Planes de pago -->
+        <div id="planesContainer" class="planes-container">
+          <div class="planes-header">
+            <h3>Elige tu plan de acceso</h3>
+            <p>Selecciona el plan que mejor se adapte a tus necesidades</p>
+          </div>
+
+          <div class="planes-grid">
+            <!-- Plan Gratuito -->
+            <div class="plan-card" onclick="seleccionarPlan('free')" id="planFree">
+              <div class="plan-icon">🎁</div>
+              <div class="plan-name">Gratuito</div>
+              <div class="plan-price">0€</div>
+              <ul class="plan-features">
+                <li>3 tandas de prueba</li>
+                <li>30 preguntas por tanda</li>
+                <li>Sin compromiso</li>
+              </ul>
+              <div class="plan-limit">
+                ⏱️ Acceso limitado
+              </div>
+            </div>
+
+            <!-- Plan Mensual -->
+            <div class="plan-card" onclick="seleccionarPlan('mensual')" id="planMensual">
+              <div class="plan-icon">📅</div>
+              <div class="plan-name">Mensual</div>
+              <div class="plan-price">9,99€<small>/mes</small></div>
+              <ul class="plan-features">
+                <li>Acceso ilimitado</li>
+                <li>Sin límite de tandas</li>
+                <li>Cancela cuando quieras</li>
+              </ul>
+            </div>
+
+            <!-- Plan Trimestral -->
+            <div class="plan-card popular" onclick="seleccionarPlan('trimestral')" id="planTrimestral">
+              <div class="plan-badge-popular">⭐ Más Popular</div>
+              <div class="plan-icon">🔥</div>
+              <div class="plan-name">Trimestral</div>
+              <div class="plan-price">24,99€<small>/3 meses</small></div>
+              <ul class="plan-features">
+                <li>Ahorra 25%</li>
+                <li>Acceso ilimitado</li>
+                <li>Pago cada 3 meses</li>
+              </ul>
+            </div>
+
+            <!-- Plan Anual -->
+            <div class="plan-card" onclick="seleccionarPlan('anual')" id="planAnual">
+              <div class="plan-icon">👑</div>
+              <div class="plan-name">Anual</div>
+              <div class="plan-price">79,99€<small>/año</small></div>
+              <ul class="plan-features">
+                <li>Ahorra 33%</li>
+                <li>Acceso ilimitado</li>
+                <li>Mejor precio</li>
+              </ul>
+            </div>
+          </div>
+
+          <button class="btn btn-premium" id="btnActivarPlan" onclick="activarPlan()" style="display:none;">
+            🚀 Activar Plan Seleccionado
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- PANTALLA 3: TEST -->
+    <!-- PANTALLA 4: TEST -->
     <div id="screenTest" class="screen">
       <div class="card">
         <div class="user-info">
@@ -1619,7 +1693,7 @@
             Siguiente →
           </button>
         </div>
-        
+
         <button class="btn btn-success" id="btnFinalizar" onclick="finalizarTest()" style="display:none; margin-top:8px; width:100%;">
           ✓ Finalizar Test
         </button>
@@ -1691,7 +1765,7 @@
       const currentTheme = html.getAttribute('data-theme');
       const lightIcon = document.getElementById('lightIcon');
       const darkIcon = document.getElementById('darkIcon');
-      
+
       if (currentTheme === 'light') {
         html.setAttribute('data-theme', 'dark');
         localStorage.setItem('theme', 'dark');
@@ -1710,9 +1784,9 @@
       const html = document.documentElement;
       const lightIcon = document.getElementById('lightIcon');
       const darkIcon = document.getElementById('darkIcon');
-      
+
       html.setAttribute('data-theme', savedTheme);
-      
+
       if (savedTheme === 'light') {
         darkIcon.classList.remove('active');
         lightIcon.classList.add('active');
@@ -1726,25 +1800,25 @@
     function toggleStatsVisibility() {
       const statsSwitch = document.getElementById('statsSwitch');
       const statsPanel = document.getElementById('statsRealTime');
-      
+
       statsSwitch.classList.toggle('active');
-      
+
       if(statsPanel) {
         statsPanel.classList.toggle('hidden');
       }
-      
+
       const isVisible = statsSwitch.classList.contains('active');
       localStorage.setItem('statsVisible', isVisible ? '1' : '0');
-      
+
       console.log('Stats visible:', isVisible ? 'SI (1)' : 'NO (0)');
     }
 
     function loadStatsPreference() {
       const saved = localStorage.getItem('statsVisible');
       const isVisible = saved === null ? true : saved === '1';
-      
+
       const statsSwitch = document.getElementById('statsSwitch');
-      
+
       if (isVisible) {
         statsSwitch.classList.add('active');
       } else {
@@ -1755,7 +1829,7 @@
     function forceShowStats() {
       const statsSwitch = document.getElementById('statsSwitch');
       const statsPanel = document.getElementById('statsRealTime');
-      
+
       statsSwitch.classList.add('active');
       if(statsPanel) {
         statsPanel.classList.remove('hidden');
@@ -1765,10 +1839,10 @@
     function restoreStatsPreference() {
       const saved = localStorage.getItem('statsVisible');
       const isVisible = saved === null ? true : saved === '1';
-      
+
       const statsSwitch = document.getElementById('statsSwitch');
       const statsPanel = document.getElementById('statsRealTime');
-      
+
       if (isVisible) {
         statsSwitch.classList.add('active');
         if(statsPanel) statsPanel.classList.remove('hidden');
@@ -1778,9 +1852,212 @@
       }
     }
 
+    // ==================== CONFIG ====================
+    const useLocalData = false;
+    const preguntasFolder = 'preguntas';
+
+    const CONFIG = {
+      mostrarProgresoTanda: false,
+      mostrarRestantesGlobal: false
+    };
+
+    // ==================== VARIABLES GLOBALES ====================
+    let usuarioActual = null;
+    let categoriaActual = null;
+    let masterPreguntasPool = [];
+    let preguntasRealizadasGlobal = 0;
+    let remainingPreguntas = [];
+    let failedPreguntas = [];
+    let preguntasActuales = [];
+    let indicePreguntaActual = 0;
+    let respuestasUsuario = [];
+    let numeroTanda = 0;
+    let totalPreguntas = 0;
+    let preguntasPorTanda = 30;
+    let aciertosGlobal = 0;
+    let inicioTestTimestamp = null;
+
+    // ==================== CONFIGURACIÓN STRIPE Y MONETIZACIÓN ====================
+    const STRIPE_PUBLIC_KEY = 'pk_test_TU_CLAVE_PUBLICA_AQUI'; // TODO: Reemplazar con tu clave pública
+    const stripe = Stripe(STRIPE_PUBLIC_KEY);
+
+    // IDs de precios de Stripe (crear en Dashboard de Stripe)
+    const STRIPE_PRICES = {
+      mensual: 'price_MENSUAL_ID',
+      trimestral: 'price_TRIMESTRAL_ID',
+      anual: 'price_ANUAL_ID'
+    };
+
+    let suscripcionesUsuario = {}; // { testId: { plan, tandasUsadas, fechaActivacion, etc } }
+    let planSeleccionado = null;
+    let testSeleccionado = null;
+    const TANDAS_GRATUITAS = 3;
+
     function progresoKey() {
       if (!usuarioActual || !categoriaActual) return null;
       return `progreso_${usuarioActual.uid}_${categoriaActual}`;
+    }
+
+    // ==================== FUNCIONES FIREBASE AUTH ====================
+    function loginWithGoogle() {
+      console.log('🔵 Iniciando login con Google...');
+
+      showLoginLoading(true);
+      hideErrorMessage();
+
+      const btnGoogle = document.getElementById('btnGoogleLogin');
+      if (btnGoogle) btnGoogle.disabled = true;
+
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.addScope('profile');
+      provider.addScope('email');
+      provider.setCustomParameters({
+        'prompt': 'select_account'
+      });
+
+      firebase.auth().signInWithPopup(provider)
+        .then((result) => {
+          console.log('✅ Login Google exitoso:', result.user);
+          showLoginLoading(false);
+          // onAuthStateChanged se encargará del resto
+        })
+        .catch((error) => {
+          console.error('❌ Error login Google:', error);
+
+          let errorMsg = 'Error en login con Google';
+
+          switch(error.code) {
+            case 'auth/popup-blocked':
+              errorMsg = 'El navegador bloqueó la ventana emergente. Por favor, permite las ventanas emergentes.';
+              break;
+            case 'auth/popup-closed-by-user':
+              errorMsg = 'Cerraste la ventana de login antes de completar el proceso.';
+              break;
+            case 'auth/cancelled-popup-request':
+              errorMsg = 'Se canceló la solicitud de login.';
+              break;
+            case 'auth/unauthorized-domain':
+              errorMsg = 'Este dominio no está autorizado. Verifica la configuración en Firebase Console.';
+              break;
+            case 'auth/operation-not-allowed':
+              errorMsg = 'El login con Google no está habilitado. Actívalo en Firebase Console.';
+              break;
+            case 'auth/network-request-failed':
+              errorMsg = 'Error de red. Verifica tu conexión a internet.';
+              break;
+            default:
+              errorMsg = `Error: ${error.message}`;
+          }
+
+          showErrorMessage(errorMsg);
+          showLoginLoading(false);
+          if (btnGoogle) btnGoogle.disabled = false;
+        });
+    }
+
+    function loginWithEmail() {
+      const email = document.getElementById('emailInput').value.trim();
+      const password = document.getElementById('passwordInput').value;
+
+      if (!email || !password) {
+        showErrorMessage('Por favor completa ambos campos', 'errorMessageEmail');
+        return;
+      }
+
+      if (!validateEmail(email)) {
+        showErrorMessage('Por favor ingresa un email válido', 'errorMessageEmail');
+        return;
+      }
+
+      showLoginLoading(true);
+      hideErrorMessage('errorMessageEmail');
+
+      firebase.auth().signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          console.log('✅ Login email exitoso:', userCredential.user);
+          showLoginLoading(false);
+          // onAuthStateChanged se encargará del resto
+        })
+        .catch((error) => {
+          console.error('❌ Error login email:', error);
+
+          let errorMsg = 'Error al iniciar sesión';
+
+          switch(error.code) {
+            case 'auth/user-not-found':
+              errorMsg = 'No existe una cuenta con este email';
+              break;
+            case 'auth/wrong-password':
+              errorMsg = 'Contraseña incorrecta';
+              break;
+            case 'auth/invalid-email':
+              errorMsg = 'Email inválido';
+              break;
+            case 'auth/user-disabled':
+              errorMsg = 'Esta cuenta ha sido deshabilitada';
+              break;
+            case 'auth/too-many-requests':
+              errorMsg = 'Demasiados intentos fallidos. Intenta más tarde';
+              break;
+            default:
+              errorMsg = error.message;
+          }
+
+          showErrorMessage(errorMsg, 'errorMessageEmail');
+          showLoginLoading(false);
+        });
+    }
+
+    function registerWithEmail() {
+      const email = document.getElementById('emailInput').value.trim();
+      const password = document.getElementById('passwordInput').value;
+
+      if (!email || !password) {
+        showErrorMessage('Por favor completa ambos campos', 'errorMessageEmail');
+        return;
+      }
+
+      if (!validateEmail(email)) {
+        showErrorMessage('Por favor ingresa un email válido', 'errorMessageEmail');
+        return;
+      }
+
+      if (password.length < 6) {
+        showErrorMessage('La contraseña debe tener al menos 6 caracteres', 'errorMessageEmail');
+        return;
+      }
+
+      showLoginLoading(true);
+      hideErrorMessage('errorMessageEmail');
+
+      firebase.auth().createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          console.log('✅ Registro exitoso:', userCredential.user);
+          showLoginLoading(false);
+          // onAuthStateChanged se encargará del resto
+        })
+        .catch((error) => {
+          console.error('❌ Error al registrarse:', error);
+
+          let errorMsg = 'Error al crear la cuenta';
+
+          switch(error.code) {
+            case 'auth/email-already-in-use':
+              errorMsg = 'Este email ya está registrado. Intenta iniciar sesión';
+              break;
+            case 'auth/invalid-email':
+              errorMsg = 'Email inválido';
+              break;
+            case 'auth/weak-password':
+              errorMsg = 'La contraseña es muy débil';
+              break;
+            default:
+              errorMsg = error.message;
+          }
+
+          showErrorMessage(errorMsg, 'errorMessageEmail');
+          showLoginLoading(false);
+        });
     }
 
     function crearPerfilUsuario() {
@@ -1796,15 +2073,46 @@
       });
     }
 
-    firebase.auth().onAuthStateChanged((user) => {
-      if (user) {
-        console.log('✅ Usuario ya autenticado:', user);
-        handleLoginSuccess(user);
-      } else {
-        console.log('🔐 Usuario no autenticado');
-        mostrarPantalla('screenLogin');
-      }
-    });
+    function validateEmail(email) {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return re.test(email);
+    }
+
+    function showLoginLoading(show) {
+      const el = document.getElementById('loginLoading');
+      if (el) el.style.display = show ? 'block' : 'none';
+    }
+
+    function cerrarSesion() {
+      firebase.auth().signOut()
+        .then(() => {
+          console.log('✅ Sesión cerrada correctamente');
+          usuarioActual = null;
+          categoriaActual = null;
+          suscripcionesUsuario = {}; // Limpiar suscripciones
+          masterPreguntasPool = [];
+          remainingPreguntas = [];
+          preguntasActuales = [];
+          indicePreguntaActual = 0;
+          respuestasUsuario = [];
+          numeroTanda = 0;
+
+          if (analytics) {
+            firebase.analytics().setUserId(null);
+          }
+
+          document.getElementById('emailInput').value = '';
+          document.getElementById('passwordInput').value = '';
+          hideErrorMessage();
+          hideErrorMessage('errorMessageEmail');
+
+          mostrarPantalla('screenLogin');
+        })
+        .catch((error) => {
+          console.error('❌ Error cerrando sesión:', error);
+          showErrorMessage('Error al cerrar sesión');
+        });
+    }
 
     function mostrarPantalla(screenId) {
       console.log('🔄 Mostrando pantalla:', screenId);
@@ -1816,117 +2124,467 @@
       return String(id).replace(/[^a-z0-9\\-_.]/gi, '_');
     }
 
-    // ==================== CATEGORÍAS ====================
-    async function cargarCategoriasDisponibles() {
-      console.log('📚 Cargando categorías disponibles...');
+    // ==================== CATEGORÍAS & DROPDOWN ====================
+    async function cargarCategoriasEnSelector() {
+      try {
+        const snapshot = await db.collection('categorias').where('activa', '==', true).get();
+        const select = document.getElementById('testSelect');
+        const dropdownList = document.getElementById('dropdownList');
+        const dropdownSelected = document.getElementById('dropdownSelected');
 
-      document.getElementById('loadingCategorias').style.display = 'block';
-      document.getElementById('listaCategorias').style.display = 'none';
-      document.getElementById('sinAcceso').style.display = 'none';
+        // limpiar
+        select.innerHTML = '<option value="">Selecciona un test...</option>';
+        dropdownList.innerHTML = '';
+        dropdownSelected.textContent = 'Selecciona un test...';
 
-      if (useLocalData && typeof window.CATEGORIAS !== 'undefined') {
-        try {
-          const categoriasObj = window.CATEGORIAS;
-          const keys = Object.keys(categoriasObj || {});
+        snapshot.forEach(doc => {
+          const cat = doc.data();
+          const id = doc.id;
 
-          const categoriasMostrables = keys
-            .map(k => ({ id: k, ...categoriasObj[k] }))
-            .filter(cat => cat && (cat.activa !== false))
-            .filter(cat => {
-              if (cat.emailsAutorizados && Array.isArray(cat.emailsAutorizados) && cat.emailsAutorizados.length > 0) {
-                if (!usuarioActual || !usuarioActual.email) return false;
-                return cat.emailsAutorizados.includes(usuarioActual.email);
-              }
-              return true;
-            });
+          // llenar select oculto (compatibilidad)
+          const option = document.createElement('option');
+          option.value = id;
+          option.textContent = cat.nombre || id;
+          select.appendChild(option);
 
-          document.getElementById('loadingCategorias').style.display = 'none';
+          // crear item visual
+          const item = document.createElement('div');
+          item.className = 'dropdown-item';
+          item.dataset.testId = id;
 
-          if (!categoriasMostrables || categoriasMostrables.length === 0) {
-            document.getElementById('sinAcceso').style.display = 'block';
-            return;
-          }
+          const info = document.createElement('div');
+          info.className = 'info';
+          const name = document.createElement('div');
+          name.className = 'name';
+          name.textContent = cat.nombre || id;
+          const sub = document.createElement('div');
+          sub.className = 'sub';
+          const totalTxt = (cat.totalPreguntas || cat.total || '?') + ' preguntas';
+          const tandaTxt = (cat.preguntasPorTanda || cat.preguntasPorTanda === 0) ? (cat.preguntasPorTanda + ' por tanda') : '30 por tanda';
+          sub.innerHTML = `<span>📚 ${totalTxt}</span><span>⏱️ ${tandaTxt}</span>`;
 
-          let html = '';
-          categoriasMostrables.forEach((cat) => {
-            html += `
-              <div class="categoria-card" onclick="seleccionarCategoria('${cat.id}')">
-                <h3>${cat.nombre}</h3>
-                <div class="info">
-                  <span>📝 ${cat.totalPreguntas || 0} preguntas</span>
-                  <span>🎯 ${cat.preguntasPorTanda || 30} por tanda</span>
-                </div>
-              </div>
-            `;
+          info.appendChild(name); info.appendChild(sub);
+          const badge = document.createElement('div');
+          badge.className = 'badge-small';
+          badge.textContent = 'Abrir';
+
+          item.appendChild(info);
+          item.appendChild(badge);
+
+          item.addEventListener('click', () => {
+            seleccionarTestDesdeDropdown(id, cat);
           });
 
-          document.getElementById('listaCategorias').innerHTML = html;
-          document.getElementById('listaCategorias').style.display = 'grid';
-          return;
-        } catch (error) {
-          console.error('❌ Error procesando categorias locales:', error);
-          document.getElementById('loadingCategorias').style.display = 'none';
-          alert('Error al procesar categorías locales: ' + error.message);
-          return;
-        }
-      }
-
-      db.collection('categorias')
-        .where('activa', '==', true)
-        .get()
-        .then((querySnapshot) => {
-          console.log('✅ Categorías recibidas:', querySnapshot.size);
-          document.getElementById('loadingCategorias').style.display = 'none';
-
-          if (querySnapshot.empty) {
-            document.getElementById('sinAcceso').style.display = 'block';
-            return;
-          }
-
-          let html = '';
-          querySnapshot.forEach((doc) => {
-            const cat = doc.data();
-            html += `
-              <div class="categoria-card" onclick="seleccionarCategoria('${doc.id}')">
-                <h3>${cat.nombre}</h3>
-                <div class="info">
-                  <span>📝 ${cat.totalPreguntas || 0} preguntas</span>
-                  <span>🎯 ${cat.preguntasPorTanda || 30} por tanda</span>
-                </div>
-              </div>
-            `;
-          });
-
-          document.getElementById('listaCategorias').innerHTML = html;
-          document.getElementById('listaCategorias').style.display = 'grid';
-        })
-        .catch((error) => {
-          console.error('❌ Error cargando categorías:', error);
-          document.getElementById('loadingCategorias').style.display = 'none';
-          alert('Error al cargar categorías: ' + error.message);
+          dropdownList.appendChild(item);
         });
+
+        // Toggle del dropdown
+        const wrapper = document.getElementById('customTestDropdown');
+        const selected = document.getElementById('dropdownSelected');
+        selected.onclick = function(e) {
+          e.stopPropagation();
+          wrapper.classList.toggle('open');
+        };
+
+        // cerrar al click fuera
+        document.addEventListener('click', (ev) => {
+          const w = document.getElementById('customTestDropdown');
+          if (!w) return;
+          if (!w.contains(ev.target)) {
+            w.classList.remove('open');
+          }
+        });
+
+        console.log('✅ Categorías cargadas en dropdown');
+      } catch (error) {
+        console.error('❌ Error cargando categorías:', error);
+      }
     }
 
-    function seleccionarCategoria(catId) {
-      console.log('🎯 Seleccionando categoría:', catId);
-      categoriaActual = catId;
+    // Al elegir un test en el dropdown: actualiza select oculto y muestra planes (o inicia test si quieres)
+    function seleccionarTestDesdeDropdown(testId, catData = {}) {
+      const select = document.getElementById('testSelect');
+      if (select) select.value = testId;
+
+      const dropdownSelected = document.getElementById('dropdownSelected');
+      dropdownSelected.innerHTML = `
+        <div style="display:flex; align-items:center; gap:12px; width:100%;">
+          <div style="flex:1;">
+            <div class="title">${catData.nombre || testId}</div>
+            <div class="meta" style="font-size:13px; color:var(--muted);">
+              📚 ${catData.totalPreguntas || catData.total || '?'} preguntas • ⏱️ ${catData.preguntasPorTanda || '30'} por tanda
+            </div>
+          </div>
+          <div style="color:var(--muted); font-size:13px;">▼</div>
+        </div>
+      `;
+      const wrapper = document.getElementById('customTestDropdown');
+      if (wrapper) wrapper.classList.remove('open');
+
+      testSeleccionado = testId;
+      mostrarPlanes();
+    }
+
+    // ==================== MONETIZACIÓN / SUSCRIPCIONES ====================
+    async function cargarSuscripcionesUsuario() {
+      if (!usuarioActual) return;
+
+      try {
+        const doc = await db.collection('suscripciones').doc(usuarioActual.uid).get();
+        if (doc.exists) {
+          suscripcionesUsuario = doc.data();
+          console.log('📊 Suscripciones cargadas:', suscripcionesUsuario);
+        } else {
+          suscripcionesUsuario = {};
+        }
+      } catch (error) {
+        console.error('❌ Error cargando suscripciones:', error);
+        suscripcionesUsuario = {};
+      }
+
+      document.getElementById('userEmailSeleccion').textContent = usuarioActual.email;
+
+      // Llamar a la función que renderiza el botón (solo visible para carlos.itim@gmail.com)
+      renderTestAccessButtonIfTester();
+
+      // Mostrar tests contratados en pantalla de login
+      mostrarTestsContratados();
+
+      // Cargar categorías en el selector (dropdown)
+      await cargarCategoriasEnSelector();
+
+      // Ir a pantalla de selección
+      document.getElementById('userEmailSeleccion').textContent = usuarioActual.email;
+      mostrarPantalla('screenSeleccionTest');
+    }
+
+    // ---------------------- BOTÓN DE ACCESO TOTAL PARA TESTER ----------------------
+    function renderTestAccessButtonIfTester() {
+      try {
+        const testerEmail = 'carlos.itim@gmail.com';
+        if (!usuarioActual || usuarioActual.email !== testerEmail) {
+          const existing = document.getElementById('btnAccesoTotalTester');
+          if (existing) existing.remove();
+          return;
+        }
+
+        const screen = document.getElementById('screenSeleccionTest');
+        if (!screen) return;
+
+        const userInfo = screen.querySelector('.user-info');
+        if (!userInfo) return;
+
+        let btn = document.getElementById('btnAccesoTotalTester');
+        if (btn) return;
+
+        btn = document.createElement('button');
+        btn.id = 'btnAccesoTotalTester';
+        btn.className = 'btn btn-success';
+        btn.style.marginTop = '12px';
+        btn.textContent = '🔓 Acceso total de prueba (tester)';
+
+        btn.onclick = async function () {
+          // Si hay test seleccionado, otorgar acceso a ese test y arrancarlo
+          const testSelect = document.getElementById('testSelect');
+          const testId = testSelect ? testSelect.value : '';
+          if (!testId) {
+            alert('Selecciona primero un test en el selector para otorgar acceso de prueba.');
+            return;
+          }
+
+          const testNombre = testSelect.options[testSelect.selectedIndex]?.text || testId;
+          const sub = {
+            plan: 'mensual',
+            tandasUsadas: 0,
+            fechaActivacion: Date.now(),
+            nombre: testNombre
+          };
+
+          // Actualizar estado local
+          suscripcionesUsuario = suscripcionesUsuario || {};
+          suscripcionesUsuario[testId] = sub;
+
+          // Intentar guardar en Firestore para persistencia (opcional)
+          try {
+            if (typeof db !== 'undefined' && db.collection && usuarioActual && usuarioActual.uid) {
+              await db.collection('suscripciones').doc(usuarioActual.uid).set({
+                [testId]: sub
+              }, { merge: true });
+              console.log('📌 Suscripción de prueba guardada en Firestore para', usuarioActual.uid);
+            }
+          } catch (err) {
+            console.warn('No se pudo guardar suscripción en Firestore (puede que no tenga permisos):', err);
+          }
+
+          // Actualizar UI
+          mostrarTestsContratados();
+
+          // Iniciar test inmediatamente
+          alert(`✅ Acceso total otorgado para el test "${testNombre}".\n\nIniciando el test ahora...`);
+          try {
+            categoriaActual = testId;
+            iniciarTest();
+          } catch (err) {
+            console.error('Error iniciando test tras otorgar acceso:', err);
+            alert('Ocurrió un error iniciando el test. Puedes iniciar desde Acceso rápido.');
+          }
+        };
+
+        userInfo.parentNode.insertBefore(btn, userInfo.nextSibling);
+      } catch (e) {
+        console.error('Error renderizando botón tester:', e);
+      }
+    }
+    // -------------------------------------------------------------------------------
+
+    // Mostrar tests contratados como accesos rápidos
+    function mostrarTestsContratados() {
+      const container = document.getElementById('testsContratados');
+      const list = document.getElementById('testsContratadosList');
+
+      const testsActivos = Object.entries(suscripcionesUsuario || {}).filter(([_, data]) => {
+        return data && data.plan && data.plan !== 'none';
+      });
+
+      if (testsActivos.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+
+      container.style.display = 'block';
+      list.innerHTML = testsActivos.map(([testId, data]) => {
+        const planIcon = data.plan === 'free' ? '🎁' : 
+                        data.plan === 'mensual' ? '📅' : 
+                        data.plan === 'trimestral' ? '🔥' : '👑';
+        const planText = data.plan === 'free' ? 'Gratis' : 
+                        data.plan === 'mensual' ? 'Mensual' : 
+                        data.plan === 'trimestral' ? 'Trimestral' : 'Anual';
+        const tandasInfo = data.plan === 'free' ? 
+          `${data.tandasUsadas || 0}/${TANDAS_GRATUITAS} tandas usadas` : 
+          'Acceso ilimitado';
+
+        return `
+          <div class="test-card-quick ${data.plan === 'free' ? '' : 'premium'}" onclick="accederTestDirecto('${testId}')">
+            <div class="test-card-info">
+              <h4>${data.nombre || testId}</h4>
+              <p>${tandasInfo}</p>
+            </div>
+            <span class="test-badge ${data.plan === 'free' ? 'free' : 'premium'}">
+              ${planIcon} ${planText}
+            </span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Acceder directamente a un test contratado
+    async function accederTestDirecto(testId) {
+      const suscripcion = suscripcionesUsuario[testId];
+
+      // Verificar límite de tandas gratuitas
+      if (suscripcion && suscripcion.plan === 'free' && suscripcion.tandasUsadas >= TANDAS_GRATUITAS) {
+        alert(`⚠️ Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar con acceso ilimitado.`);
+        testSeleccionado = testId;
+        document.getElementById('testSelect').value = testId;
+        mostrarPlanes();
+        mostrarPantalla('screenSeleccionTest');
+        return;
+      }
+
+      // Iniciar test directamente
+      categoriaActual = testId;
       iniciarTest();
     }
 
-    function volverCategorias() {
-      console.log('↩️ Volviendo a categorías');
-      categoriaActual = null;
-      masterPreguntasPool = [];
-      remainingPreguntas = [];
-      preguntasActuales = [];
-      indicePreguntaActual = 0;
-      respuestasUsuario = [];
-      numeroTanda = 0;
-      cargarCategoriasDisponibles();
-      mostrarPantalla('screenCategorias');
+    // Mostrar planes cuando se selecciona un test (select oculto o dropdown)
+    function mostrarPlanes() {
+      const testId = document.getElementById('testSelect').value;
+      const planesContainer = document.getElementById('planesContainer');
+
+      if (!testId) {
+        planesContainer.classList.remove('show');
+        return;
+      }
+
+      testSeleccionado = testId;
+      planesContainer.classList.add('show');
+
+      // Limpiar selección anterior
+      document.querySelectorAll('.plan-card').forEach(card => {
+        card.classList.remove('selected');
+      });
+      planSeleccionado = null;
+      document.getElementById('btnActivarPlan').style.display = 'none';
+
+      // Si ya tiene este test, mostrar info
+      if (suscripcionesUsuario[testId]) {
+        const sub = suscripcionesUsuario[testId];
+        if (sub.plan === 'free' && sub.tandasUsadas >= TANDAS_GRATUITAS) {
+          alert(`⚠️ Ya tienes el plan gratuito de este test pero has usado las ${TANDAS_GRATUITAS} tandas.\n\nSelecciona un plan de pago para continuar.`);
+        } else if (sub.plan !== 'free') {
+          alert(`✅ Ya tienes acceso ${sub.plan} a este test.\n\nPuedes comenzar directamente desde los accesos rápidos.`);
+        }
+      }
+    }
+
+    // Seleccionar un plan
+    function seleccionarPlan(plan) {
+      planSeleccionado = plan;
+
+      document.querySelectorAll('.plan-card').forEach(card => {
+        card.classList.remove('selected');
+      });
+
+      const planCard = document.getElementById(`plan${plan.charAt(0).toUpperCase() + plan.slice(1)}`);
+      if (planCard) {
+        planCard.classList.add('selected');
+      }
+
+      document.getElementById('btnActivarPlan').style.display = 'block';
+    }
+
+    // Activar plan seleccionado
+    async function activarPlan() {
+      if (!testSeleccionado || !planSeleccionado) {
+        alert('⚠️ Selecciona un test y un plan primero');
+        return;
+      }
+
+      if (planSeleccionado === 'free') {
+        await activarPlanGratuito();
+      } else {
+        await procesarPagoStripe();
+      }
+    }
+
+    // Activar plan gratuito (sin pago)
+    async function activarPlanGratuito() {
+      try {
+        const testNombre = document.getElementById('testSelect').options[document.getElementById('testSelect').selectedIndex].text;
+
+        await db.collection('suscripciones').doc(usuarioActual.uid).set({
+          [testSeleccionado]: {
+            plan: 'free',
+            tandasUsadas: 0,
+            fechaActivacion: Date.now(),
+            nombre: testNombre
+          }
+        }, { merge: true });
+
+        suscripcionesUsuario[testSeleccionado] = {
+          plan: 'free',
+          tandasUsadas: 0,
+          nombre: testNombre
+        };
+
+        alert(`✅ ¡Plan gratuito activado!\n\nTienes ${TANDAS_GRATUITAS} tandas de prueba para el test: ${testNombre}`);
+
+        // Limpiar selección
+        document.getElementById('planesContainer').classList.remove('show');
+        document.getElementById('testSelect').value = '';
+        planSeleccionado = null;
+        testSeleccionado = null;
+
+        // Actualizar accesos rápidos
+        mostrarTestsContratados();
+
+      } catch (error) {
+        console.error('❌ Error activando plan gratuito:', error);
+        alert('❌ Error al activar el plan. Inténtalo de nuevo.');
+      }
+    }
+
+    // Procesar pago con Stripe
+    async function procesarPagoStripe() {
+      // TODO: Integración completa con Stripe
+
+      const testNombre = document.getElementById('testSelect').options[document.getElementById('testSelect').selectedIndex].text;
+      const precios = {
+        mensual: '9,99€/mes',
+        trimestral: '24,99€ cada 3 meses',
+        anual: '79,99€/año'
+      };
+
+      alert(`🚧 Integración con Stripe en desarrollo\n\n` +
+            `Test: ${testNombre}\n` +
+            `Plan: ${planSeleccionado}\n` +
+            `Precio: ${precios[planSeleccionado]}\n\n` +
+            `En producción, esto abrirá Stripe Checkout para procesar el pago.`);
+    }
+
+    // Verificar si puede usar el test (límite de tandas)
+    function verificarLimiteTandas() {
+      if (!categoriaActual || !suscripcionesUsuario[categoriaActual]) {
+        return true; // No hay restricción si no hay suscripción
+      }
+
+      const sub = suscripcionesUsuario[categoriaActual];
+
+      if (sub.plan === 'free') {
+        if (sub.tandasUsadas >= TANDAS_GRATUITAS) {
+          alert(`⚠️ Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar.`);
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    // Incrementar contador de tandas usadas
+    async function incrementarTandaUsada() {
+      if (!categoriaActual || !suscripcionesUsuario[categoriaActual]) {
+        return;
+      }
+
+      const sub = suscripcionesUsuario[categoriaActual];
+
+      if (sub.plan === 'free') {
+        sub.tandasUsadas = (sub.tandasUsadas || 0) + 1;
+
+        try {
+          await db.collection('suscripciones').doc(usuarioActual.uid).set({
+            [categoriaActual]: sub
+          }, { merge: true });
+
+          console.log(`📊 Tandas usadas: ${sub.tandasUsadas}/${TANDAS_GRATUITAS}`);
+
+          if (sub.tandasUsadas >= TANDAS_GRATUITAS) {
+            alert(`⚠️ Has completado tus ${TANDAS_GRATUITAS} tandas gratuitas.\n\nPara continuar, actualiza a un plan de pago con acceso ilimitado.`);
+          }
+        } catch (error) {
+          console.error('Error actualizando tandas:', error);
+        }
+      }
+    }
+
+    // Modificar hideErrorMessage para soportar múltiples contenedores
+    function hideErrorMessage(elementId = 'errorMessage') {
+      const errorDiv = document.getElementById(elementId);
+      if (errorDiv) {
+        errorDiv.classList.remove('show');
+      }
+    }
+
+    // Modificar showErrorMessage para soportar múltiples contenedores
+    function showErrorMessage(message, elementId = 'errorMessage') {
+      const errorDiv = document.getElementById(elementId);
+      if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.classList.add('show');
+        setTimeout(() => hideErrorMessage(elementId), 5000);
+      }
     }
 
     // ==================== GESTIÓN DE TANDAS ====================
+    function mezclarArray(array) {
+      const newArray = [...array];
+      for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+      }
+      return newArray;
+    }
+
     function prepararTanda() {
       const panel = document.getElementById('tandaOptions');
       if (panel) panel.style.display = 'none';
@@ -1944,7 +2602,16 @@
         preguntasActuales.push(remainingPreguntas.shift());
       }
 
+      // Después de mezclar el orden de las preguntas, limpiar cualquier mapping previo
       preguntasActuales = mezclarArray(preguntasActuales);
+
+      // Limpiar cualquier mapping previo para forzar nuevo shuffle visual
+      preguntasActuales.forEach(p => {
+        if (p) {
+          delete p._displayOptions;
+          delete p._displayToOriginal;
+        }
+      });
 
       preguntasActuales.forEach((p, idx) => {
         if (!p.id) p.id = `q_${Date.now()}_${idx}_${Math.random().toString(36).substring(2,6)}`;
@@ -1957,6 +2624,10 @@
 
       guardarProgreso();
       restoreStatsPreference();
+
+      // Incrementar contador de tandas para planes gratuitos
+      incrementarTandaUsada();
+
       mostrarPregunta();
     }
 
@@ -2086,30 +2757,30 @@
 
     async function cargarProgresoSiExiste() {
       if (!usuarioActual || !categoriaActual) return null;
-      
+
       try {
         const docId = `${usuarioActual.uid}_${categoriaActual}`;
         const doc = await db.collection('progresos').doc(docId).get();
-        
+
         if (!doc.exists) {
           console.log('📭 No hay progreso guardado en la nube');
           return null;
         }
-        
+
         const estado = doc.data();
-        
+
         if (typeof estado.preguntasRealizadasGlobal === 'number') {
           preguntasRealizadasGlobal = estado.preguntasRealizadasGlobal;
         } else {
           preguntasRealizadasGlobal = 0;
         }
-        
+
         if (typeof estado.aciertosGlobal === 'number') {
           aciertosGlobal = estado.aciertosGlobal;
         } else {
           aciertosGlobal = 0;
         }
-        
+
         console.log('📥 Progreso cargado desde la nube');
         return estado;
       } catch (e) {
@@ -2120,7 +2791,7 @@
 
     function eliminarProgreso() {
       if (!usuarioActual || !categoriaActual) return;
-      
+
       try {
         const docId = `${usuarioActual.uid}_${categoriaActual}`;
         db.collection('progresos').doc(docId).delete()
@@ -2207,7 +2878,7 @@
                 failedPreguntas = (progreso.failedIds || []).map(id => idToQuestion[id]).filter(Boolean);
                 remainingPreguntas = (progreso.remainingIds || []).map(id => idToQuestion[id]).filter(Boolean);
                 preguntasActuales = (progreso.preguntasActualesIds || []).map(id => idToQuestion[id]).filter(Boolean);
-                
+
                 // IMPORTANTE: Asegurar que respuestasUsuario tiene el tamaño correcto
                 const respuestasGuardadas = progreso.respuestasUsuario || [];
                 respuestasUsuario = new Array(preguntasActuales.length).fill(null);
@@ -2215,7 +2886,7 @@
                 for (let i = 0; i < Math.min(respuestasGuardadas.length, preguntasActuales.length); i++) {
                   respuestasUsuario[i] = respuestasGuardadas[i];
                 }
-                
+
                 indicePreguntaActual = progreso.indicePreguntaActual || 0;
                 numeroTanda = progreso.numeroTanda || 1;
 
@@ -2247,12 +2918,12 @@
           if (!doc.exists) {
             throw new Error('Categoría no encontrada');
           }
-          
+
           const categoriaData = doc.data();
           document.getElementById('testCategoriaNombre').textContent = categoriaData.nombre;
           preguntasPorTanda = categoriaData.preguntasPorTanda || 30;
           totalPreguntas = categoriaData.totalPreguntas || 0;
-          
+
           return db.collection('preguntas')
             .where('categoria', '==', categoriaActual)
             .where('activa', '==', true)
@@ -2286,7 +2957,7 @@
               failedPreguntas = (progreso.failedIds || []).map(id => idToQuestion[id]).filter(Boolean);
               remainingPreguntas = (progreso.remainingIds || []).map(id => idToQuestion[id]).filter(Boolean);
               preguntasActuales = (progreso.preguntasActualesIds || []).map(id => idToQuestion[id]).filter(Boolean);
-              
+
               // IMPORTANTE: Asegurar que respuestasUsuario tiene el tamaño correcto
               const respuestasGuardadas = progreso.respuestasUsuario || [];
               respuestasUsuario = new Array(preguntasActuales.length).fill(null);
@@ -2294,7 +2965,7 @@
               for (let i = 0; i < Math.min(respuestasGuardadas.length, preguntasActuales.length); i++) {
                 respuestasUsuario[i] = respuestasGuardadas[i];
               }
-              
+
               indicePreguntaActual = progreso.indicePreguntaActual || 0;
               numeroTanda = progreso.numeroTanda || 1;
 
@@ -2318,13 +2989,30 @@
         });
     }
 
-    function mezclarArray(array) {
-      const newArray = [...array];
-      for (let i = newArray.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    // Genera opciones mezcladas para mostrar en pantalla sin tocar la pregunta original.
+    function generarOpcionesMostradas(pregunta) {
+      if (!pregunta || !pregunta.opciones) return;
+
+      const entries = Object.entries(pregunta.opciones); // [['A','textoA'], ['B','textoB'], ...]
+      if (entries.length <= 1) return;
+
+      // Mezclar el array de pares [clave, texto]
+      const arr = entries.map(([key, text]) => ({ originalKey: key, text }));
+      const shuffled = mezclarArray(arr);
+
+      const letras = ['A', 'B', 'C', 'D'];
+      const displayOptions = {};
+      const displayToOriginal = {};
+
+      for (let i = 0; i < shuffled.length && i < letras.length; i++) {
+        const letra = letras[i];
+        displayOptions[letra] = shuffled[i].text;
+        displayToOriginal[letra] = shuffled[i].originalKey; // ej: display 'A' -> original 'C'
       }
-      return newArray;
+
+      // Guardar temporalmente en la pregunta (no persistir)
+      pregunta._displayOptions = displayOptions;
+      pregunta._displayToOriginal = displayToOriginal;
     }
 
     function mostrarPregunta() {
@@ -2337,8 +3025,10 @@
         return;
       }
 
-      // Debug: verificar estado de respuestas
-      console.log(`📝 Mostrando pregunta ${indicePreguntaActual + 1}. Respuesta actual:`, respuestasUsuario[indicePreguntaActual]);
+      // Asegurar que exista mapping de opciones para mostrar (único por tanda)
+      if (!pregunta._displayOptions || !pregunta._displayToOriginal) {
+        generarOpcionesMostradas(pregunta);
+      }
 
       document.getElementById('preguntaNumero').textContent = `Pregunta ${indicePreguntaActual + 1} de ${total} (Tanda ${numeroTanda})`;
 
@@ -2351,32 +3041,31 @@
         if (progressBarContainer) progressBarContainer.style.display = 'none';
       }
 
-      document.getElementById('preguntaTexto').textContent = pregunta.pregunta;
+      document.getElementById('preguntaTexto').textContent = pregunta.pregunta || '';
 
       const letras = ['A', 'B', 'C', 'D'];
       let opcionesHtml = '';
 
-      if(pregunta.opciones) {
-        letras.forEach((letra) => {
-          const textoOpcion = pregunta.opciones[letra];
-          if(textoOpcion) {
-            // Solo marcar como seleccionada si realmente fue respondida antes
-            const respuestaActual = respuestasUsuario[indicePreguntaActual];
-            const seleccionada = (respuestaActual !== null && respuestaActual === letra) ? 'selected' : '';
-            
-            // IMPORTANTE: No agregar clases correcta/incorrecta al mostrar pregunta
-            // Solo mostrar la clase 'selected' si ya fue respondida antes
-            opcionesHtml += `
-              <div class="opcion ${seleccionada}" onclick="seleccionarOpcion('${letra}')">
-                <div class="opcion-letra">${letra}</div>
-                <div class="opcion-texto">${textoOpcion}</div>
-              </div>
-            `;
-          }
-        });
-      }
+      const displayOptions = pregunta._displayOptions || {};
+      const displayToOriginal = pregunta._displayToOriginal || {};
+      const respuestaActualOriginal = respuestasUsuario[indicePreguntaActual]; // guardamos originalKey
 
-      // Limpiar y establecer nuevo HTML - esto elimina todas las clases CSS previas
+      letras.forEach((letra) => {
+        const textoOpcion = displayOptions[letra];
+        if (textoOpcion) {
+          // seleccionar si la respuesta guardada (original) coincide con la originalKey de esta opción
+          const originalKeyParaEstaOpcion = displayToOriginal[letra];
+          const seleccionada = (respuestaActualOriginal !== null && respuestaActualOriginal === originalKeyParaEstaOpcion) ? 'selected' : '';
+
+          opcionesHtml += `
+            <div class="opcion ${seleccionada}" onclick="seleccionarOpcion('${letra}')">
+              <div class="opcion-letra">${letra}</div>
+              <div class="opcion-texto">${textoOpcion}</div>
+            </div>
+          `;
+        }
+      });
+
       const contenedor = document.getElementById('opcionesContainer');
       contenedor.innerHTML = opcionesHtml;
       document.getElementById('feedbackContainer').style.display = 'none';
@@ -2385,13 +3074,13 @@
       const btnSiguiente = document.getElementById('btnSiguiente');
       const btnFinalizar = document.getElementById('btnFinalizar');
 
-      if(indicePreguntaActual > 0) {
+      if (indicePreguntaActual > 0) {
         btnAnterior.style.display = 'flex';
       } else {
         btnAnterior.style.display = 'none';
       }
 
-      if(indicePreguntaActual < total - 1) {
+      if (indicePreguntaActual < total - 1) {
         btnSiguiente.style.display = 'flex';
         btnFinalizar.style.display = 'none';
       } else {
@@ -2407,7 +3096,7 @@
 
     function mostrarStatsEnTiempoReal() {
       const respondidas = respuestasUsuario.filter(r => r !== null).length;
-      const totalTanda = preguntasActuales.length;
+      const totalTanda = preguntasActuales.length || 1;
       const progreso = Math.round((respondidas / totalTanda) * 100);
 
       let correctasTemp = 0;
@@ -2465,7 +3154,7 @@
       `);
 
       statsPanel.innerHTML = bloques.join('\n');
-      
+
       const isVisible = document.getElementById('statsSwitch').classList.contains('active');
       if (!isVisible) {
         statsPanel.classList.add('hidden');
@@ -2475,8 +3164,8 @@
     }
 
     let autoAdvanceTimeout = null;
-    
-    function seleccionarOpcion(letra) {
+
+    function seleccionarOpcion(displayLetter) {
       if (autoAdvanceTimeout) {
         clearTimeout(autoAdvanceTimeout);
         autoAdvanceTimeout = null;
@@ -2485,21 +3174,31 @@
       const pregunta = preguntasActuales[indicePreguntaActual];
       if (!pregunta) return;
 
+      // Asegurarse mapping
+      if (!pregunta._displayToOriginal) {
+        generarOpcionesMostradas(pregunta);
+      }
+      const displayToOriginal = pregunta._displayToOriginal || {};
+      const originalLetter = displayToOriginal[displayLetter]; // la letra en la pregunta original
+
+      if (!originalLetter) {
+        console.warn('Mapping de opción no encontrado para', displayLetter);
+        return;
+      }
+
       const prev = respuestasUsuario[indicePreguntaActual];
       const correcto = pregunta.respuestaCorrecta;
-
-      // Debug
-      console.log(`✅ Selección: ${letra} en pregunta ${indicePreguntaActual + 1}. Anterior: ${prev}, Correcta: ${correcto}`);
 
       const fueNullAntes = prev === null;
       if (fueNullAntes) {
         preguntasRealizadasGlobal = (preguntasRealizadasGlobal || 0) + 1;
       }
 
-      respuestasUsuario[indicePreguntaActual] = letra;
+      // Guardar la respuesta como LETRA ORIGINAL (mantiene coherencia con estadísitcas)
+      respuestasUsuario[indicePreguntaActual] = originalLetter;
 
       const antesEraCorrecta = prev === correcto;
-      const ahoraEsCorrecta = letra === correcto;
+      const ahoraEsCorrecta = originalLetter === correcto;
 
       if (!antesEraCorrecta && ahoraEsCorrecta) {
         aciertosGlobal = (aciertosGlobal || 0) + 1;
@@ -2518,9 +3217,10 @@
         }
       }
 
+      // Actualizar selección visual (por displayLetter)
       document.querySelectorAll('.opcion').forEach((el) => {
         const letraOpcion = el.querySelector('.opcion-letra').textContent;
-        if (letraOpcion === letra) {
+        if (letraOpcion === displayLetter) {
           el.classList.add('selected');
         } else {
           el.classList.remove('selected');
@@ -2530,46 +3230,29 @@
       document.getElementById('btnSiguiente').disabled = false;
       document.getElementById('btnFinalizar').disabled = false;
       mostrarStatsEnTiempoReal();
-
       guardarProgreso();
 
-      if (ahoraEsCorrecta) {
-        const opcionesEls = document.querySelectorAll('.opcion');
-        opcionesEls.forEach(el => {
-          const letraOpcion = el.querySelector('.opcion-letra').textContent;
-          if (letraOpcion === letra) el.classList.add('correcta');
-          if (letraOpcion === pregunta.respuestaCorrecta) el.classList.add('correcta');
-        });
+      // Marcar visualmente correcta/incorrecta comparando originalKey
+      const opcionesEls = document.querySelectorAll('.opcion');
+      opcionesEls.forEach(el => {
+        const letraOpcion = el.querySelector('.opcion-letra').textContent;
+        const orig = pregunta._displayToOriginal ? pregunta._displayToOriginal[letraOpcion] : letraOpcion;
+        el.classList.remove('correcta', 'incorrecta');
+        if (orig === pregunta.respuestaCorrecta) el.classList.add('correcta');
+        if (orig === originalLetter && orig !== pregunta.respuestaCorrecta) el.classList.add('incorrecta');
+      });
 
+      // Auto avanzar si la respuesta es correcta
+      if (ahoraEsCorrecta) {
         autoAdvanceTimeout = setTimeout(() => {
+          autoAdvanceTimeout = null;
           if (indicePreguntaActual < preguntasActuales.length - 1) {
             indicePreguntaActual++;
             mostrarPregunta();
           } else {
             finalizarTanda();
           }
-          autoAdvanceTimeout = null;
         }, 650);
-      } else {
-        const opcionesEls = document.querySelectorAll('.opcion');
-        opcionesEls.forEach(el => {
-          const letraOpcion = el.querySelector('.opcion-letra').textContent;
-          if (letraOpcion === letra) el.classList.add('incorrecta');
-          if (letraOpcion === pregunta.respuestaCorrecta) el.classList.add('correcta');
-        });
-      }
-    }
-
-    function siguientePregunta() {
-      // Limpiar timeout si existe
-      if (autoAdvanceTimeout) {
-        clearTimeout(autoAdvanceTimeout);
-        autoAdvanceTimeout = null;
-      }
-      
-      if(indicePreguntaActual < preguntasActuales.length - 1) {
-        indicePreguntaActual++;
-        mostrarPregunta();
       }
     }
 
@@ -2579,8 +3262,8 @@
         clearTimeout(autoAdvanceTimeout);
         autoAdvanceTimeout = null;
       }
-      
-      if(indicePreguntaActual > 0) {
+
+      if (indicePreguntaActual > 0) {
         indicePreguntaActual--;
         mostrarPregunta();
       }
@@ -2597,7 +3280,7 @@
       const fallosRestantes = failedPreguntas.length || 0;
 
       const duracionSegundos = inicioTestTimestamp ? Math.round((Date.now() - inicioTestTimestamp) / 1000) : null;
-      const porcentaje = totalMaster > 0 ? Math.round((correctas / totalMaster) * 100) : null;
+      const porcentaje = totalMaster > 0 ? Math.round((correctas / totalMaster) * 100) : 0;
 
       const resultado = {
         usuarioId: (usuarioActual && usuarioActual.uid) ? usuarioActual.uid : null,
@@ -2616,7 +3299,7 @@
       guardarProgreso();
       guardarResultadoFinal(resultado);
 
-      document.getElementById('resultadoPorcentaje').textContent = (porcentaje !== null ? porcentaje : 0) + '%';
+      document.getElementById('resultadoPorcentaje').textContent = porcentaje + '%';
       document.getElementById('resultadoCorrectas').textContent = correctas;
       document.getElementById('resultadoIncorrectas').textContent = incorrectas;
       document.getElementById('resultadoTotal').textContent = totalMaster;
@@ -2925,27 +3608,29 @@
       window.open(`https://chat.openai.com/?q=${encoded}`, '_blank');
     }
 
-    // Hacer globales las funciones que se usan en los botones
-    window.volverCategorias = volverCategorias;
-    window.repetirFallos = repetirFallos;
-    window.saltarTanda = saltarTanda;
-    window.preguntaAnterior = preguntaAnterior;
-    window.siguientePregunta = siguientePregunta;
-    window.finalizarTest = finalizarTest;
-    window.nuevoTest = nuevoTest;
-    window.consultarChatGPT = consultarChatGPT;
-    window.toggleStats = toggleStats;
-    window.explicarPreguntaConChatGPT = explicarPreguntaConChatGPT;
-    window.seleccionarOpcion = seleccionarOpcion;
-    window.seleccionarCategoria = seleccionarCategoria;
-    window.toggleTheme = toggleTheme;
-    window.toggleStatsVisibility = toggleStatsVisibility;
+    // ==================== ON AUTH STATE ====================
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        console.log('✅ Usuario autenticado:', user.email);
+        usuarioActual = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || user.email
+        };
+        crearPerfilUsuario();
+        cargarSuscripcionesUsuario();
+      } else {
+        console.log('Usuario no autenticado');
+        suscripcionesUsuario = {};
+        mostrarPantalla('screenLogin');
+      }
+    });
 
     window.onload = function() {
       console.log('🔄 Página cargada, inicializando...');
       loadSavedTheme();
       loadStatsPreference();
-      
+
       window.addEventListener('beforeunload', function() {
         guardarProgreso();
       });
