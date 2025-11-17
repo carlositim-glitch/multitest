@@ -1329,11 +1329,6 @@
       color: #1f2937;
     }
 
-    .test-badge.free {
-      background: var(--warning);
-      color: white;
-    }
-
     /* SELECTOR DE TESTS (AHORA: hidden select + dropdown visual) */
     .test-selector {
       margin: 24px 0;
@@ -1377,26 +1372,26 @@
     .dropdown-selected .meta { color:var(--muted); font-size:13px; }
 
     .dropdown-list {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% + 10px);
-  background: var(--card); /* Cambiado de transparente a color de fondo para mejor visibilidad */
-  z-index: 60;
-  max-height: 300px; /* Altura máxima para scroll */
-  overflow-y: auto; /* Scroll vertical */
-  border-radius: 10px;
-  box-shadow: 0 8px 24px var(--shadow);
-  transition: max-height 0.28s ease;
-  pointer-events: none;
-  opacity: 0;
-}
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 10px);
+      background: var(--card); /* Cambiado de transparente a color de fondo para mejor visibilidad */
+      z-index: 60;
+      max-height: 300px; /* Altura máxima para scroll */
+      overflow-y: auto; /* Scroll vertical */
+      border-radius: 10px;
+      box-shadow: 0 8px 24px var(--shadow);
+      transition: max-height 0.28s ease;
+      pointer-events: none;
+      opacity: 0;
+    }
 
-.custom-dropdown.open .dropdown-list {
-  max-height: 300px;
-  pointer-events: auto;
-  opacity: 1;
-}
+    .custom-dropdown.open .dropdown-list {
+      max-height: 300px;
+      pointer-events: auto;
+      opacity: 1;
+    }
 
     .dropdown-item {
       background: var(--card);
@@ -1428,7 +1423,7 @@
       white-space:nowrap;
     }
 
-    /* PLANES DE PAGO - ajustes */
+    /* PLANES DE PAGO - estilos visuales mejorados (solo CSS) */
     .planes-container {
       margin-top: 30px;
       display: none;
@@ -1439,18 +1434,200 @@
       animation: fadeIn 0.3s ease;
     }
 
+    /* Grid de planes - COMPACTACIÓN APLICADA */
+    .planes-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(160px, 1fr)); /* MODIFICACIÓN: grid estricto para 4 tarjetas en pantallas grandes */
+      gap: 10px; /* Gap reducido para compacidad */
+      margin-top: 18px;
+    }
+
+    /* Tarjeta de plan - COMPACTACIÓN APLICADA */
+    .plan-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+      border-radius: 12px; /* levemente reducido */
+      padding: 12px; /* MODIFICACIÓN: menos padding para tarjetas más compactas */
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+      display: flex;
+      flex-direction: column;
+      gap: 8px; /* gap reducido */
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      position: relative;
+      min-height: 120px; /* MODIFICACIÓN: menos altura mínima */
+    }
+
+    .plan-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 14px 32px rgba(0,0,0,0.42);
+      border-color: var(--accent);
+    }
+
+    .plan-card .plan-icon {
+      font-size: 20px; /* reducido */
+      width: 40px; /* reducido */
+      height: 40px; /* reducido */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .plan-card .plan-name {
+      font-size: 16px; /* reducido */
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .plan-card .plan-price {
+      font-size: 16px; /* reducido */
+      font-weight: 900;
+      color: var(--text);
+      background: linear-gradient(90deg, rgba(52,195,255,0.06), transparent);
+      padding: 4px 8px; /* reducido */
+      border-radius: 6px;
+      display: inline-block;
+      margin-top: 4px;
+    }
+
+    .plan-card .plan-price small {
+      font-size: 11px; /* reducido */
+      font-weight: 600;
+      color: var(--muted);
+      margin-left: 6px;
+    }
+
+    .plan-card .plan-features {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px; /* reducido */
+      line-height: 1.4;
+      margin-top: 6px;
+      flex: 1;
+    }
+
+    .plan-card .plan-limit {
+      color: var(--muted);
+      font-size: 12px; /* reducido */
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    /* Tarjeta destacada (popular) */
+    .plan-card.popular {
+      border: 2px solid var(--premium);
+      background: linear-gradient(180deg, rgba(255,215,0,0.04), rgba(255,215,0,0.01));
+      transform: translateY(0);
+    }
+
+    .plan-badge-popular {
+      position: absolute;
+      top: -8px; /* menos offset */
+      right: 10px;
+      background: var(--premium);
+      color: #1f2937;
+      padding: 5px 10px; /* reducido */
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 12px; /* reducido */
+      box-shadow: 0 6px 18px rgba(255,215,0,0.08);
+    }
+
+    /* Estado seleccionado (cuando el usuario hace click) */
+    .plan-card.selected {
+      outline: 3px solid rgba(52,195,255,0.14);
+      transform: translateY(-6px) scale(1.01);
+    }
+
+    /* Ajustes visuales para botones y CTA - COMPACTACIÓN */
+    .planes-header h3 {
+      color: var(--accent);
+      margin-bottom: 4px;
+      font-size: 18px; /* reducido */
+    }
+    .planes-header p {
+      color: var(--muted);
+      margin-bottom: 12px;
+      font-size: 13px; /* reducido */
+    }
+
+    /* Botón activar plan más compacto */
+    #btnActivarPlan {
+      padding: 10px 14px; /* MODIFICACIÓN: más compacto */
+      font-size: 14px;
+      border-radius: 8px;
+    }
+
+    /* Estilos móviles específicos para planes */
+    @media (max-width: 680px) {
+      .planes-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .plan-card {
+        padding: 10px;
+        min-height: 120px;
+      }
+
+      .plan-badge-popular {
+        right: 10px;
+        top: -8px;
+        padding: 5px 10px;
+        font-size: 12px;
+      }
+    }
+@media (max-width: 900px) {  
+  .botones-navegacion {  
+    grid-template-columns: 1fr; /* una columna */  
+    gap: 8px;  
+  }  
+  
+  .btn-icon-nav {  
+    justify-self: start; /* deja el icono al inicio si quieres mantenerlo */  
+    width: 44px;  
+  }  
+  
+  #btnSiguiente {  
+    grid-column: 1;   /* ocupa la única columna */  
+    width: 100%;  
+    padding: 14px 18px;  
+    font-size: 15px;  
+  }  
+}
     /* BOTÓN PREMIUM */
     .btn-premium {
       background: linear-gradient(135deg, var(--premium) 0%, #ffa500 100%);
       color: #1f2937 !important;
       font-weight: 700;
       box-shadow: 0 4px 12px var(--premium-bg);
+      padding: 12px 16px; /* reducido un poco */
     }
 
     .btn-premium:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 20px var(--premium-bg);
     }
+/* Inserta al final de tu stylesheet */  
+.botones-navegacion {  
+  display: grid;  
+  grid-template-columns: 56px 1fr; /* columna icono algo más ancha */  
+  gap: 12px;  
+  align-items: center;             /* centra verticalmente */  
+  margin-top: 24px;  
+}  
+  
+#btnSiguiente {  
+  width: 100%;  
+  padding: 14px 20px !important;  
+  font-size: 16px !important;  
+  min-height: 48px !important;  
+  border-radius: 12px;  
+  box-shadow: 0 8px 22px rgba(52,195,255,0.08);  
+}
   </style>
 </head>
 <body>
@@ -1559,23 +1736,21 @@
           <p>Elige el test y tu plan de acceso</p>
         </div>
 
-        <!-- Selector de test -->
-<div class="test-selector">
-  <label for="testSelect">¿Qué test quieres hacer?</label>
-  <div class="select-wrapper">
-    <select id="testSelect" onchange="mostrarPlanes()">
-      <option value="">Selecciona un test...</option>
-    </select>
-  </div>
+    <!-- Selector de test -->  
+<div class="test-selector">  
+  <label for="testSelect">¿Qué test quieres hacer?</label>  
+  <div class="select-wrapper">  
+    <select id="testSelect" onchange="mostrarPlanes()">  
+      <option value="">Selecciona un test...</option>  
+    </select>  
+  </div>  
+  
+  <!-- dropdown visual (ahora dentro del mismo test-selector) -->  
+  <div class="custom-dropdown" id="customTestDropdown" role="listbox" aria-haspopup="true">  
+    <div class="dropdown-selected" id="dropdownSelected">Selecciona un test...</div>  
+    <div class="dropdown-list" id="dropdownList" aria-hidden="true"></div>  
+  </div>  
 </div>
-
-            <!-- dropdown visual -->
-            <div class="custom-dropdown" id="customTestDropdown" role="listbox" aria-haspopup="true">
-              <div class="dropdown-selected" id="dropdownSelected">Selecciona un test...</div>
-              <div class="dropdown-list" id="dropdownList" aria-hidden="true"></div>
-            </div>
-          </div>
-        </div>
 
         <!-- Planes de pago -->
         <div id="planesContainer" class="planes-container">
@@ -1587,9 +1762,13 @@
           <div class="planes-grid">
             <!-- Plan Gratuito -->
             <div class="plan-card" onclick="seleccionarPlan('free')" id="planFree">
-              <div class="plan-icon">🎁</div>
-              <div class="plan-name">Gratuito</div>
-              <div class="plan-price">0€</div>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div class="plan-icon">🎁</div>
+                <div>
+                  <div class="plan-name">Gratuito</div>
+                  <div class="plan-price">0€ <small>/tanda</small></div>
+                </div>
+              </div>
               <ul class="plan-features">
                 <li>3 tandas de prueba</li>
                 <li>30 preguntas por tanda</li>
@@ -1602,9 +1781,13 @@
 
             <!-- Plan Mensual -->
             <div class="plan-card" onclick="seleccionarPlan('mensual')" id="planMensual">
-              <div class="plan-icon">📅</div>
-              <div class="plan-name">Mensual</div>
-              <div class="plan-price">9,99€<small>/mes</small></div>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div class="plan-icon">📅</div>
+                <div>
+                  <div class="plan-name">Mensual</div>
+                  <div class="plan-price">9,99€ <small>/mes</small></div>
+                </div>
+              </div>
               <ul class="plan-features">
                 <li>Acceso ilimitado</li>
                 <li>Sin límite de tandas</li>
@@ -1615,9 +1798,13 @@
             <!-- Plan Trimestral -->
             <div class="plan-card popular" onclick="seleccionarPlan('trimestral')" id="planTrimestral">
               <div class="plan-badge-popular">⭐ Más Popular</div>
-              <div class="plan-icon">🔥</div>
-              <div class="plan-name">Trimestral</div>
-              <div class="plan-price">24,99€<small>/3 meses</small></div>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div class="plan-icon">🔥</div>
+                <div>
+                  <div class="plan-name">Trimestral</div>
+                  <div class="plan-price">24,99€ <small>/3 meses</small></div>
+                </div>
+              </div>
               <ul class="plan-features">
                 <li>Ahorra 25%</li>
                 <li>Acceso ilimitado</li>
@@ -1627,9 +1814,13 @@
 
             <!-- Plan Anual -->
             <div class="plan-card" onclick="seleccionarPlan('anual')" id="planAnual">
-              <div class="plan-icon">👑</div>
-              <div class="plan-name">Anual</div>
-              <div class="plan-price">79,99€<small>/año</small></div>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div class="plan-icon">👑</div>
+                <div>
+                  <div class="plan-name">Anual</div>
+                  <div class="plan-price">79,99€ <small>/año</small></div>
+                </div>
+              </div>
               <ul class="plan-features">
                 <li>Ahorra 33%</li>
                 <li>Acceso ilimitado</li>
@@ -2256,6 +2447,38 @@
       // Ir a pantalla de selección
       document.getElementById('userEmailSeleccion').textContent = usuarioActual.email;
       mostrarPantalla('screenSeleccionTest');
+
+      // ----------------- PRESELECCIÓN AUTOMÁTICA (MODIFICACIÓN APLICADA) -----------------
+      // Si ya hay un test seleccionado en la UI y existe suscripción para ese test -> preseleccionar plan.
+      if (testSeleccionado && suscripcionesUsuario && suscripcionesUsuario[testSeleccionado]) {
+        const sub = suscripcionesUsuario[testSeleccionado];
+        if (sub && sub.plan) {
+          seleccionarPlan(sub.plan);
+          console.log('🔎 Preseleccionado plan', sub.plan, 'para test ya seleccionado:', testSeleccionado);
+        }
+      } else {
+        // Si no hay testSeleccionado pero existe al menos una suscripción, rellenar selector con la primera para acelerar flujo
+        const keys = Object.keys(suscripcionesUsuario || {});
+        if (keys.length > 0) {
+          const firstTest = keys[0];
+          const sub = suscripcionesUsuario[firstTest];
+          if (sub && sub.plan) {
+            // setear valor en select oculto y actualizar dropdownSelected para visibilidad
+            const select = document.getElementById('testSelect');
+            if (select) select.value = firstTest;
+            // Intentar mostrar nombre si conocemos la suscripción.nombre
+            const dropdownSelected = document.getElementById('dropdownSelected');
+            if (dropdownSelected) {
+              dropdownSelected.textContent = suscripcionesUsuario[firstTest].nombre || firstTest;
+            }
+            testSeleccionado = firstTest;
+            mostrarPlanes();
+            seleccionarPlan(sub.plan);
+            console.log('🔎 Preseleccionado primer test suscrito:', firstTest, 'plan:', sub.plan);
+          }
+        }
+      }
+      // ----------------------------------------------------------------------------------
     }
 
     // ---------------------- BOTÓN DE ACCESO TOTAL PARA TESTER ----------------------
@@ -2416,7 +2639,7 @@
       planSeleccionado = null;
       document.getElementById('btnActivarPlan').style.display = 'none';
 
-      // Si ya tiene este test, mostrar info
+      // Si ya tiene este test, mostrar info (no ocultamos el panel aquí porque Opción A)
       if (suscripcionesUsuario[testId]) {
         const sub = suscripcionesUsuario[testId];
         if (sub.plan === 'free' && sub.tandasUsadas >= TANDAS_GRATUITAS) {
@@ -2810,6 +3033,13 @@
     function iniciarTest() {
       console.log('🚀 Iniciando test para categoría:', categoriaActual);
       mostrarPantalla('screenTest');
+
+      // ------------------ OCULTAR PANEL DE PLANES (OPCIÓN A) - MODIFICACIÓN APLICADA ------------------
+      const planesContainer = document.getElementById('planesContainer');
+      if (planesContainer) {
+        planesContainer.classList.remove('show');
+      }
+      // ----------------------------------------------------------------------------------------------
 
       masterPreguntasPool = [];
       remainingPreguntas = [];
