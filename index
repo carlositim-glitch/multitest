@@ -566,39 +566,141 @@
       transition: color 0.3s ease;
     }
 
-    .botones-navegacion {
-      display: grid;
-      grid-template-columns: 44px 1fr;
-      gap: 8px;
-      margin-top: 24px;
-    }
+/* ===== NAVEGACIÓN DE PREGUNTAS - SISTEMA UNIFICADO ===== */
+.botones-navegacion {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  gap: 12px;
+}
 
-    .btn-icon-nav {
-      width: 44px;
-      height: 44px;
-      background: var(--card-2);
-      border: 2px solid var(--border-hover);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      color: var(--text);
-    }
+.btn-icon-nav {
+  width: 56px;
+  height: 48px;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-2);
+  border: 2px solid var(--border-hover);
+  border-radius: 10px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
 
-    .btn-icon-nav:hover {
-      border-color: var(--accent);
-      background: var(--opcion-bg-hover);
-      transform: translateY(-2px);
-    }
+.btn-icon-nav:hover {
+  border-color: var(--accent);
+  background: var(--opcion-bg-hover);
+  transform: translateY(-2px);
+}
 
-    .btn-icon-nav:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      transform: none;
-    }
+.btn-icon-nav:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.botones-derecha {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.botones-derecha .btn {
+  min-width: 140px;
+  padding: 12px 18px;
+  min-height: 48px;
+  border-radius: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Botón Siguiente - Azul */
+#btnSiguiente {
+  background: var(--accent);
+  color: white;
+  border: none;
+  box-shadow: 0 8px 22px rgba(52, 195, 255, 0.08);
+}
+
+/* Botón Finalizar - Verde */
+#btnFinalizar {
+  background: var(--success);
+  color: white;
+  border: none;
+  box-shadow: 0 8px 22px rgba(46, 139, 87, 0.08);
+}
+
+/* Hover effects */
+#btnSiguiente:hover:not(:disabled),
+#btnFinalizar:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 10px 25px rgba(52, 195, 255, 0.15);
+}
+
+#btnFinalizar:hover:not(:disabled) {
+  box-shadow: 0 10px 25px rgba(46, 139, 87, 0.15);
+}
+
+/* Estados deshabilitados */
+#btnSiguiente:disabled,
+#btnFinalizar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .botones-navegacion {
+    margin-top: 16px;
+    gap: 8px;
+  }
+  
+  .btn-icon-nav {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+  
+  .botones-derecha {
+    gap: 8px;
+  }
+  
+  .botones-derecha .btn {
+    min-width: 120px;
+    padding: 10px 14px;
+    min-height: 44px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .botones-navegacion {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .btn-icon-nav {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .botones-derecha {
+    width: 100%;
+  }
+  
+  .botones-derecha .btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
 
     /* BOTONES DE TANDA - INLINE COMPACTOS */
     #tandaOptions {
@@ -1645,23 +1747,13 @@
         font-size: 12px;
       }
     }
-@media (max-width: 900px) {  
-  .botones-navegacion {  
-    grid-template-columns: 1fr; /* una columna */  
-    gap: 8px;  
-  }  
   
   .btn-icon-nav {  
     justify-self: start; /* deja el icono al inicio si quieres mantenerlo */  
     width: 44px;  
   }  
   
-  #btnSiguiente {  
-    grid-column: 1;   /* ocupa la única columna */  
-    width: 100%;  
-    padding: 14px 18px;  
-    font-size: 15px;  
-  }  
+  
 }
     /* BOTÓN PREMIUM */
     .btn-premium {
@@ -1676,23 +1768,7 @@
       transform: translateY(-2px);
       box-shadow: 0 6px 20px var(--premium-bg);
     }
-/* Inserta al final de tu stylesheet */  
-.botones-navegacion {  
-  display: grid;  
-  grid-template-columns: 56px 1fr; /* columna icono algo más ancha */  
-  gap: 12px;  
-  align-items: center;             /* centra verticalmente */  
-  margin-top: 24px;  
-}  
-  
-#btnSiguiente {  
-  width: 100%;  
-  padding: 14px 20px !important;  
-  font-size: 16px !important;  
-  min-height: 48px !important;  
-  border-radius: 12px;  
-  box-shadow: 0 8px 22px rgba(52,195,255,0.08);  
-}
+
   </style>
 </head>
 <body>
@@ -1943,20 +2019,21 @@
           </button>  
         </div>
 
-        <div class="botones-navegacion">
-          <button class="btn-icon-nav" id="btnAnterior" onclick="preguntaAnterior()" style="display:none;">
-            ←
-          </button>
-          <button class="btn btn-primary" id="btnSiguiente" onclick="siguientePregunta()" disabled>
-            Siguiente →
-          </button>
-        </div>
-
-        <button class="btn btn-success" id="btnFinalizar" onclick="finalizarTest()" style="display:none; margin-top:8px; width:100%;">
-          ✓ Finalizar Test
-        </button>
-      </div>
-    </div>
+        <!-- REEMPLAZA TODO EL BLOQUE DE NAVEGACIÓN ACTUAL POR ESTE -->
+<div class="botones-navegacion">
+  <button class="btn-icon-nav" id="btnAnterior" onclick="preguntaAnterior()" style="display:none;">
+    ←
+  </button>
+  
+  <div class="botones-derecha">
+    <button class="btn btn-primary" id="btnSiguiente" onclick="siguientePregunta()" disabled>
+      →
+    </button>
+    <button class="btn btn-success" id="btnFinalizar" onclick="finalizarTest()" disabled>
+      ✓ Finalizar
+    </button>
+  </div>
+</div>
 
     <!-- PANTALLA 4: RESULTADOS -->
     <div id="screenResultado" class="screen">
@@ -3413,26 +3490,32 @@ function siguientePregunta() {
   const fb = document.getElementById('feedbackContainer');
   if (fb) fb.style.display = 'none';
 
-  // botones navegación
+  // === CONTROL DE BOTONES DE NAVEGACIÓN ===
   const btnAnterior = document.getElementById('btnAnterior');
   const btnSiguiente = document.getElementById('btnSiguiente');
   const btnFinalizar = document.getElementById('btnFinalizar');
 
-  if (indicePreguntaActual > 0) btnAnterior.style.display = 'flex';
-  else btnAnterior.style.display = 'none';
-
-  if (indicePreguntaActual < total - 1) {
-    btnSiguiente.style.display = 'flex';
-    btnFinalizar.style.display = 'none';
+  // Control del botón anterior
+  if (indicePreguntaActual > 0) {
+    btnAnterior.style.display = 'flex';
   } else {
-    btnSiguiente.style.display = 'none';
-    btnFinalizar.style.display = 'block';
+    btnAnterior.style.display = 'none';
   }
 
-  // habilitar Siguiente/Finalizar SOLO si ya hay respuesta confirmada (en caso de fallo)
+  // Control de botones Siguiente/Finalizar
   const tieneRespuesta = respuestasUsuario[indicePreguntaActual] !== null && typeof respuestasUsuario[indicePreguntaActual] !== 'undefined';
-  if (btnSiguiente) btnSiguiente.disabled = !tieneRespuesta;
-  if (btnFinalizar) btnFinalizar.disabled = !tieneRespuesta;
+  
+  if (indicePreguntaActual < total - 1) {
+    // No es la última pregunta
+    btnSiguiente.style.display = 'flex';
+    btnFinalizar.style.display = 'none';
+    btnSiguiente.disabled = !tieneRespuesta;
+  } else {
+    // Es la última pregunta
+    btnSiguiente.style.display = 'none';
+    btnFinalizar.style.display = 'flex';
+    btnFinalizar.disabled = !tieneRespuesta;
+  }
 
   mostrarStatsEnTiempoReal();
 }
