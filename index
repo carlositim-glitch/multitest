@@ -3287,16 +3287,23 @@
         return;
       }
 
-      // Primer intento: guardar respuesta como letra ORIGINAL
+           // Primer intento: guardar respuesta como letra ORIGINAL
       respuestasUsuario[indicePreguntaActual] = originalLetter;
-      preguntasRealizadasGlobal++;
+      
+      // SOLO CONTAR EN TANDAS NORMALES, NO EN REPETICIÓN
+      if (!esTandaRepeticion) {
+        preguntasRealizadasGlobal++;
+      }
 
       const correcto = pregunta.respuestaCorrecta;
       const ahoraEsCorrecta = originalLetter === correcto;
 
       // Actualizar estadísticas
       if (ahoraEsCorrecta) {
-        aciertosGlobal++;
+        // SOLO CONTAR ACIERTOS EN TANDAS NORMALES
+        if (!esTandaRepeticion) {
+          aciertosGlobal++;
+        }
         
         // Mover a completadas si no estaba ya
         if (!preguntasCompletadas.find(p => p.id === pregunta.id)) {
@@ -3309,12 +3316,13 @@
           preguntasFalladas.splice(idxFallada, 1);
         }
       } else {
-        // Agregar a fallados si no estaba ya
-        if (!preguntasFalladas.find(p => p.id === pregunta.id)) {
-          preguntasFalladas.push(pregunta);
+        // Agregar a fallados si no estaba ya (SOLO EN TANDAS NORMALES)
+        if (!esTandaRepeticion) {
+          if (!preguntasFalladas.find(p => p.id === pregunta.id)) {
+            preguntasFalladas.push(pregunta);
+          }
         }
       }
-
       // Actualizar visual
       document.querySelectorAll('.opcion').forEach(el => el.classList.remove('selected', 'correcta', 'incorrecta'));
       const opcionesEls = Array.from(document.querySelectorAll('.opcion'));
