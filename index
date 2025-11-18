@@ -382,49 +382,87 @@
       transition: color 0.3s ease;
     }
 
-    .user-info {
-      background: var(--accent-bg);
-      padding: 16px;
-      border-radius: 10px;
-      margin-bottom: 24px;
-      border: 1px solid var(--accent-border);
-      transition: all 0.3s ease;
-    }
-
-    .user-info .user-content {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-
-    .user-info .user-label {
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .user-info .email {
-      color: var(--accent);
-      font-weight: 600;
-      transition: color 0.3s ease;
-    }
-
-    .user-info .logout {
-      background: transparent;
-      border: 1px solid var(--border-hover);
-      color: var(--muted);
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all 0.2s ease;
-    }
-
-    .user-info .logout:hover {
-      background: var(--card-2);
-      border-color: var(--danger);
-      color: var(--danger);
-    }
+    .user-info {  
+  background: var(--accent-bg);  
+  padding: 16px 20px;  
+  border-radius: 10px;  
+  margin-bottom: 24px;  
+  border: 1px solid var(--accent-border);  
+  transition: all 0.3s ease;  
+    
+  /* Flexbox para alinear elementos */  
+  display: flex;  
+  align-items: center;  
+  gap: 12px;  
+  justify-content: space-between; /* Separa el contenido del botón */  
+}  
+  
+.user-info .user-content {  
+  display: flex;  
+  align-items: center;  
+  gap: 12px;  
+  flex: 1; /* Ocupa el espacio disponible */  
+}  
+  
+.user-info .user-label {  
+  color: var(--muted);  
+  font-size: 14px;  
+  white-space: nowrap;  
+}  
+  
+.user-info .email {  
+  color: var(--accent);  
+  font-weight: 600;  
+  transition: color 0.3s ease;  
+  overflow: hidden;  
+  text-overflow: ellipsis;  
+  white-space: nowrap;  
+}  
+  
+/* BOTÓN SALIR - ALINEADO A LA DERECHA */  
+.user-info .logout {  
+  background: transparent;  
+  border: 1px solid var(--border-hover);  
+  color: var(--muted);  
+  padding: 8px 16px;  
+  border-radius: 6px;  
+  cursor: pointer;  
+  font-size: 14px;  
+  font-weight: 500;  
+  transition: all 0.2s ease;  
+  white-space: nowrap;  
+  margin-left: auto; /* Empuja el botón a la derecha */  
+    
+  /* Efecto hover mejorado */  
+  display: flex;  
+  align-items: center;  
+  gap: 6px;  
+}  
+  
+.user-info .logout:hover {  
+  background: var(--card-2);  
+  border-color: var(--danger);  
+  color: var(--danger);  
+  transform: translateY(-1px);  
+}  
+  
+.user-info .logout:active {  
+  transform: translateY(0);  
+}  
+  
+/* Estilos específicos para el botón Salir en la pantalla de test */  
+#screenTest .user-info .logout {  
+  background: rgba(178, 34, 34, 0.1);  
+  border-color: var(--danger-border);  
+  color: var(--danger);  
+  font-weight: 600;  
+}  
+  
+#screenTest .user-info .logout:hover {  
+  background: var(--danger);  
+  color: white;  
+  border-color: var(--danger);  
+}
 
     .pregunta-container {
       margin-bottom: 30px;
@@ -1066,29 +1104,46 @@
       }
 
       /* USER INFO COMPACTO */
-      .user-info {
-        padding: 10px; /* Reducido de 12px */
-        margin-bottom: 12px; /* Reducido de 16px */
-      }
-
-      .user-info .user-content {
-        flex-wrap: wrap;
-        margin-bottom: 8px;
-      }
-
-      .user-info .user-label {
-        font-size: 12px;
-      }
-
-      .user-info .email {
-        font-size: 13px;
-      }
-
-      .user-info .logout {
-        padding: 6px 12px; /* Reducido */
-        font-size: 12px;
-        width: 100%;
-      }
+     @media (max-width: 768px) {  
+  .user-info {  
+    padding: 12px 16px;  
+    margin-bottom: 16px;  
+    flex-wrap: wrap;  
+  }  
+    
+  .user-info .user-content {  
+    min-width: 0; /* Permite que el texto se recorte en móviles */  
+  }  
+    
+  .user-info .email {  
+    font-size: 13px;  
+  }  
+    
+  .user-info .logout {  
+    padding: 6px 12px;  
+    font-size: 13px;  
+    margin-top: 8px;  
+    width: auto;  
+  }  
+    
+  /* En móviles, el botón puede pasar a la siguiente línea si no cabe */  
+  @media (max-width: 480px) {  
+    .user-info {  
+      flex-direction: column;  
+      align-items: flex-start;  
+    }  
+      
+    .user-info .user-content {  
+      width: 100%;  
+    }  
+      
+    .user-info .logout {  
+      margin-left: 0;  
+      align-self: flex-end;  
+      margin-top: 12px;  
+    }  
+  }  
+}
 
       /* PREGUNTA OPTIMIZADA */
       .pregunta-container {
@@ -1742,13 +1797,12 @@
 </div>
 
         <div class="logo">
-          <h1>📚 Selecciona un Test</h1>
-          <p>Elige el test y tu plan de acceso</p>
+          <h1>📚 Selecciona un Test y un plan</h1>
         </div>
 
     <!-- Selector de test -->  
 <div class="test-selector">  
-  <label for="testSelect">¿Qué test quieres hacer?</label>  
+  <label for="testSelect"></label>  
   <div class="select-wrapper">  
     <select id="testSelect" onchange="mostrarPlanes()">  
       <option value="">Selecciona un test...</option>  
@@ -1849,13 +1903,16 @@
     <!-- PANTALLA 4: TEST -->
     <div id="screenTest" class="screen">
       <div class="card">
-        <div class="user-info">
-          <div class="user-content">
-            <div class="user-label">Test:</div>
-            <div class="email" id="testCategoriaNombre"></div>
-          </div>
-          <button class="logout" onclick="volverCategorias()">← Volver</button>
-        </div>
+        <div class="user-info">  
+  <div class="user-content">  
+    <div class="user-label">Test:</div>  
+    <div class="email" id="testCategoriaNombre"></div>  
+  </div>  
+  <!-- Botón "Salir" en la esquina derecha -->  
+  <button id="btnSalirTest" class="logout" onclick="volverCategorias()" title="Salir al menú principal">  
+    Salir  
+  </button>  
+</div>
 
         <div class="progress-bar">
           <div class="progress-fill" id="progressBar" style="width: 0%"></div>
@@ -3878,6 +3935,60 @@ function seleccionarOpcion(displayLetter) {
         icon.classList.add('open');
       }
     }
+// Lleva al usuario al menú principal (pantalla de selección de tests).
+// Guarda progreso, cancela auto-advance y limpia el estado temporal del test.
+function volverCategorias() {
+  try {
+    // Cancelar cualquier auto-advance en curso
+    if (typeof autoAdvanceTimeout !== 'undefined' && autoAdvanceTimeout) {
+      clearTimeout(autoAdvanceTimeout);
+      autoAdvanceTimeout = null;
+    }
+
+    // Si hay una tanda en curso, confirmar salida para evitar pérdidas inesperadas
+    if (preguntasActuales && preguntasActuales.length > 0) {
+      const confirmado = confirm('¿Deseas volver al menú principal? Se guardará tu progreso y podrás continuar después.');
+      if (!confirmado) return;
+    }
+
+    // Guardar progreso actual (si procede)
+    try { guardarProgreso(); } catch (e) { console.warn('guardarProgreso() falló al salir:', e); }
+
+    // Limpiar estado temporal del test para evitar efectos secundarios
+    preguntasActuales = [];
+    remainingPreguntas = remainingPreguntas || [];
+    failedPreguntas = failedPreguntas || [];
+    indicePreguntaActual = 0;
+    respuestasUsuario = [];
+    numeroTanda = 0;
+
+    // Opcional: mantener categoriaActual para que el usuario pueda volver rápido.
+    // Si prefieres limpiar la categoría seleccionada, descomenta la línea siguiente:
+    // categoriaActual = null;
+
+    // Mostrar pantalla de selección (menú principal)
+    mostrarPantalla('screenSeleccionTest');
+
+    // Asegurarse de que el panel de planes no quede abierto
+    const planesContainer = document.getElementById('planesContainer');
+    if (planesContainer) planesContainer.classList.remove('show');
+
+    // Forzar refresco de lista de tests contratados / email en UI
+    try {
+      if (usuarioActual && document.getElementById('userEmailSeleccion')) {
+        document.getElementById('userEmailSeleccion').textContent = usuarioActual.email || '';
+      }
+      mostrarTestsContratados();
+      cargarCategoriasEnSelector().catch(()=>{});
+    } catch(e) { /* no crítico */ }
+
+    console.log('Navegando al menú principal');
+  } catch (err) {
+    console.error('Error en volverCategorias():', err);
+    // Fallback — intentar al menos mostrar la pantalla selección
+    try { mostrarPantalla('screenSeleccionTest'); } catch(e){/* ignore */ }
+  }
+}
 
     function explicarPreguntaConChatGPT() {
       const pregunta = preguntasActuales[indicePreguntaActual];
