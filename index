@@ -865,6 +865,16 @@
     .chatgpt-btn:hover {
       background: linear-gradient(135deg, #0d8a6a 0%, #0a6f55 100%);
     }
+/* Preselección visual futurista para botón de IA (aplica solo mientras se muestra nueva pregunta) */  
+.chatgpt-btn.preselected {  
+  outline: 2px solid var(--accent);  
+  box-shadow: 0 6px 18px rgba(52,195,255,0.14);  
+  position: relative;  
+}  
+.chatgpt-btn.preselected::after {  
+  content: '🤖';  
+  margin-left: 8px;  
+}
 
     .badge {
       display: inline-block;
@@ -1728,8 +1738,8 @@
             <div class="user-label">Conectado como:</div>
             <div class="email" id="userEmailSeleccion"></div>
           </div>
-          <button class="logout" onclick="cerrarSesion()">Cerrar sesión</button>
-        </div>
+<button class="logout" onclick="volverCategorias()">Salir</button>       
+</div>
 
         <div class="logo">
           <h1>📚 Selecciona un Test</h1>
@@ -2851,9 +2861,37 @@
       // Incrementar contador de tandas para planes gratuitos
       incrementarTandaUsada();
 
+
       mostrarPregunta();
     }
+function siguientePregunta() {
+  // cancelar timeout si existiera
+  if (autoAdvanceTimeout) {
+    clearTimeout(autoAdvanceTimeout);
+    autoAdvanceTimeout = null;
+  }
 
+  // Si no hay respuesta confirmada en esta pregunta, no avanzar
+  const tieneRespuesta = respuestasUsuario[indicePreguntaActual] !== null && typeof respuestasUsuario[indicePreguntaActual] !== 'undefined';
+  if (!tieneRespuesta) {
+    const fb = document.getElementById('feedbackContainer');
+    if (fb) {
+      fb.style.display = 'block';
+      fb.innerHTML = `<div class="alert alert-info">Debes responder la pregunta antes de avanzar.</div>`;
+      setTimeout(() => { if (fb) fb.style.display = 'none'; }, 1200);
+    }
+    return;
+  }
+
+  // Avanzar
+  if (indicePreguntaActual < preguntasActuales.length - 1) {
+    indicePreguntaActual++;
+    mostrarPregunta();
+  } else {
+    // Si era la última pregunta de la tanda
+    finalizarTanda();
+  }
+}
     function finalizarTanda() {
       let correctas = 0;
       let incorrectas = 0;
@@ -3245,84 +3283,102 @@
       pregunta._displayToOriginal = displayToOriginal;
     }
 
-    function mostrarPregunta() {
-      const pregunta = preguntasActuales[indicePreguntaActual];
-      const total = preguntasActuales.length;
+   function mostrarPregunta() {
+  const pregunta = preguntasActuales[indicePreguntaActual];
+  const total = preguntasActuales.length;
 
-      if (!pregunta) {
-        console.warn('No hay pregunta en el índice actual, finalizando tanda...');
-        finalizarTanda();
-        return;
+  if (!pregunta) {
+    console.warn('No hay pregunta en el índice actual, finalizando tanda...');
+    finalizarTanda();
+    return;
+  }
+
+  // asegurar mapping
+  if (!pregunta._displayOptions || !pregunta._displayToOriginal) generarOpcionesMostradas(pregunta);
+
+  document.getElementById('preguntaNumero').textContent = `Pregunta ${indicePreguntaActual + 1} de ${total} (Tanda ${numeroTanda})`;
+
+  const progreso = ((indicePreguntaActual + 1) / total) * 100;
+  const progressBarContainer = document.querySelector('.progress-bar');
+  if (CONFIG.mostrarProgresoTanda) {
+    if (progressBarContainer) progressBarContainer.style.display = 'block';
+    document.getElementById('progressBar').style.width = progreso + '%';
+  } else {
+    if (progressBarContainer) progressBarContainer.style.display = 'none';
+  }
+
+  document.getElementById('preguntaTexto').textContent = pregunta.pregunta || '';
+
+  const letras = ['A', 'B', 'C', 'D'];
+  let opcionesHtml = '';
+
+  const displayOptions = pregunta._displayOptions || {};
+  const displayToOriginal = pregunta._displayToOriginal || {};
+
+  const yaRespondida = respuestasUsuario[indicePreguntaActual] !== null && typeof respuestasUsuario[indicePreguntaActual] !== 'undefined';
+  const respuestaConfirmadaOriginal = respuestasUsuario[indicePreguntaActual];
+
+  letras.forEach((letra) => {
+    const textoOpcion = displayOptions[letra];
+    if (!textoOpcion) return;
+
+    const originalKeyParaEstaOpcion = displayToOriginal[letra];
+    let clases = '';
+
+    if (yaRespondida) {
+      // marcar correcta/incorrecta y selected según respuesta confirmada
+      if (originalKeyParaEstaOpcion === pregunta.respuestaCorrecta) clases += ' correcta';
+      if (originalKeyParaEstaOpcion === respuestaConfirmadaOriginal) {
+        clases += ' selected';
+        if (originalKeyParaEstaOpcion !== pregunta.respuestaCorrecta) clases += ' incorrecta';
       }
-
-      // Asegurar que exista mapping de opciones para mostrar (único por tanda)
-      if (!pregunta._displayOptions || !pregunta._displayToOriginal) {
-        generarOpcionesMostradas(pregunta);
-      }
-
-      document.getElementById('preguntaNumero').textContent = `Pregunta ${indicePreguntaActual + 1} de ${total} (Tanda ${numeroTanda})`;
-
-      const progreso = ((indicePreguntaActual + 1) / total) * 100;
-      const progressBarContainer = document.querySelector('.progress-bar');
-      if (CONFIG.mostrarProgresoTanda) {
-        if (progressBarContainer) progressBarContainer.style.display = 'block';
-        document.getElementById('progressBar').style.width = progreso + '%';
-      } else {
-        if (progressBarContainer) progressBarContainer.style.display = 'none';
-      }
-
-      document.getElementById('preguntaTexto').textContent = pregunta.pregunta || '';
-
-      const letras = ['A', 'B', 'C', 'D'];
-      let opcionesHtml = '';
-
-      const displayOptions = pregunta._displayOptions || {};
-      const displayToOriginal = pregunta._displayToOriginal || {};
-      const respuestaActualOriginal = respuestasUsuario[indicePreguntaActual]; // guardamos originalKey
-
-      letras.forEach((letra) => {
-        const textoOpcion = displayOptions[letra];
-        if (textoOpcion) {
-          // seleccionar si la respuesta guardada (original) coincide con la originalKey de esta opción
-          const originalKeyParaEstaOpcion = displayToOriginal[letra];
-          const seleccionada = (respuestaActualOriginal !== null && respuestaActualOriginal === originalKeyParaEstaOpcion) ? 'selected' : '';
-
-          opcionesHtml += `
-            <div class="opcion ${seleccionada}" onclick="seleccionarOpcion('${letra}')">
-              <div class="opcion-letra">${letra}</div>
-              <div class="opcion-texto">${textoOpcion}</div>
-            </div>
-          `;
-        }
-      });
-
-      const contenedor = document.getElementById('opcionesContainer');
-      contenedor.innerHTML = opcionesHtml;
-      document.getElementById('feedbackContainer').style.display = 'none';
-
-      const btnAnterior = document.getElementById('btnAnterior');
-      const btnSiguiente = document.getElementById('btnSiguiente');
-      const btnFinalizar = document.getElementById('btnFinalizar');
-
-      if (indicePreguntaActual > 0) {
-        btnAnterior.style.display = 'flex';
-      } else {
-        btnAnterior.style.display = 'none';
-      }
-
-      if (indicePreguntaActual < total - 1) {
-        btnSiguiente.style.display = 'flex';
-        btnFinalizar.style.display = 'none';
-      } else {
-        btnSiguiente.style.display = 'none';
-        btnFinalizar.style.display = 'block';
-      }
-
-      const tieneRespuesta = respuestasUsuario[indicePreguntaActual] !== null;
-      btnSiguiente.disabled = !tieneRespuesta;
-      btnFinalizar.disabled = !tieneRespuesta;
-      mostrarStatsEnTiempoReal();
+      opcionesHtml += `
+        <div class="opcion ${clases.trim()}" aria-disabled="true">
+          <div class="opcion-letra">${letra}</div>
+          <div class="opcion-texto">${textoOpcion}</div>
+        </div>
+      `;
+    } else {
+      // no respondida: permitir click (primer intento)
+      opcionesHtml += `
+        <div class="opcion ${clases.trim()}" onclick="seleccionarOpcion('${letra}')">
+          <div class="opcion-letra">${letra}</div>
+          <div class="opcion-texto">${textoOpcion}</div>
+        </div>
+      `;
     }
+  });
+
+  const contenedor = document.getElementById('opcionesContainer');
+  contenedor.innerHTML = opcionesHtml;
+
+  // ocultar feedback temporal
+  const fb = document.getElementById('feedbackContainer');
+  if (fb) fb.style.display = 'none';
+
+  // botones navegación
+  const btnAnterior = document.getElementById('btnAnterior');
+  const btnSiguiente = document.getElementById('btnSiguiente');
+  const btnFinalizar = document.getElementById('btnFinalizar');
+
+  if (indicePreguntaActual > 0) btnAnterior.style.display = 'flex';
+  else btnAnterior.style.display = 'none';
+
+  if (indicePreguntaActual < total - 1) {
+    btnSiguiente.style.display = 'flex';
+    btnFinalizar.style.display = 'none';
+  } else {
+    btnSiguiente.style.display = 'none';
+    btnFinalizar.style.display = 'block';
+  }
+
+  // habilitar Siguiente/Finalizar SOLO si ya hay respuesta confirmada (en caso de fallo)
+  const tieneRespuesta = respuestasUsuario[indicePreguntaActual] !== null && typeof respuestasUsuario[indicePreguntaActual] !== 'undefined';
+  if (btnSiguiente) btnSiguiente.disabled = !tieneRespuesta;
+  if (btnFinalizar) btnFinalizar.disabled = !tieneRespuesta;
+
+  mostrarStatsEnTiempoReal();
+}
 
     function mostrarStatsEnTiempoReal() {
       const respondidas = respuestasUsuario.filter(r => r !== null).length;
@@ -3395,96 +3451,101 @@
 
     let autoAdvanceTimeout = null;
 
-    function seleccionarOpcion(displayLetter) {
-      if (autoAdvanceTimeout) {
-        clearTimeout(autoAdvanceTimeout);
-        autoAdvanceTimeout = null;
-      }
+function seleccionarOpcion(displayLetter) {
+  // cancelar auto-advance si existía
+  if (autoAdvanceTimeout) {
+    clearTimeout(autoAdvanceTimeout);
+    autoAdvanceTimeout = null;
+  }
 
-      const pregunta = preguntasActuales[indicePreguntaActual];
-      if (!pregunta) return;
+  const pregunta = preguntasActuales[indicePreguntaActual];
+  if (!pregunta) return;
 
-      // Asegurarse mapping
-      if (!pregunta._displayToOriginal) {
-        generarOpcionesMostradas(pregunta);
-      }
-      const displayToOriginal = pregunta._displayToOriginal || {};
-      const originalLetter = displayToOriginal[displayLetter]; // la letra en la pregunta original
+  // asegurar mapping
+  if (!pregunta._displayToOriginal) generarOpcionesMostradas(pregunta);
+  const displayToOriginal = pregunta._displayToOriginal || {};
+  const originalLetter = displayToOriginal[displayLetter];
+  if (!originalLetter) {
+    console.warn('Mapping de opción no encontrado para', displayLetter);
+    return;
+  }
 
-      if (!originalLetter) {
-        console.warn('Mapping de opción no encontrado para', displayLetter);
-        return;
-      }
-
-      const prev = respuestasUsuario[indicePreguntaActual];
-      const correcto = pregunta.respuestaCorrecta;
-
-      const fueNullAntes = prev === null;
-      if (fueNullAntes) {
-        preguntasRealizadasGlobal = (preguntasRealizadasGlobal || 0) + 1;
-      }
-
-      // Guardar la respuesta como LETRA ORIGINAL (mantiene coherencia con estadísitcas)
-      respuestasUsuario[indicePreguntaActual] = originalLetter;
-
-      const antesEraCorrecta = prev === correcto;
-      const ahoraEsCorrecta = originalLetter === correcto;
-
-      if (!antesEraCorrecta && ahoraEsCorrecta) {
-        aciertosGlobal = (aciertosGlobal || 0) + 1;
-        const idx = failedPreguntas.findIndex(p => p.id === pregunta.id);
-        if (idx !== -1) failedPreguntas.splice(idx, 1);
-      } else if (antesEraCorrecta && !ahoraEsCorrecta) {
-        aciertosGlobal = Math.max(0, (aciertosGlobal || 0) - 1);
-        if (!failedPreguntas.find(p => p.id === pregunta.id)) {
-          failedPreguntas.push(pregunta);
-        }
-      } else {
-        if (!ahoraEsCorrecta) {
-          if (!failedPreguntas.find(p => p.id === pregunta.id)) {
-            failedPreguntas.push(pregunta);
-          }
-        }
-      }
-
-      // Actualizar selección visual (por displayLetter)
-      document.querySelectorAll('.opcion').forEach((el) => {
-        const letraOpcion = el.querySelector('.opcion-letra').textContent;
-        if (letraOpcion === displayLetter) {
-          el.classList.add('selected');
-        } else {
-          el.classList.remove('selected');
-        }
-      });
-
-      document.getElementById('btnSiguiente').disabled = false;
-      document.getElementById('btnFinalizar').disabled = false;
-      mostrarStatsEnTiempoReal();
-      guardarProgreso();
-
-      // Marcar visualmente correcta/incorrecta comparando originalKey
-      const opcionesEls = document.querySelectorAll('.opcion');
-      opcionesEls.forEach(el => {
-        const letraOpcion = el.querySelector('.opcion-letra').textContent;
-        const orig = pregunta._displayToOriginal ? pregunta._displayToOriginal[letraOpcion] : letraOpcion;
-        el.classList.remove('correcta', 'incorrecta');
-        if (orig === pregunta.respuestaCorrecta) el.classList.add('correcta');
-        if (orig === originalLetter && orig !== pregunta.respuestaCorrecta) el.classList.add('incorrecta');
-      });
-
-      // Auto avanzar si la respuesta es correcta
-      if (ahoraEsCorrecta) {
-        autoAdvanceTimeout = setTimeout(() => {
-          autoAdvanceTimeout = null;
-          if (indicePreguntaActual < preguntasActuales.length - 1) {
-            indicePreguntaActual++;
-            mostrarPregunta();
-          } else {
-            finalizarTanda();
-          }
-        }, 650);
-      }
+  // Si ya hubo respuesta confirmada para esta pregunta, ignorar clicks
+  if (respuestasUsuario[indicePreguntaActual] !== null && typeof respuestasUsuario[indicePreguntaActual] !== 'undefined') {
+    // feedback breve
+    const fb = document.getElementById('feedbackContainer');
+    if (fb) {
+      fb.style.display = 'block';
+      fb.innerHTML = `<div class="alert alert-info">Respuesta ya registrada. Pulsa <strong>Siguiente</strong> para avanzar.</div>`;
+      setTimeout(() => { if (fb) fb.style.display = 'none'; }, 1200);
     }
+    return;
+  }
+
+  // Primer intento: guardar respuesta como letra ORIGINAL
+  respuestasUsuario[indicePreguntaActual] = originalLetter;
+  preguntasRealizadasGlobal = (preguntasRealizadasGlobal || 0) + 1;
+
+  const correcto = pregunta.respuestaCorrecta;
+  const ahoraEsCorrecta = originalLetter === correcto;
+
+  // Actualizar estadísticas y listas
+  if (ahoraEsCorrecta) {
+    aciertosGlobal = (aciertosGlobal || 0) + 1;
+    // quitar de failed si por algún motivo estaba
+    const idx = failedPreguntas.findIndex(p => p.id === pregunta.id);
+    if (idx !== -1) failedPreguntas.splice(idx, 1);
+  } else {
+    if (!failedPreguntas.find(p => p.id === pregunta.id)) failedPreguntas.push(pregunta);
+  }
+
+  // Actualizar visual: marcar selección
+  document.querySelectorAll('.opcion').forEach(el => el.classList.remove('selected', 'correcta', 'incorrecta'));
+  const opcionesEls = Array.from(document.querySelectorAll('.opcion'));
+  opcionesEls.forEach(el => {
+    const letraOpcion = el.querySelector('.opcion-letra').textContent;
+    const orig = pregunta._displayToOriginal ? pregunta._displayToOriginal[letraOpcion] : letraOpcion;
+    if (orig === correcto) {
+      el.classList.add('correcta');
+    }
+    if (orig === originalLetter) {
+      el.classList.add('selected');
+      if (!ahoraEsCorrecta) el.classList.add('incorrecta');
+    }
+    // desactivar pointer (opcional) para evitar cambios visuales posteriores
+    el.style.cursor = 'default';
+  });
+
+  // habilitar botones de navegación (Siguiente/Finalizar) para poder avanzar en caso de fallo
+  const btnSiguiente = document.getElementById('btnSiguiente');
+  const btnFinalizar = document.getElementById('btnFinalizar');
+  if (btnSiguiente) btnSiguiente.disabled = false;
+  if (btnFinalizar) btnFinalizar.disabled = false;
+
+  mostrarStatsEnTiempoReal();
+  guardarProgreso();
+
+  // Si fue correcta en primer intento -> esperar 1s y auto-avanzar
+  if (ahoraEsCorrecta) {
+    autoAdvanceTimeout = setTimeout(() => {
+      autoAdvanceTimeout = null;
+      if (indicePreguntaActual < preguntasActuales.length - 1) {
+        indicePreguntaActual++;
+        mostrarPregunta();
+      } else {
+        finalizarTanda();
+      }
+    }, 1000); // 1 segundo
+  } else {
+    // Si fue incorrecta: mostrar mensaje breve; no auto-avanzar (el usuario debe pulsar "Siguiente")
+    const fb = document.getElementById('feedbackContainer');
+    if (fb) {
+      fb.style.display = 'block';
+      fb.innerHTML = `<div class="alert alert-info">Respuesta incorrecta. Se ha mostrado la opción correcta. Pulsa <strong>Siguiente</strong> para continuar.</div>`;
+      setTimeout(() => { if (fb) fb.style.display = 'none'; }, 2200);
+    }
+  }
+}
 
     function preguntaAnterior() {
       // Limpiar timeout si existe
