@@ -2034,6 +2034,8 @@
     </button>
   </div>
 </div>
+      </div>
+    </div>
 
     <!-- PANTALLA 4: RESULTADOS -->
     <div id="screenResultado" class="screen">
@@ -2995,38 +2997,45 @@
       // Incrementar contador de tandas para planes gratuitos
       incrementarTandaUsada();
 
-
       mostrarPregunta();
     }
-function siguientePregunta() {
-  // cancelar timeout si existiera
-  if (autoAdvanceTimeout) {
-    clearTimeout(autoAdvanceTimeout);
-    autoAdvanceTimeout = null;
-  }
 
-  // Si no hay respuesta confirmada en esta pregunta, no avanzar
-  const tieneRespuesta = respuestasUsuario[indicePreguntaActual] !== null && typeof respuestasUsuario[indicePreguntaActual] !== 'undefined';
-  if (!tieneRespuesta) {
-    const fb = document.getElementById('feedbackContainer');
-    if (fb) {
-      fb.style.display = 'block';
-      fb.innerHTML = `<div class="alert alert-info">Debes responder la pregunta antes de avanzar.</div>`;
-      setTimeout(() => { if (fb) fb.style.display = 'none'; }, 1200);
+    function siguientePregunta() {
+      // ✅ GUARDAR PROGRESO ANTES DE AVANZAR
+      guardarProgreso();
+      
+      // cancelar timeout si existiera
+      if (autoAdvanceTimeout) {
+        clearTimeout(autoAdvanceTimeout);
+        autoAdvanceTimeout = null;
+      }
+
+      // Si no hay respuesta confirmada en esta pregunta, no avanzar
+      const tieneRespuesta = respuestasUsuario[indicePreguntaActual] !== null && typeof respuestasUsuario[indicePreguntaActual] !== 'undefined';
+      if (!tieneRespuesta) {
+        const fb = document.getElementById('feedbackContainer');
+        if (fb) {
+          fb.style.display = 'block';
+          fb.innerHTML = `<div class="alert alert-info">Debes responder la pregunta antes de avanzar.</div>`;
+          setTimeout(() => { if (fb) fb.style.display = 'none'; }, 1200);
+        }
+        return;
+      }
+
+      // Avanzar
+      if (indicePreguntaActual < preguntasActuales.length - 1) {
+        indicePreguntaActual++;
+        mostrarPregunta();
+      } else {
+        // Si era la última pregunta de la tanda
+        finalizarTanda();
+      }
     }
-    return;
-  }
 
-  // Avanzar
-  if (indicePreguntaActual < preguntasActuales.length - 1) {
-    indicePreguntaActual++;
-    mostrarPregunta();
-  } else {
-    // Si era la última pregunta de la tanda
-    finalizarTanda();
-  }
-}
     function finalizarTanda() {
+      // ✅ GUARDAR PROGRESO AL FINALIZAR TANDA
+      guardarProgreso();
+      
       let correctas = 0;
       let incorrectas = 0;
       const preguntasFalladasEstaTanda = [];
@@ -3112,76 +3121,180 @@ function siguientePregunta() {
       finalizarTest();
     }
 
-    function guardarProgreso() {
-      const key = progresoKey();
-      if (!key) return;
+    // ==================== FUNCIONES DE GUARDADO DE PROGRESO CORREGIDAS ====================
 
-      const estado = {
-        masterIds: masterPreguntasPool.map(p => p.id || null),
-        remainingIds: remainingPreguntas.map(p => p.id || null),
-        failedIds: failedPreguntas.map(p => p.id || null),
-        preguntasActualesIds: preguntasActuales.map(p => p.id || null),
-        respuestasUsuario,
-        indicePreguntaActual,
-        numeroTanda,
-        preguntasPorTanda,
-        preguntasRealizadasGlobal,
-        aciertosGlobal,
-        timestamp: Date.now()
-      };
+    // Función principal de guardado - CORREGIDA
+    function guardarProgresoEnNube() {
+      if (!usuarioActual || !categoriaActual) {
+        console.log('❌ No hay usuario o categoría para guardar progreso');
+        return;
+      }
 
-      // Guardar SOLO en Firestore (nube)
       try {
-        const docId = `${usuarioActual.uid}_${categoriaActual}`;
-        db.collection('progresos').doc(docId).set({
-          ...estado,
+        const estado = {
+          masterIds: masterPreguntasPool.map(p => p.id || null),
+          remainingIds: remainingPreguntas.map(p => p.id || null),
+          failedIds: failedPreguntas.map(p => p.id || null),
+          preguntasActualesIds: preguntasActuales.map(p => p.id || null),
+          respuestasUsuario: respuestasUsuario || [],
+          indicePreguntaActual: indicePreguntaActual || 0,
+          numeroTanda: numeroTanda || 0,
+          preguntasPorTanda: preguntasPorTanda || 30,
+          preguntasRealizadasGlobal: preguntasRealizadasGlobal || 0,
+          aciertosGlobal: aciertosGlobal || 0,
+          timestamp: Date.now(),
           usuarioId: usuarioActual.uid,
           categoria: categoriaActual,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true })
+        };
+
+        const docId = `${usuarioActual.uid}_${categoriaActual}`;
+        
+        // Intentar guardar en la colección 'progresos'
+        db.collection('progresos').doc(docId).set(estado, { merge: true })
         .then(() => {
-          console.log('💾 Progreso guardado en la nube');
+          console.log('💾 Progreso guardado en Firestore correctamente (progresos)');
         })
         .catch(err => {
-          console.error('❌ Error guardando progreso en Firestore:', err);
+          console.error('❌ Error guardando en progresos:', err);
+          // Fallback a user_progress
+          guardarEnUserProgressFallback(estado);
         });
       } catch (e) {
-        console.error('❌ Error guardando progreso:', e);
+        console.error('❌ Error en guardarProgresoEnNube:', e);
       }
     }
 
+    // Función de fallback para user_progress
+    function guardarEnUserProgressFallback(estado) {
+      const progresoSimple = {
+        currentIndex: estado.indicePreguntaActual,
+        answers: {},
+        tanda: estado.numeroTanda,
+        preguntasRealizadasGlobal: estado.preguntasRealizadasGlobal,
+        aciertosGlobal: estado.aciertosGlobal,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        version: Date.now()
+      };
+
+      // Convertir respuestasUsuario a objeto indexado
+      if (estado.respuestasUsuario && estado.preguntasActualesIds) {
+        estado.respuestasUsuario.forEach((respuesta, index) => {
+          const preguntaId = estado.preguntasActualesIds[index];
+          if (preguntaId) {
+            progresoSimple.answers[preguntaId] = respuesta;
+          }
+        });
+      }
+
+      const docId = `${usuarioActual.uid}_${categoriaActual}`;
+      db.collection('user_progress').doc(docId)
+        .set(progresoSimple, { merge: true })
+        .then(() => {
+          console.log('💾 Progreso guardado en user_progress (fallback)');
+        })
+        .catch((error) => {
+          console.error('❌ Error guardando en user_progress:', error);
+        });
+    }
+
+    // Función principal de guardado - SIMPLIFICADA
+    function guardarProgreso() {
+      console.log('💾 Guardando progreso...');
+      guardarProgresoEnNube();
+    }
+
+    // ==================== CARGAR PROGRESO DESDE FIRESTORE ====================
     async function cargarProgresoSiExiste() {
       if (!usuarioActual || !categoriaActual) return null;
 
       try {
         const docId = `${usuarioActual.uid}_${categoriaActual}`;
+        
+        // Primero intentar cargar de 'progresos'
         const doc = await db.collection('progresos').doc(docId).get();
 
+        if (doc.exists) {
+          const estado = doc.data();
+          console.log('📥 Progreso cargado desde Firestore (progresos):', estado);
+          return estado;
+        }
+
+        // Si no existe en 'progresos', intentar de 'user_progress'
+        console.log('📭 No hay progreso en progresos, intentando user_progress...');
+        return await cargarDesdeUserProgress();
+        
+      } catch (e) {
+        console.error('❌ Error leyendo progreso:', e);
+        return await cargarDesdeUserProgress(); // Fallback
+      }
+    }
+
+    // Función auxiliar para cargar desde user_progress
+    async function cargarDesdeUserProgress() {
+      try {
+        const docId = `${usuarioActual.uid}_${categoriaActual}`;
+        const doc = await db.collection('user_progress').doc(docId).get();
+
         if (!doc.exists) {
-          console.log('📭 No hay progreso guardado en la nube');
+          console.log('📭 No hay progreso guardado');
           return null;
         }
 
-        const estado = doc.data();
-
-        if (typeof estado.preguntasRealizadasGlobal === 'number') {
-          preguntasRealizadasGlobal = estado.preguntasRealizadasGlobal;
-        } else {
-          preguntasRealizadasGlobal = 0;
-        }
-
-        if (typeof estado.aciertosGlobal === 'number') {
-          aciertosGlobal = estado.aciertosGlobal;
-        } else {
-          aciertosGlobal = 0;
-        }
-
-        console.log('📥 Progreso cargado desde la nube');
-        return estado;
-      } catch (e) {
-        console.error('❌ Error leyendo progreso desde Firestore:', e);
+        const data = doc.data();
+        console.log('📥 Progreso cargado desde user_progress:', data);
+        return data;
+      } catch (error) {
+        console.error('❌ Error cargando desde user_progress:', error);
         return null;
       }
+    }
+
+    // ==================== APLICAR PROGRESO CARGADO ====================
+    function aplicarProgresoCargado(progreso) {
+      if (!progreso) return;
+
+      console.log('🔁 Aplicando progreso cargado:', progreso);
+
+      // Si es del formato antiguo (con arrays de IDs)
+      if (progreso.preguntasActualesIds && progreso.masterIds) {
+        const idToQuestion = {};
+        masterPreguntasPool.forEach(p => idToQuestion[p.id] = p);
+
+        failedPreguntas = (progreso.failedIds || []).map(id => idToQuestion[id]).filter(Boolean);
+        remainingPreguntas = (progreso.remainingIds || []).map(id => idToQuestion[id]).filter(Boolean);
+        preguntasActuales = (progreso.preguntasActualesIds || []).map(id => idToQuestion[id]).filter(Boolean);
+
+        respuestasUsuario = progreso.respuestasUsuario || [];
+        indicePreguntaActual = progreso.indicePreguntaActual || 0;
+        numeroTanda = progreso.numeroTanda || 1;
+        
+        preguntasRealizadasGlobal = progreso.preguntasRealizadasGlobal || 0;
+        aciertosGlobal = progreso.aciertosGlobal || 0;
+      } 
+      // Si es del formato nuevo (user_progress)
+      else if (progreso.answers) {
+        indicePreguntaActual = progreso.currentIndex || 0;
+        
+        // Reconstruir respuestasUsuario desde el objeto answers
+        respuestasUsuario = new Array(preguntasActuales.length).fill(null);
+        preguntasActuales.forEach((pregunta, index) => {
+          if (pregunta && pregunta.id && progreso.answers[pregunta.id] !== undefined) {
+            respuestasUsuario[index] = progreso.answers[pregunta.id];
+          }
+        });
+        
+        numeroTanda = progreso.tanda || 1;
+        preguntasRealizadasGlobal = progreso.preguntasRealizadasGlobal || 0;
+        aciertosGlobal = progreso.aciertosGlobal || 0;
+      }
+
+      console.log('✅ Progreso aplicado:', { 
+        indicePreguntaActual, 
+        respuestasUsuario, 
+        numeroTanda,
+        preguntasActuales: preguntasActuales.length 
+      });
     }
 
     function eliminarProgreso() {
@@ -3189,15 +3302,18 @@ function siguientePregunta() {
 
       try {
         const docId = `${usuarioActual.uid}_${categoriaActual}`;
-        db.collection('progresos').doc(docId).delete()
-          .then(() => {
-            console.log('🗑️ Progreso eliminado de la nube');
-          })
-          .catch(err => {
-            console.error('❌ Error eliminando progreso:', err);
-          });
+        
+        // Eliminar de ambas colecciones
+        Promise.all([
+          db.collection('progresos').doc(docId).delete(),
+          db.collection('user_progress').doc(docId).delete()
+        ]).then(() => {
+          console.log('🗑️ Progreso eliminado completamente');
+        }).catch(err => {
+          console.error('❌ Error eliminando progreso:', err);
+        });
       } catch (e) {
-        console.error('❌ Error eliminando progreso:', e);
+        console.error('❌ Error en eliminarProgreso:', e);
       }
     }
 
@@ -3206,13 +3322,11 @@ function siguientePregunta() {
       console.log('🚀 Iniciando test para categoría:', categoriaActual);
       mostrarPantalla('screenTest');
 
-      // ------------------ OCULTAR PANEL DE PLANES (OPCIÓN A) - MODIFICACIÓN APLICADA ------------------
+      // Ocultar panel de planes
       const planesContainer = document.getElementById('planesContainer');
-      if (planesContainer) {
-        planesContainer.classList.remove('show');
-      }
-      // ----------------------------------------------------------------------------------------------
+      if (planesContainer) planesContainer.classList.remove('show');
 
+      // Reiniciar variables
       masterPreguntasPool = [];
       remainingPreguntas = [];
       failedPreguntas = [];
@@ -3225,6 +3339,7 @@ function siguientePregunta() {
       inicioTestTimestamp = Date.now();
 
       if (useLocalData && typeof window.CATEGORIAS !== 'undefined') {
+        // ... (código local existente - mantener igual)
         const catData = window.CATEGORIAS[categoriaActual];
         if (!catData) {
           alert('Categoría local no encontrada: ' + categoriaActual);
@@ -3270,41 +3385,29 @@ function siguientePregunta() {
             masterPreguntasPool = mezclarArray(preguntasFiltradas.slice());
             remainingPreguntas = masterPreguntasPool.slice();
 
+            // CARGAR PROGRESO - VERSIÓN CORREGIDA
             const progreso = await cargarProgresoSiExiste();
-            if (progreso && progreso.preguntasActualesIds && progreso.preguntasActualesIds.length > 0) {
-              const quiereContinuar = confirm('Se ha encontrado progreso guardado en la nube para esta categoría. ¿Deseas continuar donde lo dejaste?');
-              if (quiereContinuar) {
-                const idToQuestion = {};
-                masterPreguntasPool.forEach(p => idToQuestion[p.id] = p);
-
-                failedPreguntas = (progreso.failedIds || []).map(id => idToQuestion[id]).filter(Boolean);
-                remainingPreguntas = (progreso.remainingIds || []).map(id => idToQuestion[id]).filter(Boolean);
-                preguntasActuales = (progreso.preguntasActualesIds || []).map(id => idToQuestion[id]).filter(Boolean);
-
-                // IMPORTANTE: Asegurar que respuestasUsuario tiene el tamaño correcto
-                const respuestasGuardadas = progreso.respuestasUsuario || [];
-                respuestasUsuario = new Array(preguntasActuales.length).fill(null);
-                // Copiar solo las respuestas que corresponden al tamaño actual
-                for (let i = 0; i < Math.min(respuestasGuardadas.length, preguntasActuales.length); i++) {
-                  respuestasUsuario[i] = respuestasGuardadas[i];
-                }
-
-                indicePreguntaActual = progreso.indicePreguntaActual || 0;
-                numeroTanda = progreso.numeroTanda || 1;
-
-                if (!preguntasActuales || preguntasActuales.length === 0) {
-                  prepararTanda();
-                } else {
+            if (progreso) {
+              const continuar = confirm("Se ha encontrado progreso guardado. ¿Deseas continuar donde lo dejaste?");
+              if (continuar) {
+                aplicarProgresoCargado(progreso);
+                // Si hay preguntas actuales, mostrar la pregunta actual
+                if (preguntasActuales && preguntasActuales.length > 0) {
                   mostrarPregunta();
+                  return;
                 }
-                return;
               } else {
+                // Si no quiere continuar, eliminar progreso
                 eliminarProgreso();
+                // Restablecer remainingPreguntas
                 remainingPreguntas = masterPreguntasPool.slice();
               }
             }
 
-            prepararTanda();
+            // Si no hay progreso o no se quiere continuar, preparar nueva tanda
+            if (!preguntasActuales || preguntasActuales.length === 0) {
+              prepararTanda();
+            }
           })
           .catch(error => {
             console.error('❌ Error cargando preguntas locales:', error);
@@ -3315,6 +3418,7 @@ function siguientePregunta() {
         return;
       }
 
+      // Código para Firebase - REEMPLAZAR desde aquí
       db.collection('categorias').doc(categoriaActual).get()
         .then((doc) => {
           if (!doc.exists) {
@@ -3349,45 +3453,32 @@ function siguientePregunta() {
           masterPreguntasPool = mezclarArray(masterPreguntasPool);
           remainingPreguntas = masterPreguntasPool.slice();
 
+          // CARGAR PROGRESO - VERSIÓN CORREGIDA
           const progreso = await cargarProgresoSiExiste();
-          if (progreso && progreso.preguntasActualesIds && progreso.preguntasActualesIds.length > 0) {
-            const quiereContinuar = confirm('Se ha encontrado progreso guardado en la nube para esta categoría. ¿Deseas continuar donde lo dejaste?');
+          if (progreso) {
+            const quiereContinuar = confirm('Se ha encontrado progreso guardado. ¿Deseas continuar donde lo dejaste?');
             if (quiereContinuar) {
-              const idToQuestion = {};
-              masterPreguntasPool.forEach(p => idToQuestion[p.id] = p);
-
-              failedPreguntas = (progreso.failedIds || []).map(id => idToQuestion[id]).filter(Boolean);
-              remainingPreguntas = (progreso.remainingIds || []).map(id => idToQuestion[id]).filter(Boolean);
-              preguntasActuales = (progreso.preguntasActualesIds || []).map(id => idToQuestion[id]).filter(Boolean);
-
-              // IMPORTANTE: Asegurar que respuestasUsuario tiene el tamaño correcto
-              const respuestasGuardadas = progreso.respuestasUsuario || [];
-              respuestasUsuario = new Array(preguntasActuales.length).fill(null);
-              // Copiar solo las respuestas que corresponden al tamaño actual
-              for (let i = 0; i < Math.min(respuestasGuardadas.length, preguntasActuales.length); i++) {
-                respuestasUsuario[i] = respuestasGuardadas[i];
-              }
-
-              indicePreguntaActual = progreso.indicePreguntaActual || 0;
-              numeroTanda = progreso.numeroTanda || 1;
-
-              if (!preguntasActuales || preguntasActuales.length === 0) {
-                prepararTanda();
-              } else {
+              aplicarProgresoCargado(progreso);
+              // Si hay preguntas actuales, mostrar la pregunta actual
+              if (preguntasActuales && preguntasActuales.length > 0) {
                 mostrarPregunta();
+                return;
               }
-              return;
             } else {
+              // Si no quiere continuar, eliminar progreso
               eliminarProgreso();
+              // Restablecer remainingPreguntas
               remainingPreguntas = masterPreguntasPool.slice();
             }
           }
 
+          // Si no hay progreso o no se quiere continuar, preparar nueva tanda
           prepararTanda();
         })
         .catch((error) => {
           console.error('❌ Error cargando preguntas:', error);
           alert('Error al cargar preguntas: ' + error.message);
+          volverCategorias();
         });
     }
 
@@ -3417,108 +3508,108 @@ function siguientePregunta() {
       pregunta._displayToOriginal = displayToOriginal;
     }
 
-   function mostrarPregunta() {
-  const pregunta = preguntasActuales[indicePreguntaActual];
-  const total = preguntasActuales.length;
+    function mostrarPregunta() {
+      const pregunta = preguntasActuales[indicePreguntaActual];
+      const total = preguntasActuales.length;
 
-  if (!pregunta) {
-    console.warn('No hay pregunta en el índice actual, finalizando tanda...');
-    finalizarTanda();
-    return;
-  }
-
-  // asegurar mapping
-  if (!pregunta._displayOptions || !pregunta._displayToOriginal) generarOpcionesMostradas(pregunta);
-
-  document.getElementById('preguntaNumero').textContent = `Pregunta ${indicePreguntaActual + 1} de ${total} (Tanda ${numeroTanda})`;
-
-  const progreso = ((indicePreguntaActual + 1) / total) * 100;
-  const progressBarContainer = document.querySelector('.progress-bar');
-  if (CONFIG.mostrarProgresoTanda) {
-    if (progressBarContainer) progressBarContainer.style.display = 'block';
-    document.getElementById('progressBar').style.width = progreso + '%';
-  } else {
-    if (progressBarContainer) progressBarContainer.style.display = 'none';
-  }
-
-  document.getElementById('preguntaTexto').textContent = pregunta.pregunta || '';
-
-  const letras = ['A', 'B', 'C', 'D'];
-  let opcionesHtml = '';
-
-  const displayOptions = pregunta._displayOptions || {};
-  const displayToOriginal = pregunta._displayToOriginal || {};
-
-  const yaRespondida = respuestasUsuario[indicePreguntaActual] !== null && typeof respuestasUsuario[indicePreguntaActual] !== 'undefined';
-  const respuestaConfirmadaOriginal = respuestasUsuario[indicePreguntaActual];
-
-  letras.forEach((letra) => {
-    const textoOpcion = displayOptions[letra];
-    if (!textoOpcion) return;
-
-    const originalKeyParaEstaOpcion = displayToOriginal[letra];
-    let clases = '';
-
-    if (yaRespondida) {
-      // marcar correcta/incorrecta y selected según respuesta confirmada
-      if (originalKeyParaEstaOpcion === pregunta.respuestaCorrecta) clases += ' correcta';
-      if (originalKeyParaEstaOpcion === respuestaConfirmadaOriginal) {
-        clases += ' selected';
-        if (originalKeyParaEstaOpcion !== pregunta.respuestaCorrecta) clases += ' incorrecta';
+      if (!pregunta) {
+        console.warn('No hay pregunta en el índice actual, finalizando tanda...');
+        finalizarTanda();
+        return;
       }
-      opcionesHtml += `
-        <div class="opcion ${clases.trim()}" aria-disabled="true">
-          <div class="opcion-letra">${letra}</div>
-          <div class="opcion-texto">${textoOpcion}</div>
-        </div>
-      `;
-    } else {
-      // no respondida: permitir click (primer intento)
-      opcionesHtml += `
-        <div class="opcion ${clases.trim()}" onclick="seleccionarOpcion('${letra}')">
-          <div class="opcion-letra">${letra}</div>
-          <div class="opcion-texto">${textoOpcion}</div>
-        </div>
-      `;
+
+      // asegurar mapping
+      if (!pregunta._displayOptions || !pregunta._displayToOriginal) generarOpcionesMostradas(pregunta);
+
+      document.getElementById('preguntaNumero').textContent = `Pregunta ${indicePreguntaActual + 1} de ${total} (Tanda ${numeroTanda})`;
+
+      const progreso = ((indicePreguntaActual + 1) / total) * 100;
+      const progressBarContainer = document.querySelector('.progress-bar');
+      if (CONFIG.mostrarProgresoTanda) {
+        if (progressBarContainer) progressBarContainer.style.display = 'block';
+        document.getElementById('progressBar').style.width = progreso + '%';
+      } else {
+        if (progressBarContainer) progressBarContainer.style.display = 'none';
+      }
+
+      document.getElementById('preguntaTexto').textContent = pregunta.pregunta || '';
+
+      const letras = ['A', 'B', 'C', 'D'];
+      let opcionesHtml = '';
+
+      const displayOptions = pregunta._displayOptions || {};
+      const displayToOriginal = pregunta._displayToOriginal || {};
+
+      const yaRespondida = respuestasUsuario[indicePreguntaActual] !== null && typeof respuestasUsuario[indicePreguntaActual] !== 'undefined';
+      const respuestaConfirmadaOriginal = respuestasUsuario[indicePreguntaActual];
+
+      letras.forEach((letra) => {
+        const textoOpcion = displayOptions[letra];
+        if (!textoOpcion) return;
+
+        const originalKeyParaEstaOpcion = displayToOriginal[letra];
+        let clases = '';
+
+        if (yaRespondida) {
+          // marcar correcta/incorrecta y selected según respuesta confirmada
+          if (originalKeyParaEstaOpcion === pregunta.respuestaCorrecta) clases += ' correcta';
+          if (originalKeyParaEstaOpcion === respuestaConfirmadaOriginal) {
+            clases += ' selected';
+            if (originalKeyParaEstaOpcion !== pregunta.respuestaCorrecta) clases += ' incorrecta';
+          }
+          opcionesHtml += `
+            <div class="opcion ${clases.trim()}" aria-disabled="true">
+              <div class="opcion-letra">${letra}</div>
+              <div class="opcion-texto">${textoOpcion}</div>
+            </div>
+          `;
+        } else {
+          // no respondida: permitir click (primer intento)
+          opcionesHtml += `
+            <div class="opcion ${clases.trim()}" onclick="seleccionarOpcion('${letra}')">
+              <div class="opcion-letra">${letra}</div>
+              <div class="opcion-texto">${textoOpcion}</div>
+            </div>
+          `;
+        }
+      });
+
+      const contenedor = document.getElementById('opcionesContainer');
+      contenedor.innerHTML = opcionesHtml;
+
+      // ocultar feedback temporal
+      const fb = document.getElementById('feedbackContainer');
+      if (fb) fb.style.display = 'none';
+
+      // === CONTROL DE BOTONES DE NAVEGACIÓN ===
+      const btnAnterior = document.getElementById('btnAnterior');
+      const btnSiguiente = document.getElementById('btnSiguiente');
+      const btnFinalizar = document.getElementById('btnFinalizar');
+
+      // Control del botón anterior
+      if (indicePreguntaActual > 0) {
+        btnAnterior.style.display = 'flex';
+      } else {
+        btnAnterior.style.display = 'none';
+      }
+
+      // Control de botones Siguiente/Finalizar
+      const tieneRespuesta = respuestasUsuario[indicePreguntaActual] !== null && typeof respuestasUsuario[indicePreguntaActual] !== 'undefined';
+      
+      if (indicePreguntaActual < total - 1) {
+        // No es la última pregunta
+        btnSiguiente.style.display = 'flex';
+        btnFinalizar.style.display = 'none';
+        btnSiguiente.disabled = !tieneRespuesta;
+      } else {
+        // Es la última pregunta
+        btnSiguiente.style.display = 'none';
+        btnFinalizar.style.display = 'flex';
+        btnFinalizar.disabled = !tieneRespuesta;
+      }
+
+      mostrarStatsEnTiempoReal();
     }
-  });
-
-  const contenedor = document.getElementById('opcionesContainer');
-  contenedor.innerHTML = opcionesHtml;
-
-  // ocultar feedback temporal
-  const fb = document.getElementById('feedbackContainer');
-  if (fb) fb.style.display = 'none';
-
-  // === CONTROL DE BOTONES DE NAVEGACIÓN ===
-  const btnAnterior = document.getElementById('btnAnterior');
-  const btnSiguiente = document.getElementById('btnSiguiente');
-  const btnFinalizar = document.getElementById('btnFinalizar');
-
-  // Control del botón anterior
-  if (indicePreguntaActual > 0) {
-    btnAnterior.style.display = 'flex';
-  } else {
-    btnAnterior.style.display = 'none';
-  }
-
-  // Control de botones Siguiente/Finalizar
-  const tieneRespuesta = respuestasUsuario[indicePreguntaActual] !== null && typeof respuestasUsuario[indicePreguntaActual] !== 'undefined';
-  
-  if (indicePreguntaActual < total - 1) {
-    // No es la última pregunta
-    btnSiguiente.style.display = 'flex';
-    btnFinalizar.style.display = 'none';
-    btnSiguiente.disabled = !tieneRespuesta;
-  } else {
-    // Es la última pregunta
-    btnSiguiente.style.display = 'none';
-    btnFinalizar.style.display = 'flex';
-    btnFinalizar.disabled = !tieneRespuesta;
-  }
-
-  mostrarStatsEnTiempoReal();
-}
 
     function mostrarStatsEnTiempoReal() {
       const respondidas = respuestasUsuario.filter(r => r !== null).length;
@@ -3591,101 +3682,103 @@ function siguientePregunta() {
 
     let autoAdvanceTimeout = null;
 
-function seleccionarOpcion(displayLetter) {
-  // cancelar auto-advance si existía
-  if (autoAdvanceTimeout) {
-    clearTimeout(autoAdvanceTimeout);
-    autoAdvanceTimeout = null;
-  }
-
-  const pregunta = preguntasActuales[indicePreguntaActual];
-  if (!pregunta) return;
-
-  // asegurar mapping
-  if (!pregunta._displayToOriginal) generarOpcionesMostradas(pregunta);
-  const displayToOriginal = pregunta._displayToOriginal || {};
-  const originalLetter = displayToOriginal[displayLetter];
-  if (!originalLetter) {
-    console.warn('Mapping de opción no encontrado para', displayLetter);
-    return;
-  }
-
-  // Si ya hubo respuesta confirmada para esta pregunta, ignorar clicks
-  if (respuestasUsuario[indicePreguntaActual] !== null && typeof respuestasUsuario[indicePreguntaActual] !== 'undefined') {
-    // feedback breve
-    const fb = document.getElementById('feedbackContainer');
-    if (fb) {
-      fb.style.display = 'block';
-      fb.innerHTML = `<div class="alert alert-info">Respuesta ya registrada. Pulsa <strong>Siguiente</strong> para avanzar.</div>`;
-      setTimeout(() => { if (fb) fb.style.display = 'none'; }, 1200);
-    }
-    return;
-  }
-
-  // Primer intento: guardar respuesta como letra ORIGINAL
-  respuestasUsuario[indicePreguntaActual] = originalLetter;
-  preguntasRealizadasGlobal = (preguntasRealizadasGlobal || 0) + 1;
-
-  const correcto = pregunta.respuestaCorrecta;
-  const ahoraEsCorrecta = originalLetter === correcto;
-
-  // Actualizar estadísticas y listas
-  if (ahoraEsCorrecta) {
-    aciertosGlobal = (aciertosGlobal || 0) + 1;
-    // quitar de failed si por algún motivo estaba
-    const idx = failedPreguntas.findIndex(p => p.id === pregunta.id);
-    if (idx !== -1) failedPreguntas.splice(idx, 1);
-  } else {
-    if (!failedPreguntas.find(p => p.id === pregunta.id)) failedPreguntas.push(pregunta);
-  }
-
-  // Actualizar visual: marcar selección
-  document.querySelectorAll('.opcion').forEach(el => el.classList.remove('selected', 'correcta', 'incorrecta'));
-  const opcionesEls = Array.from(document.querySelectorAll('.opcion'));
-  opcionesEls.forEach(el => {
-    const letraOpcion = el.querySelector('.opcion-letra').textContent;
-    const orig = pregunta._displayToOriginal ? pregunta._displayToOriginal[letraOpcion] : letraOpcion;
-    if (orig === correcto) {
-      el.classList.add('correcta');
-    }
-    if (orig === originalLetter) {
-      el.classList.add('selected');
-      if (!ahoraEsCorrecta) el.classList.add('incorrecta');
-    }
-    // desactivar pointer (opcional) para evitar cambios visuales posteriores
-    el.style.cursor = 'default';
-  });
-
-  // habilitar botones de navegación (Siguiente/Finalizar) para poder avanzar en caso de fallo
-  const btnSiguiente = document.getElementById('btnSiguiente');
-  const btnFinalizar = document.getElementById('btnFinalizar');
-  if (btnSiguiente) btnSiguiente.disabled = false;
-  if (btnFinalizar) btnFinalizar.disabled = false;
-
-  mostrarStatsEnTiempoReal();
-  guardarProgreso();
-
-  // Si fue correcta en primer intento -> esperar 1s y auto-avanzar
-  if (ahoraEsCorrecta) {
-    autoAdvanceTimeout = setTimeout(() => {
-      autoAdvanceTimeout = null;
-      if (indicePreguntaActual < preguntasActuales.length - 1) {
-        indicePreguntaActual++;
-        mostrarPregunta();
-      } else {
-        finalizarTanda();
+    function seleccionarOpcion(displayLetter) {
+      // cancelar auto-advance si existía
+      if (autoAdvanceTimeout) {
+        clearTimeout(autoAdvanceTimeout);
+        autoAdvanceTimeout = null;
       }
-    }, 1000); // 1 segundo
-  } else {
-    // Si fue incorrecta: mostrar mensaje breve; no auto-avanzar (el usuario debe pulsar "Siguiente")
-    const fb = document.getElementById('feedbackContainer');
-    if (fb) {
-      fb.style.display = 'block';
-      fb.innerHTML = `<div class="alert alert-info">Respuesta incorrecta. Se ha mostrado la opción correcta. Pulsa <strong>Siguiente</strong> para continuar.</div>`;
-      setTimeout(() => { if (fb) fb.style.display = 'none'; }, 2200);
+
+      const pregunta = preguntasActuales[indicePreguntaActual];
+      if (!pregunta) return;
+
+      // asegurar mapping
+      if (!pregunta._displayToOriginal) generarOpcionesMostradas(pregunta);
+      const displayToOriginal = pregunta._displayToOriginal || {};
+      const originalLetter = displayToOriginal[displayLetter];
+      if (!originalLetter) {
+        console.warn('Mapping de opción no encontrado para', displayLetter);
+        return;
+      }
+
+      // Si ya hubo respuesta confirmada para esta pregunta, ignorar clicks
+      if (respuestasUsuario[indicePreguntaActual] !== null && typeof respuestasUsuario[indicePreguntaActual] !== 'undefined') {
+        // feedback breve
+        const fb = document.getElementById('feedbackContainer');
+        if (fb) {
+          fb.style.display = 'block';
+          fb.innerHTML = `<div class="alert alert-info">Respuesta ya registrada. Pulsa <strong>Siguiente</strong> para avanzar.</div>`;
+          setTimeout(() => { if (fb) fb.style.display = 'none'; }, 1200);
+        }
+        return;
+      }
+
+      // Primer intento: guardar respuesta como letra ORIGINAL
+      respuestasUsuario[indicePreguntaActual] = originalLetter;
+      preguntasRealizadasGlobal = (preguntasRealizadasGlobal || 0) + 1;
+
+      const correcto = pregunta.respuestaCorrecta;
+      const ahoraEsCorrecta = originalLetter === correcto;
+
+      // Actualizar estadísticas y listas
+      if (ahoraEsCorrecta) {
+        aciertosGlobal = (aciertosGlobal || 0) + 1;
+        // quitar de failed si por algún motivo estaba
+        const idx = failedPreguntas.findIndex(p => p.id === pregunta.id);
+        if (idx !== -1) failedPreguntas.splice(idx, 1);
+      } else {
+        if (!failedPreguntas.find(p => p.id === pregunta.id)) failedPreguntas.push(pregunta);
+      }
+
+      // Actualizar visual: marcar selección
+      document.querySelectorAll('.opcion').forEach(el => el.classList.remove('selected', 'correcta', 'incorrecta'));
+      const opcionesEls = Array.from(document.querySelectorAll('.opcion'));
+      opcionesEls.forEach(el => {
+        const letraOpcion = el.querySelector('.opcion-letra').textContent;
+        const orig = pregunta._displayToOriginal ? pregunta._displayToOriginal[letraOpcion] : letraOpcion;
+        if (orig === correcto) {
+          el.classList.add('correcta');
+        }
+        if (orig === originalLetter) {
+          el.classList.add('selected');
+          if (!ahoraEsCorrecta) el.classList.add('incorrecta');
+        }
+        // desactivar pointer (opcional) para evitar cambios visuales posteriores
+        el.style.cursor = 'default';
+      });
+
+      // habilitar botones de navegación (Siguiente/Finalizar) para poder avanzar en caso de fallo
+      const btnSiguiente = document.getElementById('btnSiguiente');
+      const btnFinalizar = document.getElementById('btnFinalizar');
+      if (btnSiguiente) btnSiguiente.disabled = false;
+      if (btnFinalizar) btnFinalizar.disabled = false;
+
+      mostrarStatsEnTiempoReal();
+      
+      // ✅ GUARDAR PROGRESO INMEDIATAMENTE DESPUÉS DE RESPONDER
+      guardarProgreso();
+
+      // Si fue correcta en primer intento -> esperar 1s y auto-avanzar
+      if (ahoraEsCorrecta) {
+        autoAdvanceTimeout = setTimeout(() => {
+          autoAdvanceTimeout = null;
+          if (indicePreguntaActual < preguntasActuales.length - 1) {
+            indicePreguntaActual++;
+            mostrarPregunta();
+          } else {
+            finalizarTanda();
+          }
+        }, 1000); // 1 segundo
+      } else {
+        // Si fue incorrecta: mostrar mensaje breve; no auto-avanzar (el usuario debe pulsar "Siguiente")
+        const fb = document.getElementById('feedbackContainer');
+        if (fb) {
+          fb.style.display = 'block';
+          fb.innerHTML = `<div class="alert alert-info">Respuesta incorrecta. Se ha mostrado la opción correcta. Pulsa <strong>Siguiente</strong> para continuar.</div>`;
+          setTimeout(() => { if (fb) fb.style.display = 'none'; }, 2200);
+        }
+      }
     }
-  }
-}
 
     function preguntaAnterior() {
       // Limpiar timeout si existe
@@ -4018,60 +4111,64 @@ function seleccionarOpcion(displayLetter) {
         icon.classList.add('open');
       }
     }
-// Lleva al usuario al menú principal (pantalla de selección de tests).
-// Guarda progreso, cancela auto-advance y limpia el estado temporal del test.
-function volverCategorias() {
-  try {
-    // Cancelar cualquier auto-advance en curso
-    if (typeof autoAdvanceTimeout !== 'undefined' && autoAdvanceTimeout) {
-      clearTimeout(autoAdvanceTimeout);
-      autoAdvanceTimeout = null;
-    }
 
-    // Si hay una tanda en curso, confirmar salida para evitar pérdidas inesperadas
-    if (preguntasActuales && preguntasActuales.length > 0) {
-      const confirmado = confirm('¿Deseas volver al menú principal? Se guardará tu progreso y podrás continuar después.');
-      if (!confirmado) return;
-    }
+    // Lleva al usuario al menú principal (pantalla de selección de tests).
+    // Guarda progreso, cancela auto-advance y limpia el estado temporal del test.
+    function volverCategorias() {
+      try {
+        // ✅ GUARDAR PROGRESO ANTES DE SALIR
+        guardarProgreso();
+        
+        // Cancelar cualquier auto-advance en curso
+        if (typeof autoAdvanceTimeout !== 'undefined' && autoAdvanceTimeout) {
+          clearTimeout(autoAdvanceTimeout);
+          autoAdvanceTimeout = null;
+        }
 
-    // Guardar progreso actual (si procede)
-    try { guardarProgreso(); } catch (e) { console.warn('guardarProgreso() falló al salir:', e); }
+        // Si hay una tanda en curso, confirmar salida para evitar pérdidas inesperadas
+        if (preguntasActuales && preguntasActuales.length > 0) {
+          const confirmado = confirm('¿Deseas volver al menú principal? Se guardará tu progreso y podrás continuar después.');
+          if (!confirmado) return;
+        }
 
-    // Limpiar estado temporal del test para evitar efectos secundarios
-    preguntasActuales = [];
-    remainingPreguntas = remainingPreguntas || [];
-    failedPreguntas = failedPreguntas || [];
-    indicePreguntaActual = 0;
-    respuestasUsuario = [];
-    numeroTanda = 0;
+        // Guardar progreso actual (si procede) - ya se hizo arriba, pero por si acaso
+        try { guardarProgreso(); } catch (e) { console.warn('guardarProgreso() falló al salir:', e); }
 
-    // Opcional: mantener categoriaActual para que el usuario pueda volver rápido.
-    // Si prefieres limpiar la categoría seleccionada, descomenta la línea siguiente:
-    // categoriaActual = null;
+        // Limpiar estado temporal del test para evitar efectos secundarios
+        preguntasActuales = [];
+        remainingPreguntas = remainingPreguntas || [];
+        failedPreguntas = failedPreguntas || [];
+        indicePreguntaActual = 0;
+        respuestasUsuario = [];
+        numeroTanda = 0;
 
-    // Mostrar pantalla de selección (menú principal)
-    mostrarPantalla('screenSeleccionTest');
+        // Opcional: mantener categoriaActual para que el usuario pueda volver rápido.
+        // Si prefieres limpiar la categoría seleccionada, descomenta la línea siguiente:
+        // categoriaActual = null;
 
-    // Asegurarse de que el panel de planes no quede abierto
-    const planesContainer = document.getElementById('planesContainer');
-    if (planesContainer) planesContainer.classList.remove('show');
+        // Mostrar pantalla de selección (menú principal)
+        mostrarPantalla('screenSeleccionTest');
 
-    // Forzar refresco de lista de tests contratados / email en UI
-    try {
-      if (usuarioActual && document.getElementById('userEmailSeleccion')) {
-        document.getElementById('userEmailSeleccion').textContent = usuarioActual.email || '';
+        // Asegurarse de que el panel de planes no quede abierto
+        const planesContainer = document.getElementById('planesContainer');
+        if (planesContainer) planesContainer.classList.remove('show');
+
+        // Forzar refresco de lista de tests contratados / email en UI
+        try {
+          if (usuarioActual && document.getElementById('userEmailSeleccion')) {
+            document.getElementById('userEmailSeleccion').textContent = usuarioActual.email || '';
+          }
+          mostrarTestsContratados();
+          cargarCategoriasEnSelector().catch(()=>{});
+        } catch(e) { /* no crítico */ }
+
+        console.log('Navegando al menú principal');
+      } catch (err) {
+        console.error('Error en volverCategorias():', err);
+        // Fallback — intentar al menos mostrar la pantalla selección
+        try { mostrarPantalla('screenSeleccionTest'); } catch(e){/* ignore */ }
       }
-      mostrarTestsContratados();
-      cargarCategoriasEnSelector().catch(()=>{});
-    } catch(e) { /* no crítico */ }
-
-    console.log('Navegando al menú principal');
-  } catch (err) {
-    console.error('Error en volverCategorias():', err);
-    // Fallback — intentar al menos mostrar la pantalla selección
-    try { mostrarPantalla('screenSeleccionTest'); } catch(e){/* ignore */ }
-  }
-}
+    }
 
     function explicarPreguntaConChatGPT() {
       const pregunta = preguntasActuales[indicePreguntaActual];
@@ -4091,6 +4188,15 @@ function volverCategorias() {
 
       const encoded = encodeURIComponent(texto);
       window.open(`https://chat.openai.com/?q=${encoded}`, '_blank');
+    }
+
+    // ==================== NAVEGACIÓN ENTRE PANTALLAS ====================
+    function irALoginEmail() {
+      mostrarPantalla('screenEmailLogin');
+    }
+
+    function volverLoginPrincipal() {
+      mostrarPantalla('screenLogin');
     }
 
     // ==================== ON AUTH STATE ====================
