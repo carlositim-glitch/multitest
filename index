@@ -1769,6 +1769,7 @@
       box-shadow: 0 6px 20px var(--premium-bg);
     }
 
+
   </style>
 </head>
 <body>
@@ -3116,8 +3117,7 @@
       esTandaRepeticion = true;
       
       // Tomar TODOS los fallos para la repetición
-      tandaActual = [...preguntasFalladas];
-      preguntasFalladas = []; // Limpiar fallos actuales
+      tandaActual = preguntasFalladas.map(p => ({...p}));
       
       // Inicializar respuestas
       respuestasUsuario = new Array(tandaActual.length).fill(null);
@@ -3261,6 +3261,7 @@
 }
 
     // Función para seleccionar una opción
+        // Función para seleccionar una opción
     let autoAdvanceTimeout = null;
 
     function seleccionarOpcion(displayLetter) {
@@ -3298,31 +3299,37 @@
       const correcto = pregunta.respuestaCorrecta;
       const ahoraEsCorrecta = originalLetter === correcto;
 
-      // Actualizar estadísticas
-      if (ahoraEsCorrecta) {
-        // SOLO CONTAR ACIERTOS EN TANDAS NORMALES
-        if (!esTandaRepeticion) {
-          aciertosGlobal++;
-        }
-        
-        // Mover a completadas si no estaba ya
-        if (!preguntasCompletadas.find(p => p.id === pregunta.id)) {
-          preguntasCompletadas.push(pregunta);
-        }
-        
-        // Quitar de fallados si estaba
-        const idxFallada = preguntasFalladas.findIndex(p => p.id === pregunta.id);
-        if (idxFallada !== -1) {
-          preguntasFalladas.splice(idxFallada, 1);
-        }
-      } else {
-        // Agregar a fallados si no estaba ya (SOLO EN TANDAS NORMALES)
-        if (!esTandaRepeticion) {
-          if (!preguntasFalladas.find(p => p.id === pregunta.id)) {
-            preguntasFalladas.push(pregunta);
-          }
-        }
-      }
+     // Actualizar estadísticas
+if (ahoraEsCorrecta) {
+  // CONTAR ACIERTOS EN AMBOS CASOS (tandas normales Y de repetición)
+  aciertosGlobal++;
+  
+  // En tandas de repetición: quitar de fallados si se corrige
+  if (esTandaRepeticion) {
+    const idxFallada = preguntasFalladas.findIndex(p => p.id === pregunta.id);
+    if (idxFallada !== -1) {
+      preguntasFalladas.splice(idxFallada, 1);
+    }
+  } else {
+    // En tandas normales: mover a completadas
+    if (!preguntasCompletadas.find(p => p.id === pregunta.id)) {
+      preguntasCompletadas.push(pregunta);
+    }
+    // Quitar de fallados si estaba
+    const idxFallada = preguntasFalladas.findIndex(p => p.id === pregunta.id);
+    if (idxFallada !== -1) {
+      preguntasFalladas.splice(idxFallada, 1);
+    }
+  }
+} else {
+  // Agregar a fallados si no estaba ya (SOLO EN TANDAS NORMALES)
+  if (!esTandaRepeticion) {
+    if (!preguntasFalladas.find(p => p.id === pregunta.id)) {
+      preguntasFalladas.push(pregunta);
+    }
+  }
+  // En tandas de repetición: la pregunta YA está en falladas, no hacer nada
+}
       // Actualizar visual
       document.querySelectorAll('.opcion').forEach(el => el.classList.remove('selected', 'correcta', 'incorrecta'));
       const opcionesEls = Array.from(document.querySelectorAll('.opcion'));
@@ -3354,8 +3361,6 @@
         }, 1000);
       }
     }
-
-    // Función para navegar a la siguiente pregunta
     // Función para navegar a la siguiente pregunta
 function siguientePregunta() {
     // Guardar progreso antes de avanzar
