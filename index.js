@@ -11,11 +11,18 @@ const app = express();
 setGlobalOptions({ region: "europe-west6" });
 
 // Configuración de Stripe
-const stripeSecret = process.env.STRIPE_SECRET || "";
-const webhookSecret = process.env.STRIPE_WEBHOOK || "";
+const stripeSecret = process.env.STRIPE_SECRET || ""; // ⚠️ Agrega tu clave
+const webhookSecret = ""; // ⚠️ Usa el secret que te dio Stripe CLI
 const stripe = new Stripe(stripeSecret, { apiVersion: "2022-11-15" });
 
-app.use(express.json());
+// ✅ MIDDLEWARE PARA RUTAS NORMALES (EXCEPTO WEBHOOK)
+app.use((req, res, next) => {
+  if (req.path === "/webhook") {
+    next(); // Skip JSON parsing for webhook
+  } else {
+    express.json()(req, res, next);
+  }
+});
 
 // ✅ RUTA DE PRUEBA
 app.get("/", (req, res) => {
@@ -44,13 +51,13 @@ app.post("/create-payment-intent", async (req, res) => {
   }
 });
 
-// ✅ WEBHOOK ENDPOINT
-app.post("/webhook", async (req, res) => {
+// ✅ WEBHOOK ENDPOINT CON RAW BODY
+app.post("/webhook", express.raw({type: 'application/json'}), async (req, res) => {
   const sig = req.headers["stripe-signature"];
   
   try {
-    // Verificar el webhook
-    const event = stripe.webhooks.constructEvent(req.rawBody, sig, webhookSecret);
+    // Verificar el webhook ✅ AHORA req.body ES RAW
+    const event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     
     console.log("✅ Webhook recibido:", event.type);
     
@@ -59,7 +66,6 @@ app.post("/webhook", async (req, res) => {
       case "payment_intent.succeeded":
         const paymentIntent = event.data.object;
         console.log("💰 Pago exitoso:", paymentIntent.id);
-        // Aquí actualizas tu base de datos
         break;
         
       case "payment_intent.payment_failed":
@@ -68,7 +74,7 @@ app.post("/webhook", async (req, res) => {
         break;
         
       default:
-        console.log(`🔔 Evento no manejado: ${event.type}`);
+        console.log(`🔔 Evento: ${event.type}`);
     }
     
     res.json({ received: true });
@@ -78,9 +84,6 @@ app.post("/webhook", async (req, res) => {
     res.status(400).send(`Webhook Error: ${error.message}`);
   }
 });
-
-// ✅ IMPORTANTE: Para webhooks necesitamos raw body
-app.use("/webhook", express.raw({ type: "application/json" }));
 
 // ✅ EXPORTAR FUNCIONES
 exports.api = onRequest(app);
