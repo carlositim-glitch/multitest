@@ -31,9 +31,10 @@
     const analytics = firebase.analytics();
 
     console.log('🔥 Firebase configurado correctamente');
+    // ==================== CONFIGURACIÓN DESARROLLO ====================
+    const IS_DEVELOPMENT = false; // Cambiar a false en producción
   </script>
-
-  <style>
+    <style>
     /* ==================== VARIABLES CSS - MODO OSCURO ==================== */
     :root {
       --bg: #0f1113;
@@ -2240,8 +2241,15 @@
 
     // ==================== FUNCIONES FIREBASE AUTH ====================
     function loginWithGoogle() {
-      console.log('🔵 Iniciando login con Google...');
+      // 🔧 DESHABILITADO EN DESARROLLO
+      if (IS_DEVELOPMENT) {
+        console.log('🚫 Login con Google deshabilitado en desarrollo');
+        alert('🔧 Login con Google deshabilitado en modo desarrollo\n\nUsa "Iniciar sesión con email" para testing');
+        return;
+      }
 
+      console.log('🔵 Iniciando login con Google...');
+      // ... el resto del código original permanece igual
       showLoginLoading(true);
       hideErrorMessage();
 
