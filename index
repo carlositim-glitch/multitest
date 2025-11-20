@@ -2223,20 +2223,20 @@
     let inicioTestTimestamp = null;
 
     // ==================== CONFIGURACIÓN STRIPE Y MONETIZACIÓN ====================
-    const STRIPE_PUBLIC_KEY = 'pk_test_TU_CLAVE_PUBLICA_AQUI'; // TODO: Reemplazar con tu clave pública
+    const STRIPE_PUBLIC_KEY = 'pk_live_51SVCbMRtyqAYsH2HPHl6BQs827M5BxVQIdjr2yD2r1AlmJWrG6Bfy7UKfYML1G3O8K9se8kKBqesXk1NYSuhXHVT005d2fXOYq'; // TODO: Reemplazar con tu clave pública
     const stripe = Stripe(STRIPE_PUBLIC_KEY);
 
     // IDs de precios de Stripe (crear en Dashboard de Stripe)
     const STRIPE_PRICES = {
-      mensual: 'price_MENSUAL_ID',
-      trimestral: 'price_TRIMESTRAL_ID',
-      anual: 'price_ANUAL_ID'
+      mensual: 'prod_TS8t6wstow1doe',
+      trimestral: 'prod_TS90qfVJzF7UUU',
+      anual: 'prod_TS91BhPlLTNCd3'
     };
 
     let suscripcionesUsuario = {}; // { testId: { plan, tandasUsadas, fechaActivacion, etc } }
     let planSeleccionado = null;
     let testSeleccionado = null;
-    const TANDAS_GRATUITAS = 3;
+    const TANDAS_GRATUITAS = 2;
 
     // ==================== FUNCIONES FIREBASE AUTH ====================
     function loginWithGoogle() {
@@ -2870,21 +2870,36 @@
 
     // Procesar pago con Stripe
     async function procesarPagoStripe() {
-      // TODO: Integración completa con Stripe
+  if (!testSeleccionado || !planSeleccionado) {
+    alert('Selecciona un test y un plan primero');
+    return;
+  }
 
-      const testNombre = document.getElementById('testSelect').options[document.getElementById('testSelect').selectedIndex].text;
-      const precios = {
-        mensual: '9,99€/mes',
-        trimestral: '24,99€ cada 3 meses',
-        anual: '79,99€/año'
-      };
-
-      alert(`🚧 Integración con Stripe en desarrollo\n\n` +
-            `Test: ${testNombre}\n` +
-            `Plan: ${planSeleccionado}\n` +
-            `Precio: ${precios[planSeleccionado]}\n\n` +
-            `En producción, esto abrirá Stripe Checkout para procesar el pago.`);
+  try {
+    const testNombre = document.getElementById('testSelect').options[document.getElementById('testSelect').selectedIndex].text;
+    const priceId = STRIPE_PRICES[planSeleccionado];
+    
+    if (!priceId) {
+      throw new Error('Plan no configurado correctamente');
     }
+
+    // Crear sesión de checkout en tu backend (necesitarás Cloud Functions)
+    const checkoutSession = await crearSesionCheckout(priceId, testSeleccionado, testNombre);
+    
+    // Redirigir a Stripe Checkout
+    const result = await stripe.redirectToCheckout({
+      sessionId: checkoutSession.id
+    });
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+  } catch (error) {
+    console.error('❌ Error procesando pago:', error);
+    alert('Error al procesar el pago: ' + error.message);
+  }
+}
 
     // Verificar si puede usar el test (límite de tandas)
     function verificarLimiteTandas() {
