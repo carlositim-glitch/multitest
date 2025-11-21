@@ -600,7 +600,7 @@
 /* ===== NAVEGACIÓN DE PREGUNTAS - SISTEMA UNIFICADO ===== */
 .botones-navegacion {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-top: 24px;
   gap: 12px;
@@ -2227,7 +2227,7 @@
           <button class="btn btn-primary" id="btnRepetirFallos" onclick="repetirFallos()">  
             🔁 Repetir Fallos
           </button>  
-          <button class="btn btn-secondary" id="btnSaltarTanda" onclick="s()">  
+<button class="btn btn-secondary" id="btnSaltarTanda" onclick="saltarTanda()">  
             ⏭️ Saltar
           </button>  
         </div>
@@ -3424,7 +3424,13 @@ masterPool = mezclarArray(masterPool);
     // Preparar una nueva tanda secuencial
     function prepararNuevaTanda() {
       console.log('🔄 Preparando nueva tanda secuencial...');
-      
+      // ✅ VERIFICAR LÍMITE DE TANDAS GRATUITAS ANTES DE CONTINUAR
+  if (!verificarLimiteTandas()) {
+    // Si no puede usar más tandas, mostrar mensaje y salir
+    alert(`🚫 Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar.`);
+    volverCategorias();
+    return;
+  }
       // Ocultar panel de opciones de tanda
       const panel = document.getElementById('tandaOptions');
       if (panel) panel.style.display = 'none';
@@ -3622,7 +3628,7 @@ document.getElementById('preguntaTexto').textContent = `${pregunta.id}: ${pregun
             btnFinalizar.style.display = 'none';
             btnSiguiente.disabled = !tieneRespuesta;
             // Cambiar el texto del botón para indicar "Terminar tanda"
-            btnSiguiente.innerHTML = 'Terminar tanda →';
+            btnSiguiente.innerHTML = '→';
         }
     }
 }
@@ -3890,8 +3896,14 @@ function siguientePregunta() {
 
     // Saltar tanda (continuar sin repetir fallos)
     function saltarTanda() {
+      // ✅ VERIFICAR LÍMITE ANTES DE SALTAR
+  if (!verificarLimiteTandas()) {
+    alert(`🚫 Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar.`);
+    volverCategorias();
+    return;
+  }
       const panel = document.getElementById('tandaOptions');
-      if (panel) panel.style.display = 'none';
+           if (panel) panel.style.display = 'none';
       
       const feedback = document.getElementById('feedbackContainer');
       if (feedback) feedback.style.display = 'none';
