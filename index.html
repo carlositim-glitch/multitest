@@ -382,88 +382,118 @@
       color: var(--muted);
       transition: color 0.3s ease;
     }
-
-    .user-info {  
-  background: var(--accent-bg);  
-  padding: 16px 20px;  
-  border-radius: 10px;  
-  margin-bottom: 24px;  
-  border: 1px solid var(--accent-border);  
-  transition: all 0.3s ease;  
-    
-  /* Flexbox para alinear elementos */  
-  display: flex;  
-  align-items: center;  
-  gap: 12px;  
-  justify-content: space-between; /* Separa el contenido del botón */  
-}  
-  
-.user-info .user-content {  
-  display: flex;  
-  align-items: center;  
-  gap: 12px;  
-  flex: 1; /* Ocupa el espacio disponible */  
-}  
-  
-.user-info .user-label {  
-  color: var(--muted);  
-  font-size: 14px;  
-  white-space: nowrap;  
-}  
-  
-.user-info .email {  
-  color: var(--accent);  
-  font-weight: 600;  
-  transition: color 0.3s ease;  
-  overflow: hidden;  
-  text-overflow: ellipsis;  
-  white-space: nowrap;  
-}  
-  
-/* BOTÓN SALIR - ALINEADO A LA DERECHA */  
-.user-info .logout {  
-  background: transparent;  
-  border: 1px solid var(--border-hover);  
-  color: var(--muted);  
-  padding: 8px 16px;  
-  border-radius: 6px;  
-  cursor: pointer;  
-  font-size: 14px;  
-  font-weight: 500;  
-  transition: all 0.2s ease;  
-  white-space: nowrap;  
-  margin-left: auto; /* Empuja el botón a la derecha */  
-    
-  /* Efecto hover mejorado */  
-  display: flex;  
-  align-items: center;  
-  gap: 6px;  
-}  
-  
-.user-info .logout:hover {  
-  background: var(--card-2);  
-  border-color: var(--danger);  
-  color: var(--danger);  
-  transform: translateY(-1px);  
-}  
-  
-.user-info .logout:active {  
-  transform: translateY(0);  
-}  
-  
-/* Estilos específicos para el botón Salir en la pantalla de test */  
-#screenTest .user-info .logout {  
-  background: rgba(178, 34, 34, 0.1);  
-  border-color: var(--danger-border);  
-  color: var(--danger);  
-  font-weight: 600;  
-}  
-  
-#screenTest .user-info .logout:hover {  
-  background: var(--danger);  
-  color: white;  
-  border-color: var(--danger);  
+/* ==================== USER INFO CONTAINER - MEJORADO ==================== */
+/* ==================== USER INFO CONTAINER - TEXTO SIN SUPERPOSICIÓN ==================== */
+.user-info {
+  background: var(--accent-bg);
+  padding: 16px 90px 16px 20px; /* Padding derecho aumentado significativamente */
+  border-radius: 10px;
+  margin-bottom: 24px;
+  border: 1px solid var(--accent-border);
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
 }
+
+.user-info .user-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  max-width: calc(100% - 80px); /* Limitar el ancho para evitar superposición */
+}
+
+.user-info .user-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.user-info .email {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 14px;
+  transition: color 0.3s ease;
+  word-break: break-word;
+  line-height: 1.3;
+  cursor: default;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* BOTÓN SALIR - ESQUINA SUPERIOR DERECHA */
+.user-info .logout {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: 1px solid var(--border-hover);
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  height: 28px;
+  z-index: 10; /* Asegurar que esté por encima del texto */
+}
+
+.user-info .logout:hover {
+  background: var(--card-2);
+  border-color: var(--danger);
+  color: var(--danger);
+  transform: translateY(-1px);
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+  .user-info {
+    padding: 14px 75px 14px 16px;
+  }
+  
+  .user-info .user-content {
+    max-width: calc(100% - 65px);
+  }
+  
+  .user-info .logout {
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    font-size: 11px;
+    min-width: 45px;
+    height: 26px;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-info {
+    padding: 12px 70px 12px 14px;
+  }
+  
+  .user-info .user-content {
+    max-width: calc(100% - 60px);
+  }
+  
+  .user-info .logout {
+    top: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    font-size: 10px;
+    min-width: 40px;
+    height: 24px;
+  }
+}
+/* ==================== FIN ESTILOS ESPECÍFICOS ==================== */
+
 
     .pregunta-container {
       margin-bottom: 30px;
@@ -657,7 +687,7 @@
   transform: none;
 }
 
-/* Responsive */
+/* ==================== RESPONSIVE MEJORADO ==================== */
 @media (max-width: 768px) {
   .botones-navegacion {
     margin-top: 16px;
@@ -675,31 +705,66 @@
   }
   
   .botones-derecha .btn {
-    min-width: 120px;
-    padding: 10px 14px;
+    min-width: 100px;  /* Reducido para móvil */
+    padding: 10px 12px; /* Más compacto */
     min-height: 44px;
+    font-size: 14px;
+  }
+  
+  /* Específico para botones Siguiente/Finalizar en tablet */
+  #btnSiguiente, #btnFinalizar {
+    min-width: 100px;
+    padding: 10px 12px;
     font-size: 14px;
   }
 }
 
 @media (max-width: 480px) {
+  /* EN MÓVILES PEQUEÑOS: mantener en fila pero más compacto */
   .botones-navegacion {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row; /* ← MANTENER EN FILA, NO COLUMNA */
+    align-items: center;
+    gap: 6px;
   }
   
   .btn-icon-nav {
-    width: 100%;
-    justify-content: center;
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
   }
   
   .botones-derecha {
-    width: 100%;
+    gap: 6px;
   }
   
   .botones-derecha .btn {
-    flex: 1;
-    min-width: 0;
+    min-width: 80px;  /* Más estrecho para móviles pequeños */
+    padding: 8px 10px;
+    min-height: 40px;
+    font-size: 12px;
+  }
+  
+  /* Específico para botones Siguiente/Finalizar en móvil pequeño */
+  #btnSiguiente, #btnFinalizar {
+    min-width: 80px;
+    padding: 8px 10px;
+    font-size: 12px;
+    min-height: 40px;
+  }
+}
+
+/* Para pantallas MUY pequeñas (menos de 360px) */
+@media (max-width: 360px) {
+  .botones-derecha .btn {
+    min-width: 70px;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  
+  #btnSiguiente, #btnFinalizar {
+    min-width: 70px;
+    padding: 6px 8px;
+    font-size: 11px;
   }
 }
 
@@ -1540,26 +1605,42 @@
     .dropdown-selected .meta { color:var(--muted); font-size:13px; }
 
     .dropdown-list {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: calc(100% + 10px);
-      background: var(--card); /* Cambiado de transparente a color de fondo para mejor visibilidad */
-      z-index: 60;
-      max-height: 300px; /* Altura máxima para scroll */
-      overflow-y: auto; /* Scroll vertical */
-      border-radius: 10px;
-      box-shadow: 0 8px 24px var(--shadow);
-      transition: max-height 0.28s ease;
-      pointer-events: none;
-      opacity: 0;
-    }
+  position: fixed; /* Cambio de absolute a fixed */
+  left: 12px; /* Margen desde los bordes de la pantalla */
+  right: 12px; /* Margen desde los bordes de la pantalla */
+  top: auto; /* Removemos el top fijo */
+  bottom: 12px; /* Anclamos desde abajo */
+  background: var(--card);
+  z-index: 1000; /* Z-index más alto para estar sobre todo */
+  max-height: 80vh; /* 80% de la altura de la pantalla */
+  overflow-y: auto;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px var(--shadow);
+  transition: max-height 0.28s ease;
+  pointer-events: none;
+  opacity: 0;
+  padding: 12px; /* Padding interno para mejor presentación */
+}
 
-    .custom-dropdown.open .dropdown-list {
-      max-height: 300px;
-      pointer-events: auto;
-      opacity: 1;
-    }
+.custom-dropdown.open .dropdown-list {
+  max-height: 80vh;
+  pointer-events: auto;
+  opacity: 1;
+}
+
+/* Para pantallas pequeñas, ocupar más espacio */
+@media (max-width: 768px) {
+  .dropdown-list {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    max-height: 85vh; /* Un poco más de altura en móviles */
+  }
+  
+  .custom-dropdown.open .dropdown-list {
+    max-height: 85vh;
+  }
+}
 
     .dropdown-item {
       background: var(--card);
@@ -1868,7 +1949,7 @@
       <div class="card">
         <div class="user-info">
           <div class="user-content">
-            <div class="user-label">Conectado como:</div>
+            <div class="user-label">Versión 0.11 - Conectado como:</div>
             <div class="email" id="userEmailSeleccion"></div>
           </div>
 <button class="logout" onclick="volverCategorias()">Salir</button>       
@@ -1912,7 +1993,7 @@
                 </div>
               </div>
               <ul class="plan-features">
-                <li>3 tandas de prueba</li>
+                <li>2 tandas de prueba</li>
                 <li>30 preguntas por tanda</li>
                 <li>Sin compromiso</li>
               </ul>
@@ -2016,7 +2097,7 @@
           <button class="btn btn-primary" id="btnRepetirFallos" onclick="repetirFallos()">  
             🔁 Repetir Fallos
           </button>  
-          <button class="btn btn-secondary" id="btnSaltarTanda" onclick="saltarTanda()">  
+          <button class="btn btn-secondary" id="btnSaltarTanda" onclick="s()">  
             ⏭️ Saltar
           </button>  
         </div>
