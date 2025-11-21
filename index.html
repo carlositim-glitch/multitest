@@ -2784,7 +2784,19 @@
 
       testSeleccionado = testId;
       mostrarPlanes();
+      // ✅ AÑADIR ESTO: Si ya tiene suscripción activa para este test, mostrar botón
+  if (suscripcionesUsuario && suscripcionesUsuario[testId]) {
+    const sub = suscripcionesUsuario[testId];
+    if (sub && sub.plan && sub.plan !== 'none') {
+      const testNombre = sub.nombre || catData.nombre || testId;
+      // Usar setTimeout para asegurar que el DOM esté listo
+      setTimeout(() => {
+        mostrarBotonIniciarTest(testNombre);
+      }, 100);
     }
+  }
+}
+    
 
     // ==================== MONETIZACIÓN / SUSCRIPCIONES ====================
     async function cargarSuscripcionesUsuario() {
@@ -2848,9 +2860,71 @@
           }
         }
       }
-      // ----------------------------------------------------------------------------------
     }
+      // ----------------------------------------------------------------------------------
+    
+    // Mostrar botón para iniciar test después de activar plan
+function mostrarBotonIniciarTest(testNombre) {
+  try {
+    const screen = document.getElementById('screenSeleccionTest');
+    if (!screen) return;
 
+    const logo = screen.querySelector('.logo');
+    if (!logo) return;
+
+    let btnExistente = document.getElementById('btnIniciarTestActivado');
+    let infoExistente = document.getElementById('infoTestActivado');
+    if (btnExistente) btnExistente.remove();
+    if (infoExistente) infoExistente.remove();
+
+    const btn = document.createElement('button');
+    btn.id = 'btnIniciarTestActivado';
+    btn.className = 'btn btn-success';
+    btn.style.marginTop = '12px';
+    btn.textContent = `🚀 Iniciar Test`;
+
+    btn.onclick = function() {
+      categoriaActual = testSeleccionado;
+      iniciarTest();
+    };
+
+    const infoCategoria = document.createElement('div');
+    infoCategoria.id = 'infoTestActivado';
+    infoCategoria.style.cssText = `
+      background: var(--premium-bg);
+      border: 2px solid var(--premium-border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(255, 215, 0, 0.15);
+    `;
+
+    infoCategoria.innerHTML = `
+      <div class="test-card-info">
+        <h4 style="color: var(--premium); font-size: 16px; margin-bottom: 4px; font-weight: 600;">
+          ${testNombre}
+        </h4>
+        <p style="color: var(--muted); font-size: 13px;">
+          Test activo y listo para usar
+        </p>
+      </div>
+      <span style="background: var(--premium); color: #1f2937; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap;">
+        👑 Activo
+      </span>
+    `;
+
+    logo.parentNode.insertBefore(btn, logo.nextSibling);
+    logo.parentNode.insertBefore(infoCategoria, btn.nextSibling);
+
+  } catch (e) {
+    console.error('Error mostrando botón iniciar test:', e);
+  }
+}
+    
     // ---------------------- BOTÓN DE ACCESO TOTAL PARA TESTER ----------------------
     function renderTestAccessButtonIfTester() {
       try {
@@ -2971,23 +3045,42 @@
     }
 
     // Acceder directamente a un test contratado
-    async function accederTestDirecto(testId) {
-      const suscripcion = suscripcionesUsuario[testId];
+   async function accederTestDirecto(testId) {
+  // ✅ EXCEPCIÓN PARA DESARROLLADOR - Acceso total sin restricciones
+  if (usuarioActual && usuarioActual.email === 'carlos.itim@gmail.com') {
+    console.log('🔧 Acceso de desarrollador - saltando verificaciones');
+    categoriaActual = testId;
+    iniciarTest();
+    return;
+  }
+  
+  // ✅ VERIFICACIONES DE SEGURIDAD PARA USUARIOS NORMALES
+  const suscripcion = suscripcionesUsuario[testId];
+  
+  // Verificar que tenga suscripción válida para ESTE test específico
+  if (!suscripcion || !suscripcion.plan || suscripcion.plan === 'none') {
+    alert('🚫 No tienes acceso a este test. Debes activar un plan primero.');
+    testSeleccionado = testId;
+    document.getElementById('testSelect').value = testId;
+    mostrarPlanes();
+    mostrarPantalla('screenSeleccionTest');
+    return;
+  }
+  
+  // Si tiene plan gratuito, verificar límite de tandas
+  if (suscripcion.plan === 'free' && suscripcion.tandasUsadas >= TANDAS_GRATUITAS) {
+    alert(`⚠️ Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar con acceso ilimitado.`);
+    testSeleccionado = testId;
+    document.getElementById('testSelect').value = testId;
+    mostrarPlanes();
+    mostrarPantalla('screenSeleccionTest');
+    return;
+  }
 
-      // Verificar límite de tandas gratuitas
-      if (suscripcion && suscripcion.plan === 'free' && suscripcion.tandasUsadas >= TANDAS_GRATUITAS) {
-        alert(`⚠️ Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar con acceso ilimitado.`);
-        testSeleccionado = testId;
-        document.getElementById('testSelect').value = testId;
-        mostrarPlanes();
-        mostrarPantalla('screenSeleccionTest');
-        return;
-      }
-
-      // Iniciar test directamente
-      categoriaActual = testId;
-      iniciarTest();
-    }
+  // Acceso permitido
+  categoriaActual = testId;
+  iniciarTest();
+}
 
     // Mostrar planes cuando se selecciona un test (select oculto o dropdown)
     function mostrarPlanes() {
@@ -3011,14 +3104,22 @@
 
       // Si ya tiene este test, mostrar info (no ocultamos el panel aquí porque Opción A)
       if (suscripcionesUsuario[testId]) {
-        const sub = suscripcionesUsuario[testId];
-        if (sub.plan === 'free' && sub.tandasUsadas >= TANDAS_GRATUITAS) {
-          alert(`⚠️ Ya tienes el plan gratuito de este test pero has usado las ${TANDAS_GRATUITAS} tandas.\n\nSelecciona un plan de pago para continuar.`);
-        } else if (sub.plan !== 'free') {
-          alert(`✅ Ya tienes acceso ${sub.plan} a este test.\n\nPuedes comenzar directamente desde los accesos rápidos.`);
-        }
-      }
+    const sub = suscripcionesUsuario[testId];
+    
+    // ✅ AÑADIR ESTO:
+    // Si tiene plan activo, mostrar botón para iniciar test
+    // if (sub.plan && sub.plan !== 'none') {
+     // const testNombre = sub.nombre || testId;
+     // mostrarBotonIniciarTest(testNombre);
+    // }
+    
+    if (sub.plan === 'free' && sub.tandasUsadas >= TANDAS_GRATUITAS) {
+      alert(`⚠️ Ya tienes el plan gratuito de este test pero has usado las ${TANDAS_GRATUITAS} tandas.\n\nSelecciona un plan de pago para continuar.`);
+    } else if (sub.plan !== 'free') {
+      alert(`✅ Ya tienes acceso ${sub.plan} a este test.\n\nPuedes comenzar directamente desde los accesos rápidos.`);
     }
+  }
+}
 
     // Seleccionar un plan
     function seleccionarPlan(plan) {
@@ -3185,12 +3286,39 @@ async function activarPlanGratuito() {
         setTimeout(() => hideErrorMessage(elementId), 5000);
       }
     }
+// Verificar si el usuario tiene acceso al test específico
+function verificarAccesoTest(testId) {
+  if (!usuarioActual || !testId) {
+    return { acceso: false, motivo: 'Usuario o test no válido' };
+  }
 
+  // Verificar si tiene suscripción para este test específico
+  const suscripcion = suscripcionesUsuario[testId];
+  
+  if (!suscripcion || !suscripcion.plan || suscripcion.plan === 'none') {
+    return { acceso: false, motivo: 'No tienes acceso a este test' };
+  }
+
+  // Verificar límites del plan gratuito
+  if (suscripcion.plan === 'free' && suscripcion.tandasUsadas >= TANDAS_GRATUITAS) {
+    return { acceso: false, motivo: 'Has agotado tus tandas gratuitas para este test' };
+  }
+
+  return { acceso: true, motivo: 'Acceso válido' };
+}
     // ==================== NUEVO SISTEMA DE TANDAS SECUENCIALES ====================
 
     // Función principal para iniciar el test con el nuevo sistema
     function iniciarTest() {
       console.log('🚀 Iniciando test con nuevo sistema de tandas para categoría:', categoriaActual);
+  
+  // ✅ AÑADIR VERIFICACIÓN DE SEGURIDAD
+  const verificacion = verificarAccesoTest(categoriaActual);
+  if (!verificacion.acceso) {
+    alert(`🚫 Acceso denegado: ${verificacion.motivo}`);
+    volverCategorias();
+    return;
+  }
       mostrarPantalla('screenTest');
 
       // Ocultar panel de planes
@@ -4386,25 +4514,47 @@ function siguientePregunta() {
     }
 
     function explicarPreguntaConChatGPT() {
-      const pregunta = tandaActual[indicePreguntaActual];
-      if (!pregunta) return;
+  const pregunta = tandaActual[indicePreguntaActual];
+  if (!pregunta) return;
 
-      let texto = `Tengo la siguiente pregunta tipo test:\n\n"${pregunta.pregunta}"\n\n`;
-      texto += "Opciones:\n";
+  let texto = `Tengo la siguiente pregunta tipo test:\n\n"${pregunta.pregunta}"\n\n`;
+  texto += "Opciones:\n";
 
-      if (pregunta.opciones) {
-        Object.entries(pregunta.opciones).forEach(([letra, opcion]) => {
-          texto += `- ${letra}: ${opcion}\n`;
-        });
+  // ✅ USAR LAS OPCIONES COMO SE MUESTRAN AL USUARIO
+  if (pregunta._displayOptions) {
+    // Usar las opciones mezcladas que ve el usuario
+    Object.entries(pregunta._displayOptions).forEach(([letra, opcion]) => {
+      texto += `- ${letra}: ${opcion}\n`;
+    });
+    
+    // ✅ ENCONTRAR LA LETRA CORRECTA COMO SE MUESTRA AL USUARIO
+    const displayToOriginal = pregunta._displayToOriginal || {};
+    let respuestaCorrectaMostrada = 'A'; // fallback
+    
+    for (const [displayLetter, originalLetter] of Object.entries(displayToOriginal)) {
+      if (originalLetter === pregunta.respuestaCorrecta) {
+        respuestaCorrectaMostrada = displayLetter;
+        break;
       }
-
-      texto += `\nLa respuesta correcta es: ${pregunta.respuestaCorrecta}\n\n`;
-      texto += "¿Me puedes explicar por qué esa es la opción correcta?";
-
-      const encoded = encodeURIComponent(texto);
-      window.open(`https://chat.openai.com/?q=${encoded}`, '_blank');
     }
+    
+    texto += `\nLa respuesta correcta es: ${respuestaCorrectaMostrada}\n\n`;
+  } else {
+    // Fallback: usar opciones originales si no hay mezcladas
+    if (pregunta.opciones) {
+      Object.entries(pregunta.opciones).forEach(([letra, opcion]) => {
+        texto += `- ${letra}: ${opcion}\n`;
+      });
+    }
+    texto += `\nLa respuesta correcta es: ${pregunta.respuestaCorrecta}\n\n`;
+  }
 
+  texto += "¿Me puedes explicar por qué esa es la opción correcta?";
+
+  const encoded = encodeURIComponent(texto);
+  window.open(`https://chat.openai.com/?q=${encoded}`, '_blank');
+}
+    
     // ==================== NAVEGACIÓN ENTRE PANTALLAS ====================
     function irALoginEmail() {
       mostrarPantalla('screenEmailLogin');
