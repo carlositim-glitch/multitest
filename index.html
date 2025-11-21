@@ -1205,51 +1205,181 @@
       }
 
       /* TOGGLES REDUCIDOS 30% */
-      .toggles-container {
-        padding: 8px; /* Reducido de 8px 12px */
-        gap: 8px;
-        margin-bottom: 4px;
-      }
+      /* ==================== TOGGLES CONTAINER - TAMAÑO OPTIMIZADO ==================== */
+.toggles-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px; /* Reducido de 12px */
+  padding: 12px; /* Reducido de 16px 12px */
+  max-width: 900px;
+  margin: 0 auto 6px auto; /* Reducido de 8px */
+}
 
-      .toggle-wrapper {
-        padding: 5px; /* Reducido */
-      }
+.toggle-wrapper {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 50px;
+  padding: 6px; /* Reducido de 8px */
+  cursor: pointer;
+  display: flex;
+  gap: 3px; /* Reducido de 4px */
+  box-shadow: 0 3px 8px var(--shadow); /* Reducido de 0 4px 12px */
+  transition: all 0.3s ease;
+}
 
-      .theme-option {
-        width: 28px; /* Reducido 30%: 40px × 0.7 = 28px */
-        height: 28px;
-        font-size: 14px; /* Reducido proporcionalmente */
-      }
+.toggle-wrapper:hover {
+  transform: translateY(-1px); /* Reducido de -2px */
+  box-shadow: 0 4px 12px var(--shadow); /* Reducido de 0 6px 16px */
+  border-color: var(--accent);
+}
 
-      .stats-switch {
-        width: 62px; /* Reducido 30%: 88px × 0.7 = 61.6px ≈ 62px */
-        height: 28px; /* Igual que theme-option */
-        border-radius: 14px;
-      }
+/* THEME TOGGLE - TAMAÑO REDUCIDO */
+.theme-option {
+  width: 26px; /* Reducido de 40px */
+  height: 26px; /* Reducido de 40px */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px; /* Reducido de 20px */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  user-select: none;
+}
 
-      .stats-switch-slider {
-        width: 22px; /* Proporcional */
-        height: 22px;
-        top: 2px;
-        left: 2px;
-      }
+.theme-option.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.1);
+}
 
-      .stats-switch.active .stats-switch-slider {
-        left: calc(100% - 24px);
-      }
+.theme-option:not(.active):hover {
+  background: var(--card-2);
+  transform: scale(1.05);
+}
 
-      .stats-switch::before,
-      .stats-switch::after {
-        font-size: 10px; /* Reducido */
-      }
+/* STATS TOGGLE - TAMAÑO REDUCIDO */
+.stats-switch {
+  position: relative;
+  width: 56px; /* Reducido de 88px */
+  height: 26px; /* Reducido de 40px */
+  background: var(--card-2);
+  border-radius: 13px; /* Reducido proporcionalmente */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid var(--border-hover);
+}
 
-      .stats-switch::before {
-        right: 6px;
-      }
+.stats-switch:hover {
+  border-color: var(--accent);
+}
 
-      .stats-switch::after {
-        left: 6px;
-      }
+.stats-switch-slider {
+  position: absolute;
+  top: 2px; /* Reducido de 3px */
+  left: 2px; /* Reducido de 3px */
+  width: 20px; /* Reducido de 32px */
+  height: 20px; /* Reducido de 32px */
+  background: var(--muted);
+  border-radius: 50%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* Reducido de 0 2px 4px */
+}
+
+.stats-switch.active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.stats-switch.active .stats-switch-slider {
+  left: calc(100% - 22px); /* Ajustado proporcionalmente */
+  background: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3); /* Reducido de 0 2px 8px */
+}
+
+.stats-switch::before,
+.stats-switch::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px; /* Reducido de 14px */
+  font-weight: 700;
+  transition: opacity 0.3s ease;
+}
+
+.stats-switch::before {
+  content: '1';
+  right: 7px; /* Reducido de 10px */
+  color: white;
+  opacity: 0;
+}
+
+.stats-switch::after {
+  content: '0';
+  left: 7px; /* Reducido de 10px */
+  color: var(--muted);
+  opacity: 1;
+}
+
+.stats-switch.active::before {
+  opacity: 1;
+}
+
+.stats-switch.active::after {
+  opacity: 0;
+}
+
+/* ==================== RESPONSIVE AJUSTADO ==================== */
+@media (max-width: 768px) {
+  .toggles-container {
+    padding: 8px;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .toggle-wrapper {
+    padding: 4px;
+  }
+
+  .theme-option {
+    width: 28px; /* Reducido proporcionalmente */
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .stats-switch {
+    width: 60px; /* Reducido proporcionalmente */
+    height: 28px;
+    border-radius: 14px;
+  }
+
+  .stats-switch-slider {
+    width: 22px;
+    height: 22px;
+    top: 2px;
+    left: 2px;
+  }
+
+  .stats-switch.active .stats-switch-slider {
+    left: calc(100% - 24px);
+  }
+
+  .stats-switch::before,
+  .stats-switch::after {
+    font-size: 9px;
+  }
+
+  .stats-switch::before {
+    right: 5px;
+  }
+
+  .stats-switch::after {
+    left: 5px;
+  }
+}
 
       /* CARD OPTIMIZADO */
       .card {
@@ -2920,42 +3050,45 @@
       }
     }
 
-    // Activar plan gratuito (sin pago)
-    async function activarPlanGratuito() {
-      try {
-        const testNombre = document.getElementById('testSelect').options[document.getElementById('testSelect').selectedIndex].text;
+   // Activar plan gratuito (sin pago)
+async function activarPlanGratuito() {
+  try {
+    const testNombre = document.getElementById('testSelect').options[document.getElementById('testSelect').selectedIndex].text;
 
-        await db.collection('suscripciones').doc(usuarioActual.uid).set({
-          [testSeleccionado]: {
-            plan: 'free',
-            tandasUsadas: 0,
-            fechaActivacion: Date.now(),
-            nombre: testNombre
-          }
-        }, { merge: true });
-
-        suscripcionesUsuario[testSeleccionado] = {
-          plan: 'free',
-          tandasUsadas: 0,
-          nombre: testNombre
-        };
-
-        alert(`✅ ¡Plan gratuito activado!\n\nTienes ${TANDAS_GRATUITAS} tandas de prueba para el test: ${testNombre}`);
-
-        // Limpiar selección
-        document.getElementById('planesContainer').classList.remove('show');
-        document.getElementById('testSelect').value = '';
-        planSeleccionado = null;
-        testSeleccionado = null;
-
-        // Actualizar accesos rápidos
-        mostrarTestsContratados();
-
-      } catch (error) {
-        console.error('❌ Error activando plan gratuito:', error);
-        alert('❌ Error al activar el plan. Inténtalo de nuevo.');
+    await db.collection('suscripciones').doc(usuarioActual.uid).set({
+      [testSeleccionado]: {
+        plan: 'free',
+        tandasUsadas: 0,
+        fechaActivacion: Date.now(),
+        nombre: testNombre
       }
-    }
+    }, { merge: true });
+
+    suscripcionesUsuario[testSeleccionado] = {
+      plan: 'free',
+      tandasUsadas: 0,
+      nombre: testNombre
+    };
+
+    alert(`✅ ¡Plan gratuito activado!\n\nTienes ${TANDAS_GRATUITAS} tandas de prueba para el test: ${testNombre}`);
+
+    // ❌ NO LIMPIAR SELECCIÓN INMEDIATAMENTE
+    // document.getElementById('planesContainer').classList.remove('show');
+    // document.getElementById('testSelect').value = '';
+    // planSeleccionado = null;
+    // testSeleccionado = null;
+
+    // ✅ MOSTRAR BOTÓN INICIAR TEST
+    mostrarBotonIniciarTest(testNombre);
+
+    // Actualizar accesos rápidos
+    mostrarTestsContratados();
+
+  } catch (error) {
+    console.error('❌ Error activando plan gratuito:', error);
+    alert('❌ Error al activar el plan. Inténtalo de nuevo.');
+  }
+}
 
     // Procesar pago con Stripe
     async function procesarPagoStripe() {
@@ -3121,6 +3254,8 @@
             const data = { id: doc.id, ...doc.data() };
             masterPool.push(data);
           });
+          // 🎲 BARAJAR todas las preguntas al inicio del test
+masterPool = mezclarArray(masterPool);
 
           // Inicializar preguntasPendientes con todas las preguntas del masterPool
           preguntasPendientes = [...masterPool];
@@ -3262,7 +3397,7 @@
         if (progressBarContainer) progressBarContainer.style.display = 'none';
       }
 
-      document.getElementById('preguntaTexto').textContent = pregunta.pregunta || '';
+document.getElementById('preguntaTexto').textContent = `${pregunta.id}: ${pregunta.pregunta || ''}`;
 
       // Generar opciones
       const letras = ['A', 'B', 'C', 'D'];
