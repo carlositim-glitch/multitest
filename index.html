@@ -1653,30 +1653,112 @@
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
+.test-card-quick {
+  background: linear-gradient(135deg, #34c3ff 0%, #0ea5e9 50%, #0284c7 100%) !important;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 3px solid #34c3ff !important;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 6px 24px rgba(52, 195, 255, 0.4) !important;
+  position: relative;
+  overflow: hidden;
+}
 
-    .test-card-quick {
-      background: var(--card-2);
-      padding: 16px 20px;
-      border-radius: 12px;
-      border: 2px solid var(--border);
-      cursor: pointer;
-      transition: all 0.3s ease;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+.test-card-quick::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s ease;
+}
 
-    .test-card-quick:hover {
-      border-color: var(--accent);
-      background: var(--accent-bg);
-      transform: translateX(5px);
-    }
+.test-card-quick:hover {
+  background: linear-gradient(135deg, #5dd5ff 0%, #34c3ff 50%, #0ea5e9 100%) !important;
+  border-color: #0ea5e9 !important;
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 0 12px 40px rgba(52, 195, 255, 0.6), 0 0 20px rgba(52, 195, 255, 0.8) !important;
+  filter: brightness(1.1) saturate(1.1) !important;
+}
 
-    .test-card-quick.premium {
-      border-color: var(--premium);
-      background: var(--premium-bg);
-    }
+.test-card-quick:hover::before {
+  left: 100%;
+}
+      .test-card-quick p {
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6) !important;
+  margin-top: 4px !important;
+}
+      .test-card-quick h4 {
+  color: #FFFFFF !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6) !important;
+  font-weight: 800 !important;
+  font-size: 16px !important;
+}
+      
+.test-card-quick.premium {
+  border: 3px solid #FFD700 !important;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%) !important;
+  box-shadow: 0 6px 24px rgba(255, 215, 0, 0.4) !important;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.test-card-quick.premium::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.6s ease;
+}
+
+.test-card-quick.premium:hover {
+  background: linear-gradient(135deg, #FFED4E 0%, #FFD700 50%, #FFA500 100%) !important;
+  border-color: #FFA500 !important;
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 0 12px 40px rgba(255, 215, 0, 0.6), 0 0 20px rgba(255, 215, 0, 0.8) !important;
+  filter: brightness(1.1) saturate(1.2) !important;
+}
+     .test-card-quick.premium h4 {
+  color: #8B4513 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
+  font-weight: 800 !important;
+}
+
+.test-card-quick.premium p {
+  color: #654321 !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.3) !important;
+} 
+
+.test-card-quick.premium:hover::before {
+  left: 100%;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+.test-card-quick.premium:hover {
+  border-color: #FFA500;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.35), rgba(255, 193, 7, 0.25));
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 32px rgba(255, 215, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
 
     .test-card-info h4 {
       color: var(--text);
@@ -1684,7 +1766,11 @@
       margin-bottom: 4px;
       font-weight: 600;
     }
-
+.test-card-quick.premium .test-card-info h4 {
+  color: #B8860B !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  font-weight: 700;
+}
     .test-card-info p {
       color: var(--muted);
       font-size: 13px;
@@ -1701,9 +1787,13 @@
     }
 
     .test-badge.premium {
-      background: var(--premium);
-      color: #1f2937;
-    }
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #1f2937;
+  border: 2px solid #FFB000;
+  box-shadow: 0 3px 12px rgba(255, 215, 0, 0.4);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  font-weight: 800;
+}
 
     /* SELECTOR DE TESTS (AHORA: hidden select + dropdown visual) */
     .test-selector {
@@ -2852,7 +2942,7 @@
   
   // Mostrar botón dorado inmediatamente
   const testNombre = sub.nombre || firstTest;
-  mostrarBotonIniciarTest(testNombre);
+ // mostrarBotonIniciarTest(testNombre);
   
   console.log('✅ Test preseleccionado automáticamente:', testNombre);
 }
@@ -3225,7 +3315,7 @@ async function activarPlanGratuito() {
     // testSeleccionado = null;
 
     // ✅ MOSTRAR BOTÓN INICIAR TEST
-    mostrarBotonIniciarTest(testNombre);
+  //  mostrarBotonIniciarTest(testNombre);
 
     // Actualizar accesos rápidos
     mostrarTestsContratados();
