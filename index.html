@@ -1629,17 +1629,30 @@
     }
 
     .tests-contratados {
-      margin: 30px 0 20px 0;
-    }
+  margin: 30px 0 20px 0;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(255, 215, 0, 0.04));
+  border: 2px solid var(--premium-border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.15);
+  transition: all 0.3s ease;
+}
 
-    .tests-contratados h3 {
-      color: var(--accent);
-      font-size: 18px;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+.tests-contratados:hover {
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.25);
+  transform: translateY(-2px);
+}
+
+   .tests-contratados h3 {
+  color: var(--premium);
+  font-size: 18px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
 
     .test-card-quick {
       background: var(--card-2);
@@ -2084,7 +2097,10 @@
           </div>
 <button class="logout" onclick="volverCategorias()">Salir</button>       
 </div>
-
+<div id="testsContratadosSeleccion" class="tests-contratados" style="display:none;">
+  <h3>👑 Tus Tests Activos</h3>
+  <div id="testsContratadosSeleccionList"></div>
+</div>
         <div class="logo">
           <h1>📚 Selecciona un Test y un plan</h1>
         </div>
@@ -2784,19 +2800,62 @@
 
       testSeleccionado = testId;
       mostrarPlanes();
-      // ✅ AÑADIR ESTO: Si ya tiene suscripción activa para este test, mostrar botón
-  if (suscripcionesUsuario && suscripcionesUsuario[testId]) {
-    const sub = suscripcionesUsuario[testId];
-    if (sub && sub.plan && sub.plan !== 'none') {
-      const testNombre = sub.nombre || catData.nombre || testId;
-      // Usar setTimeout para asegurar que el DOM esté listo
-      setTimeout(() => {
-        mostrarBotonIniciarTest(testNombre);
-      }, 100);
-    }
-  }
+     
 }
-    
+    function preseleccionarTestContratado() {
+  const keys = Object.keys(suscripcionesUsuario || {});
+  if (keys.length === 0) {
+    console.log('📭 No hay suscripciones para preseleccionar');
+    return;
+  }
+
+  // Buscar el primer test con suscripción activa
+  const firstTest = keys[0];
+  const sub = suscripcionesUsuario[firstTest];
+  
+  if (!sub || !sub.plan || sub.plan === 'none') {
+    console.log('📭 Primera suscripción no es válida');
+    return;
+  }
+
+  console.log('🔎 Preseleccionando test automáticamente:', firstTest, 'con plan:', sub.plan);
+
+  // Actualizar select oculto
+  const select = document.getElementById('testSelect');
+  if (select) {
+    select.value = firstTest;
+  }
+
+  // Actualizar dropdown visual
+  const dropdownSelected = document.getElementById('dropdownSelected');
+  if (dropdownSelected) {
+    const testNombre = sub.nombre || firstTest;
+    dropdownSelected.innerHTML = `
+      <div style="display:flex; align-items:center; gap:12px; width:100%;">
+        <div style="flex:1;">
+          <div class="title">${testNombre}</div>
+          <div class="meta" style="font-size:13px; color:var(--muted);">
+            Test activo - ${sub.plan} 
+          </div>
+        </div>
+        <div style="color:var(--premium); font-size:13px;">👑</div>
+      </div>
+    `;
+  }
+
+  // Establecer variables globales
+  testSeleccionado = firstTest;
+  
+  // Mostrar planes y preseleccionar
+  mostrarPlanes();
+  seleccionarPlan(sub.plan);
+  
+  // Mostrar botón dorado inmediatamente
+  const testNombre = sub.nombre || firstTest;
+  mostrarBotonIniciarTest(testNombre);
+  
+  console.log('✅ Test preseleccionado automáticamente:', testNombre);
+}
 
     // ==================== MONETIZACIÓN / SUSCRIPCIONES ====================
     async function cargarSuscripcionesUsuario() {
@@ -2829,41 +2888,14 @@
       // Ir a pantalla de selección
       document.getElementById('userEmailSeleccion').textContent = usuarioActual.email;
       mostrarPantalla('screenSeleccionTest');
-
-      // ----------------- PRESELECCIÓN AUTOMÁTICA (MODIFICACIÓN APLICADA) -----------------
-      // Si ya hay un test seleccionado en la UI y existe suscripción para ese test -> preseleccionar plan.
-      if (testSeleccionado && suscripcionesUsuario && suscripcionesUsuario[testSeleccionado]) {
-        const sub = suscripcionesUsuario[testSeleccionado];
-        if (sub && sub.plan) {
-          seleccionarPlan(sub.plan);
-          console.log('🔎 Preseleccionado plan', sub.plan, 'para test ya seleccionado:', testSeleccionado);
-        }
-      } else {
-        // Si no hay testSeleccionado pero existe al menos una suscripción, rellenar selector con la primera para acelerar flujo
-        const keys = Object.keys(suscripcionesUsuario || {});
-        if (keys.length > 0) {
-          const firstTest = keys[0];
-          const sub = suscripcionesUsuario[firstTest];
-          if (sub && sub.plan) {
-            // setear valor en select oculto y actualizar dropdownSelected para visibilidad
-            const select = document.getElementById('testSelect');
-            if (select) select.value = firstTest;
-            // Intentar mostrar nombre si conocemos la suscripción.nombre
-            const dropdownSelected = document.getElementById('dropdownSelected');
-            if (dropdownSelected) {
-              dropdownSelected.textContent = suscripcionesUsuario[firstTest].nombre || firstTest;
-            }
-            testSeleccionado = firstTest;
-            mostrarPlanes();
-            seleccionarPlan(sub.plan);
-            console.log('🔎 Preseleccionado primer test suscrito:', firstTest, 'plan:', sub.plan);
-          }
-        }
-      }
-    }
-      // ----------------------------------------------------------------------------------
+    // ✅ AGREGAR ESTO AL FINAL:
+  // Esperar a que el DOM se actualice y luego preseleccionar
+  setTimeout(() => {
+    preseleccionarTestContratado();
+  }, 300);
+}
     
-    // Mostrar botón para iniciar test después de activar plan
+         // Mostrar botón para iniciar test después de activar plan
 function mostrarBotonIniciarTest(testNombre) {
   try {
     const screen = document.getElementById('screenSeleccionTest');
@@ -3005,44 +3037,56 @@ function mostrarBotonIniciarTest(testNombre) {
     // -------------------------------------------------------------------------------
 
     // Mostrar tests contratados como accesos rápidos
-    function mostrarTestsContratados() {
-      const container = document.getElementById('testsContratados');
-      const list = document.getElementById('testsContratadosList');
+   function mostrarTestsContratados() {
+  // Mostrar en pantalla de login
+  actualizarTestsContratados('testsContratados', 'testsContratadosList', '⚡ Acceso rápido a tus tests');
+  // Mostrar en pantalla de selección
+  actualizarTestsContratados('testsContratadosSeleccion', 'testsContratadosSeleccionList', '👑 Tus Tests Activos');
+}
 
-      const testsActivos = Object.entries(suscripcionesUsuario || {}).filter(([_, data]) => {
-        return data && data.plan && data.plan !== 'none';
-      });
+function actualizarTestsContratados(containerId, listId, titulo) {
+  const container = document.getElementById(containerId);
+  const list = document.getElementById(listId);
+  
+  if (!container || !list) return;
 
-      if (testsActivos.length === 0) {
-        container.style.display = 'none';
-        return;
-      }
+  const testsActivos = Object.entries(suscripcionesUsuario || {}).filter(([_, data]) => {
+    return data && data.plan && data.plan !== 'none';
+  });
 
-      container.style.display = 'block';
-      list.innerHTML = testsActivos.map(([testId, data]) => {
-        const planIcon = data.plan === 'free' ? '🎁' : 
-                        data.plan === 'mensual' ? '📅' : 
-                        data.plan === 'trimestral' ? '🔥' : '👑';
-        const planText = data.plan === 'free' ? 'Gratis' : 
-                        data.plan === 'mensual' ? 'Mensual' : 
-                        data.plan === 'trimestral' ? 'Trimestral' : 'Anual';
-        const tandasInfo = data.plan === 'free' ? 
-          `${data.tandasUsadas || 0}/${TANDAS_GRATUITAS} tandas usadas` : 
-          'Acceso ilimitado';
+  if (testsActivos.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
 
-        return `
-          <div class="test-card-quick ${data.plan === 'free' ? '' : 'premium'}" onclick="accederTestDirecto('${testId}')">
-            <div class="test-card-info">
-              <h4>${data.nombre || testId}</h4>
-              <p>${tandasInfo}</p>
-            </div>
-            <span class="test-badge ${data.plan === 'free' ? 'free' : 'premium'}">
-              ${planIcon} ${planText}
-            </span>
-          </div>
-        `;
-      }).join('');
-    }
+  container.style.display = 'block';
+  const h3 = container.querySelector('h3');
+  if (h3) h3.textContent = titulo;
+  
+  list.innerHTML = testsActivos.map(([testId, data]) => {
+    const planIcon = data.plan === 'free' ? '🎁' : 
+                    data.plan === 'mensual' ? '📅' : 
+                    data.plan === 'trimestral' ? '🔥' : '👑';
+    const planText = data.plan === 'free' ? 'Gratis' : 
+                    data.plan === 'mensual' ? 'Mensual' : 
+                    data.plan === 'trimestral' ? 'Trimestral' : 'Anual';
+    const tandasInfo = data.plan === 'free' ? 
+      `${data.tandasUsadas || 0}/${TANDAS_GRATUITAS} tandas usadas` : 
+      'Acceso ilimitado';
+
+    return `
+      <div class="test-card-quick ${data.plan === 'free' ? '' : 'premium'}" onclick="accederTestDirecto('${testId}')">
+        <div class="test-card-info">
+          <h4>${data.nombre || testId}</h4>
+          <p>${tandasInfo}</p>
+        </div>
+        <span class="test-badge ${data.plan === 'free' ? 'free' : 'premium'}">
+          ${planIcon} ${planText}
+        </span>
+      </div>
+    `;
+  }).join('');
+}
 
     // Acceder directamente a un test contratado
    async function accederTestDirecto(testId) {
@@ -3157,6 +3201,7 @@ async function activarPlanGratuito() {
     const testNombre = document.getElementById('testSelect').options[document.getElementById('testSelect').selectedIndex].text;
 
     await db.collection('suscripciones').doc(usuarioActual.uid).set({
+        email: usuarioActual.email, // ✅ AÑADIR ESTO
       [testSeleccionado]: {
         plan: 'free',
         tandasUsadas: 0,
@@ -3255,6 +3300,7 @@ async function activarPlanGratuito() {
 
         try {
           await db.collection('suscripciones').doc(usuarioActual.uid).set({
+              email: usuarioActual.email, // ✅ AÑADIR ESTO
             [categoriaActual]: sub
           }, { merge: true });
 
