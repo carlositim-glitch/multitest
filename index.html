@@ -9,6 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
 
   <!-- Stripe SDK -->
   <script src="https://js.stripe.com/v3/"></script>
@@ -29,6 +30,7 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
     const analytics = firebase.analytics();
+    const functions = firebase.functions();
 
     console.log('🔥 Firebase configurado correctamente');
     // ==================== CONFIGURACIÓN DESARROLLO ====================
@@ -2039,6 +2041,7 @@
 
     /* Botón activar plan más compacto */
     #btnActivarPlan {
+        display: none !important;
       padding: 10px 14px; /* MODIFICACIÓN: más compacto */
       font-size: 14px;
       border-radius: 8px;
@@ -2050,17 +2053,51 @@
         grid-template-columns: 1fr;
       }
 
-      .plan-card {
-        padding: 10px;
-        min-height: 120px;
-      }
+     .plan-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  position: relative;
+  min-height: 120px;
+}
 
-      .plan-badge-popular {
-        right: 10px;
-        top: -8px;
-        padding: 5px 10px;
-        font-size: 12px;
-      }
+.plan-card:hover {
+  transform: translateY(-8px) scale(1.03) !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.5) !important;
+  border-color: var(--accent) !important;
+}
+      .plan-card::before {
+  content: '💳 Contratar';
+  position: absolute;
+  bottom: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.plan-card:hover::before {
+  bottom: -25px;
+  opacity: 1;
+}
+
+.plan-card:active {
+  transform: translateY(-4px) scale(1.01) !important;
+}
     }
   
   .btn-icon-nav {  
@@ -2541,9 +2578,9 @@
     let inicioTestTimestamp = null;
 
     // ==================== CONFIGURACIÓN STRIPE Y MONETIZACIÓN ====================
-    const STRIPE_PUBLIC_KEY = 'pk_live_51SVCbMRtyqAYsH2HPHl6BQs827M5BxVQIdjr2yD2r1AlmJWrG6Bfy7UKfYML1G3O8K9se8kKBqesXk1NYSuhXHVT005d2fXOYq'; // TODO: Reemplazar con tu clave pública
+    const STRIPE_PUBLIC_KEY = 'pk_test_51SVCbvRsnNtATP9UbXroRGFhMARYundAmKx5CJGq7sVmviU8MqQ8lZ2xJcerbehw5pkGFSJiRpVHJEOhsZDFjVSV00SnHb7KiG'; // TODO: Reemplazar con tu clave pública
     const stripe = Stripe(STRIPE_PUBLIC_KEY);
-
+console.log('🔑 Stripe inicializado con:', STRIPE_PUBLIC_KEY.substring(0, 20) + '...');
     // IDs de precios de Stripe (crear en Dashboard de Stripe)
     const STRIPE_PRICES = {
       mensual: 'prod_TS8t6wstow1doe',
@@ -3218,59 +3255,160 @@ function actualizarTestsContratados(containerId, listId, titulo) {
 
     // Mostrar planes cuando se selecciona un test (select oculto o dropdown)
     function mostrarPlanes() {
-      const testId = document.getElementById('testSelect').value;
-      const planesContainer = document.getElementById('planesContainer');
+  const testId = document.getElementById('testSelect').value;
+  const planesContainer = document.getElementById('planesContainer');
 
-      if (!testId) {
-        planesContainer.classList.remove('show');
-        return;
-      }
+  if (!testId) {
+    planesContainer.classList.remove('show');
+    return;
+  }
 
-      testSeleccionado = testId;
-      planesContainer.classList.add('show');
+  testSeleccionado = testId;
+  
+  // ✅ SIEMPRE mostrar los planes
+  planesContainer.classList.add('show');
 
-      // Limpiar selección anterior
-      document.querySelectorAll('.plan-card').forEach(card => {
-        card.classList.remove('selected');
-      });
-      planSeleccionado = null;
-      document.getElementById('btnActivarPlan').style.display = 'none';
+  // Limpiar selección anterior
+  document.querySelectorAll('.plan-card').forEach(card => {
+    card.classList.remove('selected', 'disabled');
+    card.style.opacity = '1';
+    card.style.pointerEvents = 'auto';
+    card.style.filter = 'none';
+  });
+  
+  planSeleccionado = null;
 
-      // Si ya tiene este test, mostrar info (no ocultamos el panel aquí porque Opción A)
-      if (suscripcionesUsuario[testId]) {
+  // 🚫 DESHABILITAR plan gratuito si ya lo tiene
+  if (suscripcionesUsuario[testId]) {
     const sub = suscripcionesUsuario[testId];
     
-    // ✅ AÑADIR ESTO:
-    // Si tiene plan activo, mostrar botón para iniciar test
-    // if (sub.plan && sub.plan !== 'none') {
-     // const testNombre = sub.nombre || testId;
-     // mostrarBotonIniciarTest(testNombre);
-    // }
-    
-    if (sub.plan === 'free' && sub.tandasUsadas >= TANDAS_GRATUITAS) {
-      alert(`⚠️ Ya tienes el plan gratuito de este test pero has usado las ${TANDAS_GRATUITAS} tandas.\n\nSelecciona un plan de pago para continuar.`);
-    } else if (sub.plan !== 'free') {
-      alert(`✅ Ya tienes acceso ${sub.plan} a este test.\n\nPuedes comenzar directamente desde los accesos rápidos.`);
+    if (sub.plan === 'free') {
+      const planFree = document.getElementById('planFree');
+      if (planFree) {
+        planFree.classList.add('disabled');
+        planFree.style.opacity = '0.5';
+        planFree.style.pointerEvents = 'none';
+        planFree.style.filter = 'grayscale(1)';
+        
+        // Agregar texto de "Ya activado"
+        let yaActivado = planFree.querySelector('.ya-activado');
+        if (!yaActivado) {
+          yaActivado = document.createElement('div');
+          yaActivado.className = 'ya-activado';
+          yaActivado.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+          `;
+          yaActivado.textContent = '✅ Ya Activado';
+          planFree.appendChild(yaActivado);
+        }
+      }
     }
   }
 }
 
     // Seleccionar un plan
-    function seleccionarPlan(plan) {
-      planSeleccionado = plan;
-
-      document.querySelectorAll('.plan-card').forEach(card => {
-        card.classList.remove('selected');
-      });
-
-      const planCard = document.getElementById(`plan${plan.charAt(0).toUpperCase() + plan.slice(1)}`);
-      if (planCard) {
-        planCard.classList.add('selected');
-      }
-
-      document.getElementById('btnActivarPlan').style.display = 'block';
+function seleccionarPlan(plan) {
+  // 🚫 BLOQUEAR si es plan gratuito y ya lo tiene
+  if (plan === 'free' && suscripcionesUsuario[testSeleccionado]) {
+    const sub = suscripcionesUsuario[testSeleccionado];
+    if (sub.plan === 'free') {
+      alert('✅ Ya tienes el plan gratuito activado.\n\n🚀 Selecciona un plan superior para upgrade.');
+      return;
     }
+  }
 
+  if (!testSeleccionado) {
+    alert('⚠️ Selecciona un test primero');
+    return;
+  }
+
+  // ... resto del código igual ...
+  
+  // El resto de la función permanece igual
+  document.querySelectorAll('.plan-card').forEach(card => {
+    card.style.transform = 'translateY(0) scale(1)';
+    card.style.borderColor = 'var(--border)';
+  });
+  
+  const planCard = document.getElementById(`plan${plan.charAt(0).toUpperCase() + plan.slice(1)}`);
+  if (planCard) {
+    planCard.style.transform = 'translateY(-4px) scale(1.02)';
+    planCard.style.borderColor = 'var(--accent)';
+    planCard.style.boxShadow = '0 12px 32px rgba(52, 195, 255, 0.3)';
+  }
+
+  const planesInfo = {
+    free: { 
+      nombre: 'Plan Gratuito', 
+      precio: 'Gratis', 
+      descripcion: '2 tandas de prueba',
+      accion: 'activar'
+    },
+    mensual: { 
+      nombre: 'Plan Mensual', 
+      precio: '9,99€/mes', 
+      descripcion: 'Acceso ilimitado',
+      accion: 'contratar'
+    },
+    trimestral: { 
+      nombre: 'Plan Trimestral', 
+      precio: '24,99€/3 meses', 
+      descripcion: 'Ahorra 25%',
+      accion: 'contratar'
+    },
+    anual: { 
+      nombre: 'Plan Anual', 
+      precio: '79,99€/año', 
+      descripcion: 'Ahorra 33%',
+      accion: 'contratar'
+    }
+  };
+
+  const planInfo = planesInfo[plan];
+  const testNombre = document.getElementById('testSelect').options[document.getElementById('testSelect').selectedIndex].text;
+
+  let confirmMsg;
+  if (plan === 'free') {
+    confirmMsg = `🎁 ¿Confirmas la activación?\n\n` +
+      `📚 Test: ${testNombre}\n` +
+      `💳 Plan: ${planInfo.nombre}\n` +
+      `💰 Precio: ${planInfo.precio}\n` +
+      `📋 Incluye: ${planInfo.descripcion}\n\n` +
+      `✅ ¿Activar acceso gratuito?`;
+  } else {
+    confirmMsg = `💳 ¿Confirmas la contratación?\n\n` +
+      `📚 Test: ${testNombre}\n` +
+      `💳 Plan: ${planInfo.nombre}\n` +
+      `💰 Precio: ${planInfo.precio}\n` +
+      `📋 Incluye: ${planInfo.descripcion}\n\n` +
+      `🚀 ¿Proceder al pago?`;
+  }
+
+  if (confirm(confirmMsg)) {
+    planSeleccionado = plan;
+    
+    if (plan === 'free') {
+      activarPlanGratuito();
+    } else {
+      procesarPagoStripe();
+    }
+  } else {
+    if (planCard) {
+      planCard.style.transform = '';
+      planCard.style.borderColor = '';
+      planCard.style.boxShadow = '';
+    }
+  }
+}
     // Activar plan seleccionado
     async function activarPlan() {
       if (!testSeleccionado || !planSeleccionado) {
@@ -3326,8 +3464,7 @@ async function activarPlanGratuito() {
   }
 }
 
-    // Procesar pago con Stripe
-    async function procesarPagoStripe() {
+   async function procesarPagoStripe() {
   if (!testSeleccionado || !planSeleccionado) {
     alert('Selecciona un test y un plan primero');
     return;
@@ -3341,16 +3478,26 @@ async function activarPlanGratuito() {
       throw new Error('Plan no configurado correctamente');
     }
 
-    // Crear sesión de checkout en tu backend (necesitarás Cloud Functions)
-    const checkoutSession = await crearSesionCheckout(priceId, testSeleccionado, testNombre);
+    console.log('🚀 Iniciando pago:', { testNombre, planSeleccionado, priceId });
+
+    // ✅ LÍNEA CORREGIDA - usar 'functions' en lugar de 'firebase.functions()'
+    const crearSesionCheckout = functions.httpsCallable('crearSesionCheckout');
     
-    // Redirigir a Stripe Checkout
-    const result = await stripe.redirectToCheckout({
-      sessionId: checkoutSession.id
+    const result = await crearSesionCheckout({
+      priceId: priceId,
+      testId: testSeleccionado,
+      testNombre: testNombre
     });
 
-    if (result.error) {
-      throw new Error(result.error.message);
+    console.log('✅ Sesión creada:', result.data);
+
+    // Redirigir a Stripe Checkout
+    const checkoutResult = await stripe.redirectToCheckout({
+      sessionId: result.data.sessionId
+    });
+
+    if (checkoutResult.error) {
+      throw new Error(checkoutResult.error.message);
     }
 
   } catch (error) {
@@ -3358,7 +3505,6 @@ async function activarPlanGratuito() {
     alert('Error al procesar el pago: ' + error.message);
   }
 }
-
     // Verificar si puede usar el test (límite de tandas)
     function verificarLimiteTandas() {
       if (!categoriaActual || !suscripcionesUsuario[categoriaActual]) {
