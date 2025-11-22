@@ -30,8 +30,7 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
     const analytics = firebase.analytics();
-    const functions = firebase.functions();
-
+    const functions = firebase.functions('europe-west6');
     console.log('🔥 Firebase configurado correctamente');
     // ==================== CONFIGURACIÓN DESARROLLO ====================
     const IS_DEVELOPMENT = false; // Cambiar a false en producción
