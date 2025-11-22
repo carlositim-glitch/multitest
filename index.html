@@ -26,14 +26,17 @@
       measurementId: "G-D3PN7H340S"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const analytics = firebase.analytics();
-    const functions = firebase.functions('europe-west6');
-    console.log('🔥 Firebase configurado correctamente');
+   firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const analytics = firebase.analytics();
+
+// ✅ MÉTODO ALTERNATIVO para especificar región
+const functions = firebase.app().functions('europe-west6');
+
+const IS_DEVELOPMENT = false;
+console.log('🔥 Firebase configurado correctamente');
     // ==================== CONFIGURACIÓN DESARROLLO ====================
-    const IS_DEVELOPMENT = false; // Cambiar a false en producción
   </script>
     <style>
     /* ==================== VARIABLES CSS - MODO OSCURO ==================== */
@@ -2582,9 +2585,9 @@
 console.log('🔑 Stripe inicializado con:', STRIPE_PUBLIC_KEY.substring(0, 20) + '...');
     // IDs de precios de Stripe (crear en Dashboard de Stripe)
     const STRIPE_PRICES = {
-      mensual: 'prod_TS8t6wstow1doe',
-      trimestral: 'prod_TS90qfVJzF7UUU',
-      anual: 'prod_TS91BhPlLTNCd3'
+      mensual: 'price_1SVEbuRtyqAYsH2HaPpWMASN',
+      trimestral: 'price_1SVEi2RtyqAYsH2H02GArUFC',
+      anual: 'price_1SVEjnRtyqAYsH2HVK2QqziS'
     };
 
     let suscripcionesUsuario = {}; // { testId: { plan, tandasUsadas, fechaActivacion, etc } }
@@ -3464,6 +3467,12 @@ async function activarPlanGratuito() {
 }
 
    async function procesarPagoStripe() {
+     // ✅ VERIFICAR QUE FUNCTIONS ESTÉ DISPONIBLE
+  if (!functions) {
+    alert('❌ Error: Sistema de pagos no disponible. Recarga la página e inténtalo de nuevo.');
+    console.error('Functions no está inicializado');
+    return;
+  }
   if (!testSeleccionado || !planSeleccionado) {
     alert('Selecciona un test y un plan primero');
     return;
@@ -3480,8 +3489,8 @@ async function activarPlanGratuito() {
     console.log('🚀 Iniciando pago:', { testNombre, planSeleccionado, priceId });
 
     // ✅ LÍNEA CORREGIDA - usar 'functions' en lugar de 'firebase.functions()'
-    const crearSesionCheckout = functions.httpsCallable('crearSesionCheckout');
-    
+    console.log('🔧 Verificando functions:', typeof functions);
+const crearSesionCheckout = functions.httpsCallable('crearCheckoutSession');   
     const result = await crearSesionCheckout({
       priceId: priceId,
       testId: testSeleccionado,
