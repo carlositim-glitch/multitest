@@ -2122,7 +2122,26 @@ console.log('🔥 Firebase configurado correctamente');
       transform: translateY(-2px);
       box-shadow: 0 6px 20px var(--premium-bg);
     }
+/* ==================== ANIMACIONES Y ESTADOS DE PLANES ==================== */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+      20%, 40%, 60%, 80% { transform: translateX(3px); }
+    }
 
+    .plan-locked {
+      border: 2px solid var(--danger) !important;
+    }
+
+    .plan-card.blocked {
+      transition: all 0.3s ease;
+    }
+
+    .plan-overlay {
+      transition: opacity 0.2s ease;
+    }
+
+  </style>
 
   </style>
 </head>
@@ -2259,7 +2278,7 @@ console.log('🔥 Firebase configurado correctamente');
 
           <div class="planes-grid">
             <!-- Plan Gratuito -->
-            <div class="plan-card" onclick="seleccionarPlan('free')" id="planFree">
+            <div class="plan-card" id="planFree">
               <div style="display:flex; align-items:center; gap:12px;">
                 <div class="plan-icon">🎁</div>
                 <div>
@@ -2278,7 +2297,7 @@ console.log('🔥 Firebase configurado correctamente');
             </div>
 
             <!-- Plan Mensual -->
-            <div class="plan-card" onclick="seleccionarPlan('mensual')" id="planMensual">
+            <div class="plan-card" id="planMensual">
               <div style="display:flex; align-items:center; gap:12px;">
                 <div class="plan-icon">📅</div>
                 <div>
@@ -2294,7 +2313,7 @@ console.log('🔥 Firebase configurado correctamente');
             </div>
 
             <!-- Plan Trimestral -->
-            <div class="plan-card popular" onclick="seleccionarPlan('trimestral')" id="planTrimestral">
+            <div class="plan-card popular" id="planTrimestral">
               <div class="plan-badge-popular">⭐ Más Popular</div>
               <div style="display:flex; align-items:center; gap:12px;">
                 <div class="plan-icon">🔥</div>
@@ -2311,7 +2330,7 @@ console.log('🔥 Firebase configurado correctamente');
             </div>
 
             <!-- Plan Anual -->
-            <div class="plan-card" onclick="seleccionarPlan('anual')" id="planAnual">
+            <div class="plan-card" id="planAnual">
               <div style="display:flex; align-items:center; gap:12px;">
                 <div class="plan-icon">👑</div>
                 <div>
@@ -2931,14 +2950,13 @@ console.log('🔑 Stripe inicializado con:', STRIPE_PUBLIC_KEY.substring(0, 20) 
       mostrarPlanes();
      
 }
-    function preseleccionarTestContratado() {
+   function preseleccionarTestContratadoSeguro() {
   const keys = Object.keys(suscripcionesUsuario || {});
   if (keys.length === 0) {
     console.log('📭 No hay suscripciones para preseleccionar');
     return;
   }
 
-  // Buscar el primer test con suscripción activa
   const firstTest = keys[0];
   const sub = suscripcionesUsuario[firstTest];
   
@@ -2947,15 +2965,13 @@ console.log('🔑 Stripe inicializado con:', STRIPE_PUBLIC_KEY.substring(0, 20) 
     return;
   }
 
-  console.log('🔎 Preseleccionando test automáticamente:', firstTest, 'con plan:', sub.plan);
+  console.log('🔎 Preseleccionando test:', firstTest, 'con plan:', sub.plan);
 
   // Actualizar select oculto
   const select = document.getElementById('testSelect');
-  if (select) {
-    select.value = firstTest;
-  }
+  if (select) select.value = firstTest;
 
-  // Actualizar dropdown visual
+  // Actualizar dropdown visual  
   const dropdownSelected = document.getElementById('dropdownSelected');
   if (dropdownSelected) {
     const testNombre = sub.nombre || firstTest;
@@ -2972,56 +2988,111 @@ console.log('🔑 Stripe inicializado con:', STRIPE_PUBLIC_KEY.substring(0, 20) 
     `;
   }
 
-  // Establecer variables globales
   testSeleccionado = firstTest;
   
-  // Mostrar planes y preseleccionar
-  mostrarPlanes();
-  seleccionarPlan(sub.plan);
+  // ✅ MOSTRAR PLANES Y BLOQUEAR INMEDIATAMENTE
+  mostrarPlanesConBloqueo(sub.plan);
   
-  // Mostrar botón dorado inmediatamente
-  const testNombre = sub.nombre || firstTest;
- // mostrarBotonIniciarTest(testNombre);
-  
-  console.log('✅ Test preseleccionado automáticamente:', testNombre);
+  console.log('✅ Test preseleccionado y planes bloqueados');
 }
+    function mostrarPlanesConBloqueo(planActivo) {
+  const planesContainer = document.getElementById('planesContainer');
+  if (!testSeleccionado) {
+    if (planesContainer) planesContainer.classList.remove('show');
+    return;
+  }
 
-    // ==================== MONETIZACIÓN / SUSCRIPCIONES ====================
-    async function cargarSuscripcionesUsuario() {
-      if (!usuarioActual) return;
+  if (planesContainer) planesContainer.classList.add('show');
+  console.log('📋 Mostrando planes con bloqueo para:', planActivo);
 
-      try {
-        const doc = await db.collection('suscripciones').doc(usuarioActual.uid).get();
-        if (doc.exists) {
-          suscripcionesUsuario = doc.data();
-          console.log('📊 Suscripciones cargadas:', suscripcionesUsuario);
-        } else {
-          suscripcionesUsuario = {};
-        }
-      } catch (error) {
-        console.error('❌ Error cargando suscripciones:', error);
-        suscripcionesUsuario = {};
-      }
+  // ✅ LIMPIAR TODO
+  limpiarEstadoPlanesCompleto();
+  planSeleccionado = null;
 
-      document.getElementById('userEmailSeleccion').textContent = usuarioActual.email;
-
-      // Llamar a la función que renderiza el botón (solo visible para carlos.itim@gmail.com)
-      renderTestAccessButtonIfTester();
-
-      // Mostrar tests contratados en pantalla de login
-      mostrarTestsContratados();
-
-      // Cargar categorías en el selector (dropdown)
-      await cargarCategoriasEnSelector();
-
-      // Ir a pantalla de selección
-      document.getElementById('userEmailSeleccion').textContent = usuarioActual.email;
-      mostrarPantalla('screenSeleccionTest');
-    // ✅ AGREGAR ESTO AL FINAL:
-  // Esperar a que el DOM se actualice y luego preseleccionar
+  // ✅ INICIALIZAR EVENTOS UNA SOLA VEZ
   setTimeout(() => {
-    preseleccionarTestContratado();
-  }, 300);
+    inicializarEventosPlanesUnaVez();
+    
+    // ✅ BLOQUEAR PLANES INFERIORES SI HAY SUSCRIPCIÓN
+    if (planActivo && planActivo !== 'none') {
+      bloquearPlanesInferiores(planActivo);
+    }
+  }, 150);
+}
+    function preseleccionarTestContratadoCorregido() {
+  const keys = Object.keys(suscripcionesUsuario || {});
+  if (keys.length === 0) {
+    console.log('📭 No hay suscripciones para preseleccionar');
+    return;
+  }
+
+  const firstTest = keys[0];
+  const sub = suscripcionesUsuario[firstTest];
+  
+  if (!sub || !sub.plan || sub.plan === 'none') {
+    console.log('📭 Primera suscripción no es válida');
+    return;
+  }
+
+  console.log('🔎 Preseleccionando test (sin auto-click):', firstTest);
+
+  // Actualizar select oculto
+  const select = document.getElementById('testSelect');
+  if (select) select.value = firstTest;
+
+  // Actualizar dropdown visual  
+  const dropdownSelected = document.getElementById('dropdownSelected');
+  if (dropdownSelected) {
+    const testNombre = sub.nombre || firstTest;
+    dropdownSelected.innerHTML = `
+      <div style="display:flex; align-items:center; gap:12px; width:100%;">
+        <div style="flex:1;">
+          <div class="title">${testNombre}</div>
+          <div class="meta" style="font-size:13px; color:var(--muted);">
+            Test activo - ${sub.plan} 
+          </div>
+        </div>
+        <div style="color:var(--premium); font-size:13px;">👑</div>
+      </div>
+    `;
+  }
+
+  testSeleccionado = firstTest;
+  
+  // ✅ SOLO mostrar planes, NO auto-seleccionar ni auto-clickear
+  mostrarPlanes();
+  
+  console.log('✅ Test preseleccionado correctamente');
+}
+    // ==================== MONETIZACIÓN / SUSCRIPCIONES ====================
+   async function cargarSuscripcionesUsuario() {
+  if (!usuarioActual) return;
+
+  try {
+    const doc = await db.collection('suscripciones').doc(usuarioActual.uid).get();
+    if (doc.exists) {
+      suscripcionesUsuario = doc.data();
+      console.log('📊 Suscripciones cargadas:', suscripcionesUsuario);
+    } else {
+      suscripcionesUsuario = {};
+    }
+  } catch (error) {
+    console.error('❌ Error cargando suscripciones:', error);
+    suscripcionesUsuario = {};
+  }
+
+  document.getElementById('userEmailSeleccion').textContent = usuarioActual.email;
+  renderTestAccessButtonIfTester();
+  mostrarTestsContratados();
+  await cargarCategoriasEnSelector();
+  
+  document.getElementById('userEmailSeleccion').textContent = usuarioActual.email;
+  mostrarPantalla('screenSeleccionTest');
+  
+  // ✅ ESPERAR Y PRESELECCIONAR CON BLOQUEO
+  setTimeout(() => {
+    preseleccionarTestContratadoSeguro();
+  }, 400);
 }
     
          // Mostrar botón para iniciar test después de activar plan
@@ -3254,124 +3325,463 @@ function actualizarTestsContratados(containerId, listId, titulo) {
   categoriaActual = testId;
   iniciarTest();
 }
+function inicializarEventosPlanesUnaVez() {
+  console.log('🎯 Inicializando eventos de planes (versión única)...');
+  
+  const planes = [
+    { id: 'planFree', plan: 'free' },
+    { id: 'planMensual', plan: 'mensual' },
+    { id: 'planTrimestral', plan: 'trimestral' },
+    { id: 'planAnual', plan: 'anual' }
+  ];
 
-    // Mostrar planes cuando se selecciona un test (select oculto o dropdown)
-    function mostrarPlanes() {
+  planes.forEach(({ id, plan }) => {
+    const planCard = document.getElementById(id);
+    if (!planCard) {
+      console.warn(`⚠️ No se encontró plan card: ${id}`);
+      return;
+    }
+
+    // ✅ CLONAR EL NODO PARA ELIMINAR TODOS LOS LISTENERS ANTERIORES
+    const nuevoCard = planCard.cloneNode(true);
+    planCard.parentNode.replaceChild(nuevoCard, planCard);
+    
+    // ✅ AGREGAR LISTENER AL NODO LIMPIO
+    nuevoCard.addEventListener('click', function(e) {
+      // Verificar múltiples condiciones de bloqueo
+      if (nuevoCard.classList.contains('disabled') || 
+          nuevoCard.classList.contains('blocked') ||
+          nuevoCard.classList.contains('plan-locked') ||
+          nuevoCard.style.pointerEvents === 'none' ||
+          nuevoCard.querySelector('.plan-overlay')) {
+        
+        console.log(`🚫 Click bloqueado en ${plan}`);
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        
+        // Animación de rechazo
+        nuevoCard.style.animation = 'shake 0.5s ease-in-out';
+        setTimeout(() => {
+          nuevoCard.style.animation = '';
+        }, 500);
+        
+        return false;
+      }
+
+      console.log(`✅ Click permitido en ${plan}`);
+      seleccionarPlan(plan);
+    }, { capture: true });
+
+    console.log(`✅ Evento añadido a ${id}`);
+  });
+}
+function mostrarPlanes() {
   const testId = document.getElementById('testSelect').value;
   const planesContainer = document.getElementById('planesContainer');
 
   if (!testId) {
-    planesContainer.classList.remove('show');
+    if (planesContainer) planesContainer.classList.remove('show');
     return;
   }
 
   testSeleccionado = testId;
+  if (planesContainer) planesContainer.classList.add('show');
   
-  // ✅ SIEMPRE mostrar los planes
-  planesContainer.classList.add('show');
+  console.log('📋 Mostrando planes para test:', testId);
 
-  // Limpiar selección anterior
-  document.querySelectorAll('.plan-card').forEach(card => {
-    card.classList.remove('selected', 'disabled');
-    card.style.opacity = '1';
-    card.style.pointerEvents = 'auto';
-    card.style.filter = 'none';
-  });
-  
+  // ✅ LIMPIAR TODO
+  limpiarEstadoPlanesCompleto();
   planSeleccionado = null;
 
-  // 🚫 DESHABILITAR plan gratuito si ya lo tiene
-  if (suscripcionesUsuario[testId]) {
-    const sub = suscripcionesUsuario[testId];
+  // ✅ INICIALIZAR Y BLOQUEAR
+  setTimeout(() => {
+    inicializarEventosPlanesUnaVez();
     
-    if (sub.plan === 'free') {
-      const planFree = document.getElementById('planFree');
-      if (planFree) {
-        planFree.classList.add('disabled');
-        planFree.style.opacity = '0.5';
-        planFree.style.pointerEvents = 'none';
-        planFree.style.filter = 'grayscale(1)';
-        
-        // Agregar texto de "Ya activado"
-        let yaActivado = planFree.querySelector('.ya-activado');
-        if (!yaActivado) {
-          yaActivado = document.createElement('div');
-          yaActivado.className = 'ya-activado';
-          yaActivado.style.cssText = `
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-          `;
-          yaActivado.textContent = '✅ Ya Activado';
-          planFree.appendChild(yaActivado);
-        }
-      }
+    // Verificar si hay suscripción activa
+    const suscripcion = suscripcionesUsuario[testId];
+    if (suscripcion && suscripcion.plan && suscripcion.plan !== 'none') {
+      console.log('🔒 Bloqueando planes por suscripción activa:', suscripcion.plan);
+      bloquearPlanesInferiores(suscripcion.plan);
     }
+  }, 150);
+}
+    function bloquearPlanesInferiores(planActual) {
+  const jerarquia = {
+    'free': 0,
+    'mensual': 1, 
+    'trimestral': 2,
+    'anual': 3
+  };
+  
+  const planesToIds = {
+    'free': 'planFree',
+    'mensual': 'planMensual',
+    'trimestral': 'planTrimestral', 
+    'anual': 'planAnual'
+  };
+  
+  const nivelActual = jerarquia[planActual];
+  if (typeof nivelActual === 'undefined') {
+    console.warn('⚠️ Plan desconocido:', planActual);
+    return;
   }
+
+  console.log(`🔒 Bloqueando planes <= ${planActual} (nivel ${nivelActual})`);
+  
+  Object.entries(jerarquia).forEach(([planNombre, nivelPlan]) => {
+    const planCardId = planesToIds[planNombre];
+    const planCard = document.getElementById(planCardId);
+    
+    if (!planCard) return;
+
+    if (nivelPlan <= nivelActual) {
+      // Bloquear este plan (igual o inferior)
+      bloquearPlanCompletamente(planCard, nivelPlan === nivelActual);
+    } else {
+      // Plan superior - dejar disponible
+      console.log(`✅ Plan ${planNombre} disponible para upgrade`);
+    }
+  });
+}
+    function bloquearPlanCompletamente(planCard, esActivo) {
+  if (!planCard) return;
+  
+  console.log(`🔒 Bloqueando completamente:`, planCard.id, 'esActivo:', esActivo);
+  
+  // ✅ MÚLTIPLES CAPAS DE BLOQUEO
+  planCard.classList.add('disabled', 'blocked', 'plan-locked');
+  
+  // ✅ ESTILOS AGRESIVOS
+  planCard.style.cssText = `
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+    cursor: not-allowed !important;
+    user-select: none !important;
+    filter: grayscale(0.8) !important;
+    position: relative !important;
+  `;
+  
+  // ✅ OVERLAY BLOQUEANTE ABSOLUTO
+  const overlay = document.createElement('div');
+  overlay.className = 'plan-overlay plan-blocked-overlay';
+  overlay.style.cssText = `
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    color: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 12px !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    z-index: 9999 !important;
+    pointer-events: all !important;
+    cursor: not-allowed !important;
+  `;
+  
+  // Bloquear clicks en el overlay
+  overlay.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  }, true);
+  
+  if (esActivo) {
+    overlay.innerHTML = `
+      <div style="text-align: center; pointer-events: none;">
+        <div style="font-size: 28px; margin-bottom: 8px;">✅</div>
+        <div style="font-size: 16px;">PLAN ACTIVO</div>
+        <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">Ya contratado</div>
+      </div>
+    `;
+  } else {
+    overlay.innerHTML = `
+      <div style="text-align: center; pointer-events: none;">
+        <div style="font-size: 28px; margin-bottom: 8px;">🔒</div>
+        <div style="font-size: 16px;">NO DISPONIBLE</div>
+        <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">Plan inferior</div>
+      </div>
+    `;
+  }
+  
+  // Limpiar overlays antiguos antes de agregar
+  planCard.querySelectorAll('.plan-overlay').forEach(o => o.remove());
+  planCard.appendChild(overlay);
+  
+  console.log('✅ Plan bloqueado exitosamente:', planCard.id);
+}
+    function debugPlanesEstado() {
+  console.log('🔍 DEBUG - Estado actual de planes:');
+  document.querySelectorAll('.plan-card').forEach(card => {
+    console.log(`Plan ${card.id}:`, {
+      clases: Array.from(card.classList),
+      pointerEvents: card.style.pointerEvents,
+      onclick: !!card.onclick,
+      overlay: !!card.querySelector('.plan-overlay'),
+      disabled: card.classList.contains('disabled'),
+      blocked: card.classList.contains('blocked')
+    });
+  });
+}
+ function limpiarEstadoPlanesCompleto() {
+  console.log('🧹 Limpiando estado completo de planes...');
+  
+  document.querySelectorAll('.plan-card').forEach(card => {
+    // Remover TODAS las clases de estado
+    card.classList.remove('selected', 'disabled', 'blocked', 'plan-locked');
+    
+    // Restaurar estilos
+    card.style.cssText = '';
+    
+    // Limpiar overlays
+    card.querySelectorAll('.plan-overlay, .plan-blocked-overlay').forEach(overlay => {
+      overlay.remove();
+    });
+  });
+  
+  console.log('✅ Estado limpiado completamente');
 }
 
-    // Seleccionar un plan
-function seleccionarPlan(plan) {
-  // 🚫 BLOQUEAR si es plan gratuito y ya lo tiene
-  if (plan === 'free' && suscripcionesUsuario[testSeleccionado]) {
-    const sub = suscripcionesUsuario[testSeleccionado];
-    if (sub.plan === 'free') {
-      alert('✅ Ya tienes el plan gratuito activado.\n\n🚀 Selecciona un plan superior para upgrade.');
-      return;
-    }
+// ✅ FUNCIÓN AUXILIAR: Extraer nombre de plan desde el ID
+function extraerNombrePlan(planCardId) {
+  const mapeoIds = {
+    'planFree': 'free',
+    'planMensual': 'mensual', 
+    'planTrimestral': 'trimestral',
+    'planAnual': 'anual'
+  };
+  return mapeoIds[planCardId] || null;
+}
+
+// ✅ FUNCIÓN AUXILIAR: Bloquear planes inactivos
+function bloquearPlanesInactivosCorregido(planActual) {
+  const jerarquiaPlanes = {
+    'free': 0,
+    'mensual': 1, 
+    'trimestral': 2,
+    'anual': 3
+  };
+  
+  const planesToIds = {
+    'free': 'planFree',
+    'mensual': 'planMensual',
+    'trimestral': 'planTrimestral', 
+    'anual': 'planAnual'
+  };
+  
+  const nivelActual = jerarquiaPlanes[planActual];
+  if (typeof nivelActual === 'undefined') {
+    console.warn('⚠️ Plan desconocido:', planActual);
+    return;
   }
+
+  console.log(`🔒 Bloqueando planes inferiores a: ${planActual} (nivel ${nivelActual})`);
+  
+  Object.entries(jerarquiaPlanes).forEach(([planNombre, nivelPlan]) => {
+    const planCardId = planesToIds[planNombre];
+    const planCard = document.getElementById(planCardId);
+    
+    if (!planCard) return;
+
+    if (nivelPlan <= nivelActual) {
+      // Este plan es igual o inferior al actual - BLOQUEAR
+      bloquearTarjetaPlanMejorado(planCard, nivelPlan === nivelActual);
+    } else {
+      // Plan superior - dejar disponible para upgrade
+      console.log(`✅ Plan ${planNombre} disponible para upgrade`);
+    }
+  });
+}
+function bloquearTarjetaPlanMejorado(planCard, esActivo) {
+  if (!planCard) return;
+  
+  console.log(`🔒 Bloqueando tarjeta:`, planCard.id, 'esActivo:', esActivo);
+  
+  // Agregar múltiples clases de bloqueo
+  planCard.classList.add('disabled', 'blocked', 'plan-locked');
+  
+  // Aplicar estilos de bloqueo FUERTES
+  planCard.style.cssText = `
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+    cursor: not-allowed !important;
+    user-select: none !important;
+    position: relative !important;
+    filter: grayscale(0.8) !important;
+  `;
+  
+  // Crear overlay bloqueante ABSOLUTO
+  const overlay = document.createElement('div');
+  overlay.className = 'plan-overlay plan-blocked-overlay';
+  overlay.style.cssText = `
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0, 0, 0, 0.75) !important;
+    color: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 12px !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    z-index: 9999 !important;
+    pointer-events: all !important;
+    cursor: not-allowed !important;
+  `;
+  
+  // Bloquear clicks en el overlay también
+  overlay.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  }, true);
+  
+  if (esActivo) {
+    overlay.innerHTML = `
+      <div style="text-align: center; pointer-events: none;">
+        <div style="font-size: 24px; margin-bottom: 4px;">✅</div>
+        <div>PLAN ACTIVO</div>
+        <div style="font-size: 11px; opacity: 0.8;">Ya contratado</div>
+      </div>
+    `;
+  } else {
+    overlay.innerHTML = `
+      <div style="text-align: center; pointer-events: none;">
+        <div style="font-size: 24px; margin-bottom: 4px;">🔒</div>
+        <div>NO DISPONIBLE</div>
+        <div style="font-size: 11px; opacity: 0.8;">Plan inferior</div>
+      </div>
+    `;
+  }
+  
+  // Limpiar overlays antiguos antes de agregar el nuevo
+  planCard.querySelectorAll('.plan-overlay').forEach(o => o.remove());
+  planCard.appendChild(overlay);
+  
+  console.log('✅ Tarjeta bloqueada exitosamente');
+}
+// ✅ FUNCIÓN AUXILIAR: Bloquear una tarjeta de plan específica
+function bloquearPlanCard(planCard, esActivo) {
+  if (!planCard) {
+    console.error('❌ PlanCard no válida para bloquear');
+    return;
+  }
+  
+  console.log(`🔒 Bloqueando plan card:`, planCard.id, 'esActivo:', esActivo);
+  
+  // ✅ BLOQUEO MÚLTIPLE Y REDUNDANTE
+  planCard.classList.add('disabled', 'blocked', 'plan-locked');
+  
+  // ✅ ESTILOS DE BLOQUEO MÁS AGRESIVOS
+  planCard.style.opacity = '0.4';
+  planCard.style.pointerEvents = 'none';
+  planCard.style.filter = 'grayscale(1) blur(1px)';
+  planCard.style.cursor = 'not-allowed';
+  planCard.style.userSelect = 'none';
+  planCard.style.transform = 'scale(0.98)';
+  
+  // ✅ REMOVER TODOS LOS EVENTOS POSIBLES
+  planCard.onclick = null;
+  planCard.removeAttribute('onclick');
+  
+  // ✅ CREAR OVERLAY BLOQUEANTE MÁS VISIBLE
+  const overlay = document.createElement('div');
+  overlay.className = 'plan-overlay plan-blocked-overlay';
+  overlay.style.cssText = `
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0,0,0,0.85) !important;
+    color: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 12px !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    z-index: 999 !important;
+    pointer-events: all !important;
+    backdrop-filter: blur(2px) !important;
+    cursor: not-allowed !important;
+  `;
+  
+  // ✅ PREVENIR CLICKS EN EL OVERLAY TAMBIÉN
+  overlay.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    console.log('🚫 Click bloqueado en overlay');
+    return false;
+  }, true);
+  
+  if (esActivo) {
+    overlay.innerHTML = `
+      <div style="text-align: center; line-height: 1.2; pointer-events: none;">
+        <div style="font-size: 24px; margin-bottom: 4px;">✅</div>
+        <div style="font-weight: 800;">PLAN ACTIVO</div>
+        <div style="font-size: 11px; opacity: 0.8; margin-top: 2px;">Ya contratado</div>
+      </div>
+    `;
+  } else {
+    overlay.innerHTML = `
+      <div style="text-align: center; line-height: 1.2; pointer-events: none;">
+        <div style="font-size: 24px; margin-bottom: 4px;">🚫</div>
+        <div style="font-weight: 800;">PLAN INFERIOR</div>
+        <div style="font-size: 11px; opacity: 0.8; margin-top: 2px;">No disponible</div>
+      </div>
+    `;
+  }
+  
+  planCard.appendChild(overlay);
+  
+  // ✅ LOGGING PARA VERIFICAR
+  console.log('✅ Plan bloqueado exitosamente:', planCard.id, {
+    clases: Array.from(planCard.classList),
+    pointerEvents: planCard.style.pointerEvents,
+    tieneOverlay: !!planCard.querySelector('.plan-overlay')
+  });
+}
+function seleccionarPlan(plan) {
+  console.log('🔍 seleccionarPlan llamada para:', plan, 'desde:', new Error().stack.split('\n')[1]);
 
   if (!testSeleccionado) {
     alert('⚠️ Selecciona un test primero');
     return;
   }
 
-  // ... resto del código igual ...
-  
-  // El resto de la función permanece igual
-  document.querySelectorAll('.plan-card').forEach(card => {
-    card.style.transform = 'translateY(0) scale(1)';
-    card.style.borderColor = 'var(--border)';
-  });
-  
-  const planCard = document.getElementById(`plan${plan.charAt(0).toUpperCase() + plan.slice(1)}`);
-  if (planCard) {
-    planCard.style.transform = 'translateY(-4px) scale(1.02)';
-    planCard.style.borderColor = 'var(--accent)';
-    planCard.style.boxShadow = '0 12px 32px rgba(52, 195, 255, 0.3)';
-  }
-
+  // El resto de la lógica igual...
   const planesInfo = {
     free: { 
       nombre: 'Plan Gratuito', 
       precio: 'Gratis', 
-      descripcion: '2 tandas de prueba',
-      accion: 'activar'
+      descripcion: '2 tandas de prueba'
     },
     mensual: { 
       nombre: 'Plan Mensual', 
       precio: '9,99€/mes', 
-      descripcion: 'Acceso ilimitado',
-      accion: 'contratar'
+      descripcion: 'Acceso ilimitado'
     },
     trimestral: { 
       nombre: 'Plan Trimestral', 
       precio: '24,99€/3 meses', 
-      descripcion: 'Ahorra 25%',
-      accion: 'contratar'
+      descripcion: 'Ahorra 25%'
     },
     anual: { 
       nombre: 'Plan Anual', 
       precio: '79,99€/año', 
-      descripcion: 'Ahorra 33%',
-      accion: 'contratar'
+      descripcion: 'Ahorra 33%'
     }
   };
 
@@ -3402,12 +3812,6 @@ function seleccionarPlan(plan) {
       activarPlanGratuito();
     } else {
       procesarPagoStripe();
-    }
-  } else {
-    if (planCard) {
-      planCard.style.transform = '';
-      planCard.style.borderColor = '';
-      planCard.style.boxShadow = '';
     }
   }
 }
@@ -3495,6 +3899,7 @@ const crearSesionCheckout = functions.httpsCallable('crearCheckoutSession');
       priceId: priceId,
       testId: testSeleccionado,
       testNombre: testNombre
+      userEmail: usuarioActual.email
     });
 
     console.log('✅ Sesión creada:', result.data);
@@ -4411,25 +4816,42 @@ function siguientePregunta() {
 
     // Cargar progreso desde Firestore
     async function cargarProgresoSiExiste() {
-      if (!usuarioActual || !categoriaActual) return null;
+  if (!usuarioActual || !categoriaActual) return null;
 
-      try {
-        const docId = `${usuarioActual.uid}_${categoriaActual}`;
-        const doc = await db.collection('progresos').doc(docId).get();
+  try {
+    const docId = `${usuarioActual.uid}_${categoriaActual}`;
+    const doc = await db.collection('progresos').doc(docId).get();
 
-        if (doc.exists) {
-          const estado = doc.data();
-          console.log('📥 Progreso cargado desde Firestore:', estado);
-          return estado;
-        }
-        
-        console.log('📭 No hay progreso guardado');
-        return null;
-      } catch (e) {
-        console.error('❌ Error leyendo progreso:', e);
+    if (doc.exists) {
+      const estado = doc.data();
+      console.log('📥 Progreso encontrado en Firestore:', estado);
+      
+      // ✅ VALIDAR QUE SEA PROGRESO REAL Y ÚTIL
+      const tieneProgresoUtil = estado && 
+        estado.tandaActualIds && 
+        Array.isArray(estado.tandaActualIds) && 
+        estado.tandaActualIds.length > 0 &&
+        typeof estado.indicePreguntaActual === 'number' &&
+        estado.indicePreguntaActual >= 0;
+      
+      if (tieneProgresoUtil) {
+        console.log('✅ Progreso válido encontrado');
+        return estado;
+      } else {
+        console.log('🗑️ Progreso encontrado pero vacío/inválido - eliminando');
+        // Eliminar progreso inválido
+        await db.collection('progresos').doc(docId).delete();
         return null;
       }
     }
+    
+    console.log('📭 No hay progreso guardado');
+    return null;
+  } catch (e) {
+    console.error('❌ Error leyendo progreso:', e);
+    return null;
+  }
+}
 
     // Aplicar progreso cargado
     function aplicarProgresoCargado(progreso) {
