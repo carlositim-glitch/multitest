@@ -30,11 +30,12 @@
 const auth = firebase.auth();
 const db = firebase.firestore();
 const analytics = firebase.analytics();
+const IS_DEVELOPMENT = false;
 
 // ✅ MÉTODO ALTERNATIVO para especificar región
 const functions = firebase.functions('europe-west6');
 const verificarPago = functions.httpsCallable('verificarPago');
-const IS_DEVELOPMENT = false;
+
 console.log('🔥 Firebase configurado correctamente');
     // ==================== CONFIGURACIÓN DESARROLLO ====================
   </script>
@@ -2216,20 +2217,25 @@ console.log('🔥 Firebase configurado correctamente');
       </div>
     </div>
 
-    <!-- PANTALLA 3: SELECCIONAR TEST Y PLAN -->
+   <!-- PANTALLA 3: SELECCIONAR TEST Y PLAN -->
     <div id="screenSeleccionTest" class="screen">
       <div class="card">
-        <div class="user-info">
-          <div class="user-content">
-            <div class="user-label">Versión BETA 0.11 - Conectado como:</div>
-            <div class="email" id="userEmailSeleccion"></div>
-          </div>
-<button class="logout" onclick="cerrarSesion()">🔄</button>
-</div>
-<div id="testsContratadosSeleccion" class="tests-contratados" style="display:none;">
-  <h3>👑 Tus Tests Activos</h3>
-  <div id="testsContratadosSeleccionList"></div>
-</div>
+        <div class="user-info">  
+          <div class="user-content">  
+            <div class="user-label" style="font-size: 11px; margin-bottom: 2px;">
+              📧 <a href="mailto:multitest.gobcan@gmail.com" style="color: var(--accent); text-decoration: none;" title="Enviar correo de contacto">multitest.gobcan@gmail.com</a>
+            </div>
+            <div class="user-label">Versión BETA 0.11 - Conectado como:</div>  
+            <div class="email" id="userEmailSeleccion"></div>  
+          </div>  
+          <button class="logout" onclick="cerrarSesion()">🔄</button>
+        </div>
+        
+        <div id="testsContratadosSeleccion" class="tests-contratados" style="display:none;">
+          <h3>👑 Tus Tests Activos</h3>
+          <div id="testsContratadosSeleccionList"></div>
+        </div>
+        
         <div class="logo">
           <h1>📚 Selecciona un Test y un plan</h1>
         </div>
@@ -2580,14 +2586,14 @@ console.log('🔥 Firebase configurado correctamente');
     let inicioTestTimestamp = null;
 
     // ==================== CONFIGURACIÓN STRIPE Y MONETIZACIÓN ====================
-    const STRIPE_PUBLIC_KEY = 'pk_test_51SVCbvRsnNtATP9UbXroRGFhMARYundAmKx5CJGq7sVmviU8MqQ8lZ2xJcerbehw5pkGFSJiRpVHJEOhsZDFjVSV00SnHb7KiG'; // TODO: Reemplazar con tu clave pública
+    const STRIPE_PUBLIC_KEY = 'pk_live_51SVCbMRtyqAYsH2HPHl6BQs827M5BxVQIdjr2yD2r1AlmJWrG6Bfy7UKfYML1G3O8K9se8kKBqesXk1NYSuhXHVT005d2fXOYq'; // TODO: Reemplazar con tu clave pública
     const stripe = Stripe(STRIPE_PUBLIC_KEY);
 console.log('🔑 Stripe inicializado con:', STRIPE_PUBLIC_KEY.substring(0, 20) + '...');
     // IDs de precios de Stripe (crear en Dashboard de Stripe)
     const STRIPE_PRICES = {
       mensual: 'price_1SVEbuRtyqAYsH2HaPpWMASN',
-    trimestral: 'price_1SWu42RsnNtATP9UPeHj3GxP',
-      anual: 'price_1SWu4uRsnNtATP9UP3YCCjvK'
+    trimestral: 'price_1SVEi2RtyqAYsH2H02GArUFC',
+      anual: 'price_1SVEjnRtyqAYsH2HVK2QqziS'
     };
 
     let suscripcionesUsuario = {}; // { testId: { plan, tandasUsadas, fechaActivacion, etc } }
@@ -3501,12 +3507,6 @@ async function activarPlanGratuito() {
 }
 
    async function procesarPagoStripe() {
-     // ✅ VERIFICAR QUE FUNCTIONS ESTÉ DISPONIBLE
-  if (!functions) {
-    alert('❌ Error: Sistema de pagos no disponible. Recarga la página e inténtalo de nuevo.');
-    console.error('Functions no está inicializado');
-    return;
-  }
   if (!testSeleccionado || !planSeleccionado) {
     alert('Selecciona un test y un plan primero');
     return;
@@ -3522,10 +3522,9 @@ async function activarPlanGratuito() {
 
     console.log('🚀 Iniciando pago:', { testNombre, planSeleccionado, priceId });
 
-    // ✅ LÍNEA CORREGIDA - usar 'functions' en lugar de 'firebase.functions()'
-    console.log('🔧 Verificando functions:', typeof functions);
-const crearSesionCheckout = functions.httpsCallable('crearCheckoutSession');   
-    const result = await crearSesionCheckout({
+    const crearCheckoutSession = firebase.app().functions('europe-west6').httpsCallable('crearCheckoutSession');
+    
+    const result = await crearCheckoutSession({
       priceId: priceId,
       testId: testSeleccionado,
       testNombre: testNombre
@@ -3533,7 +3532,6 @@ const crearSesionCheckout = functions.httpsCallable('crearCheckoutSession');
 
     console.log('✅ Sesión creada:', result.data);
 
-    // Redirigir a Stripe Checkout
     const checkoutResult = await stripe.redirectToCheckout({
       sessionId: result.data.sessionId
     });
@@ -3746,85 +3744,87 @@ masterPool = mezclarArray(masterPool);
     }
 
     // Preparar una nueva tanda secuencial
-    function prepararNuevaTanda() {
-      console.log('🔄 Preparando nueva tanda secuencial...');
-      // ✅ VERIFICAR LÍMITE DE TANDAS GRATUITAS ANTES DE CONTINUAR
+    // ==================== PREPARAR NUEVA TANDA - CORREGIDO ====================
+function prepararNuevaTanda() {
+  console.log('🔄 Preparando nueva tanda secuencial...');
+  
+  // ✅ VERIFICAR LÍMITE DE TANDAS GRATUITAS
   if (!verificarLimiteTandas()) {
-    // Si no puede usar más tandas, mostrar mensaje y salir
     alert(`🚫 Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar.`);
     volverCategorias();
     return;
   }
-      // Ocultar panel de opciones de tanda
-      const panel = document.getElementById('tandaOptions');
-      if (panel) panel.style.display = 'none';
-      
-      const feedback = document.getElementById('feedbackContainer');
-      if (feedback) feedback.style.display = 'none';
+  
+  // Ocultar panels
+  const panel = document.getElementById('tandaOptions');
+  if (panel) panel.style.display = 'none';
+  
+  const feedback = document.getElementById('feedbackContainer');
+  if (feedback) feedback.style.display = 'none';
 
-      // Determinar si es tanda normal o de repetición
-      if (preguntasFalladas.length > 0 && !esTandaRepeticion) {
-        // Hay fallos pendientes -> preparar tanda de repetición
-        prepararTandaRepeticion();
-        return;
-      }
+  // ✅ VERIFICAR SI HAY FALLOS PENDIENTES (prioridad)
+  if (preguntasFalladas.length > 0 && !esTandaRepeticion) {
+    prepararTandaRepeticion();
+    return;
+  }
 
-      // Tanda normal: tomar preguntas NUEVAS del pool pendiente
-      esTandaRepeticion = false;
-      numeroTanda++;
-      
-      // Calcular rango de preguntas para esta tanda
-      const inicio = (numeroTanda - 1) * preguntasPorTanda;
-      const fin = Math.min(inicio + preguntasPorTanda, preguntasPendientes.length);
-      
-      if (inicio >= preguntasPendientes.length) {
-        // No hay más preguntas nuevas
-        if (preguntasFalladas.length > 0) {
-          // Pero hay fallos pendientes -> preparar tanda de repetición
-          prepararTandaRepeticion();
-          return;
-        } else {
-          // No hay más preguntas ni fallos -> test completado
-          finalizarTest();
-          return;
-        }
-      }
-
-      // Tomar el bloque de preguntas para esta tanda
-      tandaActual = preguntasPendientes.slice(inicio, fin);
-      
-      // Inicializar respuestas
-      respuestasUsuario = new Array(tandaActual.length).fill(null);
-      indicePreguntaActual = 0;
-
-      console.log(`🔢 Tanda #${numeroTanda}: ${tandaActual.length} preguntas nuevas (${inicio}-${fin-1})`);
-      
-      // Incrementar contador de tandas para planes gratuitos
-      incrementarTandaUsada();
-      
-      guardarProgreso();
-      restoreStatsPreference();
-      mostrarPregunta();
+  // ✅ VERIFICAR SI AÚN HAY PREGUNTAS PENDIENTES
+  if (preguntasPendientes.length === 0) {
+    console.log('📭 No hay más preguntas pendientes');
+    if (preguntasFalladas.length > 0) {
+      prepararTandaRepeticion();
+    } else {
+      finalizarTest();
     }
+    return;
+  }
 
+  // Tanda normal: tomar preguntas NUEVAS del pool pendiente
+  esTandaRepeticion = false;
+  numeroTanda++;
+  
+  // ✅ TOMAR LAS PRIMERAS X PREGUNTAS Y ELIMINARLAS DEL POOL
+  const cantidadATomar = Math.min(preguntasPorTanda, preguntasPendientes.length);
+  tandaActual = preguntasPendientes.splice(0, cantidadATomar); // ← splice ELIMINA del array
+  
+  // Inicializar respuestas
+  respuestasUsuario = new Array(tandaActual.length).fill(null);
+  indicePreguntaActual = 0;
+
+  console.log(`🔢 Tanda #${numeroTanda}: ${tandaActual.length} preguntas nuevas (quedan ${preguntasPendientes.length} pendientes)`);
+  
+  // Incrementar contador de tandas para planes gratuitos
+  incrementarTandaUsada();
+  
+  guardarProgreso();
+  restoreStatsPreference();
+  mostrarPregunta();
+}
     // Preparar tanda de repetición (solo fallos)
-    function prepararTandaRepeticion() {
-      console.log('🔄 Preparando tanda de repetición de fallos...');
-      
-      esTandaRepeticion = true;
-      
-      // Tomar TODOS los fallos para la repetición
-      tandaActual = preguntasFalladas.map(p => ({...p}));
-      
-      // Inicializar respuestas
-      respuestasUsuario = new Array(tandaActual.length).fill(null);
-      indicePreguntaActual = 0;
+   function prepararTandaRepeticion() {
+  console.log('🔄 Preparando tanda de repetición de fallos...');
+  
+  // ✅ VERIFICAR QUE REALMENTE HAY FALLOS
+  if (preguntasFalladas.length === 0) {
+    console.log('📭 No hay fallos para repetir, continuando...');
+    prepararNuevaTanda();
+    return;
+  }
+  
+  esTandaRepeticion = true;
+  
+  // ✅ NO ELIMINAR de preguntasFalladas, solo copiar
+  tandaActual = preguntasFalladas.map(p => ({...p}));
+  
+  // Inicializar respuestas
+  respuestasUsuario = new Array(tandaActual.length).fill(null);
+  indicePreguntaActual = 0;
 
-      console.log(`🔁 Tanda de repetición: ${tandaActual.length} preguntas falladas`);
-      
-      guardarProgreso();
-      mostrarPregunta();
-    }
+  console.log(`🔁 Tanda de repetición: ${tandaActual.length} preguntas falladas`);
+  
+  guardarProgreso();
+  mostrarPregunta();
+}
 
     // Función para mostrar la pregunta actual
     function mostrarPregunta() {
@@ -3992,41 +3992,44 @@ document.getElementById('preguntaTexto').textContent = `${pregunta.id}: ${pregun
       if (!esTandaRepeticion) {
         preguntasRealizadasGlobal++;
       }
+      // Actualizar estadísticas
+  const correcto = pregunta.respuestaCorrecta;
+  const ahoraEsCorrecta = originalLetter === correcto;
 
-      const correcto = pregunta.respuestaCorrecta;
-      const ahoraEsCorrecta = originalLetter === correcto;
-
-     // Actualizar estadísticas
-if (ahoraEsCorrecta) {
-  // CONTAR ACIERTOS EN AMBOS CASOS (tandas normales Y de repetición)
-  aciertosGlobal++;
-  
-  // En tandas de repetición: quitar de fallados si se corrige
-  if (esTandaRepeticion) {
-    const idxFallada = preguntasFalladas.findIndex(p => p.id === pregunta.id);
-    if (idxFallada !== -1) {
-      preguntasFalladas.splice(idxFallada, 1);
+  // ✅ ACTUALIZAR ESTADÍSTICAS Y POOLS CORRECTAMENTE
+  if (ahoraEsCorrecta) {
+    aciertosGlobal++;
+    
+    if (esTandaRepeticion) {
+      // En repetición: quitar de fallados si se corrige
+      const idxFallada = preguntasFalladas.findIndex(p => p.id === pregunta.id);
+      if (idxFallada !== -1) {
+        preguntasFalladas.splice(idxFallada, 1);
+        // ✅ Mover a completadas
+        if (!preguntasCompletadas.find(p => p.id === pregunta.id)) {
+          preguntasCompletadas.push({...pregunta});
+        }
+      }
+    } else {
+      // En tanda normal: mover a completadas
+      if (!preguntasCompletadas.find(p => p.id === pregunta.id)) {
+        preguntasCompletadas.push({...pregunta});
+      }
+      // Quitar de fallados si estaba (por si era un reintento)
+      const idxFallada = preguntasFalladas.findIndex(p => p.id === pregunta.id);
+      if (idxFallada !== -1) {
+        preguntasFalladas.splice(idxFallada, 1);
+      }
     }
   } else {
-    // En tandas normales: mover a completadas
-    if (!preguntasCompletadas.find(p => p.id === pregunta.id)) {
-      preguntasCompletadas.push(pregunta);
+    // ✅ INCORRECTO: solo agregar a falladas en TANDAS NORMALES
+    if (!esTandaRepeticion) {
+      if (!preguntasFalladas.find(p => p.id === pregunta.id)) {
+        preguntasFalladas.push({...pregunta});
+      }
     }
-    // Quitar de fallados si estaba
-    const idxFallada = preguntasFalladas.findIndex(p => p.id === pregunta.id);
-    if (idxFallada !== -1) {
-      preguntasFalladas.splice(idxFallada, 1);
-    }
+    // En repetición: la pregunta YA está en falladas, no hacer nada
   }
-} else {
-  // Agregar a fallados si no estaba ya (SOLO EN TANDAS NORMALES)
-  if (!esTandaRepeticion) {
-    if (!preguntasFalladas.find(p => p.id === pregunta.id)) {
-      preguntasFalladas.push(pregunta);
-    }
-  }
-  // En tandas de repetición: la pregunta YA está en falladas, no hacer nada
-}
       // Actualizar visual
       document.querySelectorAll('.opcion').forEach(el => el.classList.remove('selected', 'correcta', 'incorrecta'));
       const opcionesEls = Array.from(document.querySelectorAll('.opcion'));
@@ -4943,8 +4946,12 @@ function siguientePregunta() {
 
 // ========== FUNCIÓN VERIFICAR PAGO ==========
 async function verificarPagoStripe(sessionId) {
+  let loadingDiv = null;
+  
   try {
-    const loadingDiv = document.createElement('div');
+    // Mostrar loading
+    loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loadingPago';
     loadingDiv.style.cssText = `
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.8); z-index: 99999;
@@ -4957,12 +4964,31 @@ async function verificarPagoStripe(sessionId) {
     `;
     document.body.appendChild(loadingDiv);
     
-const verificarPago = firebase.functions('europe-west6').httpsCallable('verificarPago');
-    const resultado = await verificarPago({ sessionId: sessionId });
+    console.log('🔍 Verificando pago con sessionId:', sessionId);
     
-    document.body.removeChild(loadingDiv);
+    // ✅ Usar firebase.app().functions()
+    const verificarPago = firebase.app().functions('europe-west6').httpsCallable('verificarPago');
+    
+    // ✅ Añadir timeout de 10 segundos
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout verificando pago')), 10000)
+    );
+    
+    const resultado = await Promise.race([
+      verificarPago({ sessionId: sessionId }),
+      timeoutPromise
+    ]);
+    
+    console.log('✅ Resultado verificación:', resultado.data);
+    
+    // Eliminar loading
+    if (loadingDiv && loadingDiv.parentNode) {
+      document.body.removeChild(loadingDiv);
+      loadingDiv = null;
+    }
     
     if (resultado.data.success) {
+      // Recargar suscripciones
       await cargarSuscripcionesUsuario();
       
       alert(`🎉 ¡Pago exitoso!\n\n` +
@@ -4970,15 +4996,33 @@ const verificarPago = firebase.functions('europe-west6').httpsCallable('verifica
             `Categoría: ${resultado.data.categoria}\n\n` +
             `Ya puedes usar tus tests ilimitados.`);
       
+      // Limpiar URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
     
   } catch (error) {
-    console.error('Error verificando pago:', error);
-    alert('⚠️ Hubo un problema verificando tu pago.\n\nContacta con soporte.');
+    console.error('❌ Error verificando pago:', error);
+    
+    // Asegurar que se elimina el loading
+    if (loadingDiv && loadingDiv.parentNode) {
+      document.body.removeChild(loadingDiv);
+    }
+    
+    // Si es timeout, el webhook lo procesará
+    if (error.message === 'Timeout verificando pago') {
+      alert('⏱️ La verificación está tardando más de lo normal.\n\n' +
+            'Tu pago se procesará en unos minutos.\n' +
+            'Recarga la página en 1-2 minutos para ver tu suscripción activa.');
+    } else {
+      alert('⚠️ Hubo un problema verificando tu pago.\n\n' +
+            'Tu pago fue procesado correctamente y se activará automáticamente.\n' +
+            'Recarga la página en 1 minuto.');
+    }
+    
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 }
+
   </script>
 </body>
 </html>
