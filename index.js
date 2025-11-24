@@ -7,41 +7,46 @@ const Stripe = require("stripe");
 admin.initializeApp();
 const db = admin.firestore();
 
-// Configuración global
+// ✅ Configuración global - NO TOCAR
 setGlobalOptions({region: "europe-west6"});
 
-// ⚠️ CAMBIA ESTO POR TU CLAVE REAL
-const stripeSecret = "sk_live_51SVCbM....";
-const webhookSecret = "whsec_TICnJjVXFYJNiJeVz5Rcc3W6dr8e6fbD";
+// ⚠️ TODO: Mover a variables de entorno
+const stripeSecret = process.env.STRIPE_SECRET_KEY || "sk_live_51SVCbM...";
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "whsec_TICnJjVXFYJNiJeVz5Rcc3W6dr8e6fbD";
 const stripe = new Stripe(stripeSecret, {apiVersion: "2023-10-16"});
 
+// ✅ Mapeo centralizado de precios
+const PRICE_TO_PLAN = {
+  "price_1SVEbuRtyqAYsH2HaPpWMASN": "mensual",
+  "price_1SWu42RsnNtATP9UPeHj3GxP": "trimestral",
+  "price_1SWu4uRsnNtATP9UP3YCCjvK": "anual"
+};
+
 // ============================================================
-// FUNCIÓN PRINCIPAL: CREAR CHECKOUT SESSION
+// CREAR CHECKOUT SESSION
 // ============================================================
 exports.crearCheckoutSession = onCall({region: "europe-west6"}, async (request) => {
-  console.log("🔍 INICIO - Request completo:", JSON.stringify(request.data));
+  console.log("🔍 crearCheckoutSession - Data:", JSON.stringify(request.data));
   
   try {
     if (!request.auth) {
-      console.error("❌ No hay auth");
-      throw new Error("Usuario no autenticado");
+      throw new HttpsError("unauthenticated", "Usuario no autenticado");
     }
-    
-    console.log("✅ Usuario autenticado:", request.auth.uid);
     
     const {priceId, testId, testNombre} = request.data;
     
     if (!priceId || !testId || !testNombre) {
-      console.error("❌ Faltan datos:", {priceId, testId, testNombre});
-      throw new Error("Faltan datos requeridos");
+      throw new HttpsError("invalid-argument", "Faltan datos requeridos");
     }
     
-    console.log("✅ Datos validados");
+    if (!PRICE_TO_PLAN[priceId]) {
+      throw new HttpsError("invalid-argument", `PriceId no válido: ${priceId}`);
+    }
     
     const userId = request.auth.uid;
     const userEmail = request.auth.token.email;
     
-    console.log("🚀 Intentando crear sesión Stripe...");
+    console.log(`✅ Creando sesión - Usuario: ${userId}, Plan: ${PRICE_TO_PLAN[priceId]}`);
     
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -51,165 +56,168 @@ exports.crearCheckoutSession = onCall({region: "europe-west6"}, async (request) 
       cancel_url: `https://multitest-gobcan.web.app/?payment=cancelled`,
       customer_email: userEmail,
       client_reference_id: userId,
-      metadata: {
-        userId, 
-        testId, 
-        testNombre
-      },
+      metadata: {userId, testId, testNombre, priceId},
       subscription_data: {
-        metadata: {
-          userId, 
-          testId, 
-          testNombre
-        },
-      },
+        metadata: {userId, testId, testNombre, priceId}
+      }
     });
     
-    console.log("✅ Sesión creada:", session.id);
-// GUARDAR EN FIRESTORE
-await db.collection('checkoutSessions').doc(session.id).set({
-  userId,
-  testId,
-  testNombre,
-  priceId,
-  createdAt: admin.firestore.FieldValue.serverTimestamp()
-});
+    console.log("✅ Sesión Stripe creada:", session.id);
+    
+    await db.collection("checkoutSessions").doc(session.id).set({
+      userId,
+      testId,
+      testNombre,
+      priceId,
+      plan: PRICE_TO_PLAN[priceId],
+      status: "pending",
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
     return {sessionId: session.id};
     
   } catch (error) {
-    console.error("❌ ERROR COMPLETO:", error);
-    console.error("❌ Error message:", error.message);
-    console.error("❌ Error stack:", error.stack);
-throw new HttpsError('internal', error.message);
+    console.error("❌ ERROR:", error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", error.message);
   }
 });
+
 // ============================================================
-// FUNCIÓN: VERIFICAR PAGO (LLAMADA DESDE FRONTEND)
+// VERIFICAR PAGO
 // ============================================================
 exports.verificarPago = onCall({region: "europe-west6"}, async (request) => {
   try {
     if (!request.auth) {
-      throw new Error("Usuario no autenticado");
+      throw new HttpsError("unauthenticated", "Usuario no autenticado");
     }
 
     const {sessionId} = request.data;
     if (!sessionId) {
-      throw new Error("Session ID requerido");
+      throw new HttpsError("invalid-argument", "Session ID requerido");
     }
 
-    console.log("🔍 Verificando pago:", sessionId);
+    console.log(`🔍 Verificando: ${sessionId} - Usuario: ${request.auth.uid}`);
 
-    // Recuperar sesión de Stripe
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-    // Verificar que el pago fue completado
     if (session.payment_status !== "paid") {
-      throw new Error("Pago no completado");
+      throw new HttpsError("failed-precondition", "Pago no completado");
     }
 
-    // Verificar que la sesión pertenece al usuario
     if (session.client_reference_id !== request.auth.uid) {
-      throw new Error("Sesión no válida para este usuario");
+      throw new HttpsError("permission-denied", "Sesión no válida");
     }
 
-    // Obtener datos de la sesión guardada
     const sessionDoc = await db.collection("checkoutSessions").doc(sessionId).get();
     if (!sessionDoc.exists) {
-      throw new Error("Sesión no encontrada en BD");
+      throw new HttpsError("not-found", "Sesión no encontrada");
     }
 
     const sessionData = sessionDoc.data();
-    const {userId, testId, testNombre} = sessionData;
+    
+    if (sessionData.status === "completed") {
+      console.log("ℹ️ Ya procesada");
+      return {success: true, plan: sessionData.plan, categoria: sessionData.testNombre};
+    }
 
-    // Determinar plan según monto
-    let plan = "mensual";
-    const amount = session.amount_total / 100; // Stripe usa centavos
-    if (amount === 24.99) plan = "trimestral";
-    else if (amount === 79.99) plan = "anual";
+    const {userId, testId, testNombre, plan} = sessionData;
 
-    // Activar suscripción en Firestore
     await db.collection("suscripciones").doc(userId).set({
-      email: session.customer_email,
+      email: session.customer_email || request.auth.token.email,
       [testId]: {
-        plan: plan,
+        plan,
         tandasUsadas: 0,
         fechaActivacion: Date.now(),
         nombre: testNombre,
         stripeCustomerId: session.customer,
         stripeSubscriptionId: session.subscription,
-        stripeSessionId: sessionId,
         status: "active",
-      },
+        activatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }
     }, {merge: true});
 
-    // Actualizar estado de la sesión
     await db.collection("checkoutSessions").doc(sessionId).update({
       status: "completed",
-      completedAt: admin.firestore.FieldValue.serverTimestamp(),
+      completedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    console.log(`✅ Suscripción activada: ${plan} para ${userId} en ${testId}`);
+    console.log(`✅ Activado: ${plan} para ${userId}`);
 
-    return {
-      success: true,
-      plan: plan,
-      categoria: testNombre,
-    };
+    return {success: true, plan, categoria: testNombre};
 
   } catch (error) {
-    console.error("❌ Error verificando pago:", error);
-    throw new Error(`Error verificando pago: ${error.message}`);
+    console.error("❌ ERROR:", error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", error.message);
   }
 });
 
 // ============================================================
-// WEBHOOK (OPCIONAL - BACKUP)
+// WEBHOOK
 // ============================================================
 exports.stripeWebhook = onRequest({region: "europe-west6"}, async (req, res) => {
   try {
     const sig = req.headers["stripe-signature"];
-    const event = stripe.webhooks.constructEvent(req.rawBody, sig, webhookSecret);
+    let event;
     
-    console.log("📥 Webhook recibido:", event.type);
+    try {
+      event = stripe.webhooks.constructEvent(req.rawBody, sig, webhookSecret);
+    } catch (err) {
+      console.error("❌ Firma inválida:", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+    
+    console.log("📥 Webhook:", event.type);
     
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       
-      // Buscar datos de la sesión
-console.log('🔍 Buscando sesión:', session.id);
-const sessionDoc = await db.collection("checkoutSessions").doc(session.id).get();
-if (!sessionDoc.exists) {
-  console.error("❌ Sesión no encontrada:", session.id);
-  return res.status(200).json({received: true});
-}
-console.log('✅ Sesión encontrada');
+      if (session.payment_status !== "paid") {
+        console.warn("⚠️ Pago no completado");
+        return res.status(200).json({received: true});
+      }
+      
+      const sessionDoc = await db.collection("checkoutSessions").doc(session.id).get();
+      if (!sessionDoc.exists) {
+        console.error("❌ Sesión no encontrada");
+        return res.status(200).json({received: true});
+      }
+      
       const sessionData = sessionDoc.data();
-      const {userId, testId, testNombre} = sessionData;
-
-      let plan = "mensual";
-      const amount = session.amount_total / 100;
-      if (amount === 24.99) plan = "trimestral";
-      else if (amount === 79.99) plan = "anual";
+      if (sessionData.status === "completed") {
+        console.log("ℹ️ Ya procesada");
+        return res.status(200).json({received: true});
+      }
+      
+      const {userId, testId, testNombre, plan} = sessionData;
 
       await db.collection("suscripciones").doc(userId).set({
         email: session.customer_email,
         [testId]: {
-          plan: plan,
+          plan,
           tandasUsadas: 0,
           fechaActivacion: Date.now(),
           nombre: testNombre,
           stripeCustomerId: session.customer,
           stripeSubscriptionId: session.subscription,
           status: "active",
-        },
+          activatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }
       }, {merge: true});
 
-      console.log(`🎉 Webhook: Plan ${plan} activado para ${userId}`);
+      await db.collection("checkoutSessions").doc(session.id).update({
+        status: "completed",
+        completedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      console.log(`✅ Webhook activó: ${plan} para ${userId}`);
     }
     
-    res.status(200).json({received: true});
+    return res.status(200).json({received: true});
+    
   } catch (error) {
-    console.error("❌ Webhook error:", error.message);
-    res.status(400).send(error.message);
+    console.error("❌ Webhook error:", error);
+    return res.status(500).json({error: error.message});
   }
 });
