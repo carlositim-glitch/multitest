@@ -4919,14 +4919,66 @@ function siguientePregunta() {
     });
 
     window.onload = function() {
-      console.log('🔄 Página cargada, inicializando...');
-      loadSavedTheme();
-      loadStatsPreference();
+  console.log('🔄 Página cargada, inicializando...');
+  loadSavedTheme();
+  loadStatsPreference();
 
-      window.addEventListener('beforeunload', function() {
-        guardarProgreso();
-      });
-    };
+  // ========== VERIFICAR PAGO AL VOLVER DE STRIPE ==========
+  const urlParams = new URLSearchParams(window.location.search);
+  const paymentStatus = urlParams.get('payment');
+  const sessionId = urlParams.get('session_id');
+  
+  if (paymentStatus === 'success' && sessionId) {
+    verificarPagoStripe(sessionId);
+  } else if (paymentStatus === 'cancelled') {
+    alert('❌ Pago cancelado.');
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+  // ======================================================
+
+  window.addEventListener('beforeunload', function() {
+    guardarProgreso();
+  });
+};
+
+// ========== FUNCIÓN VERIFICAR PAGO ==========
+async function verificarPagoStripe(sessionId) {
+  try {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.style.cssText = `
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.8); z-index: 99999;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 20px;
+    `;
+    loadingDiv.innerHTML = `
+      <div class="spinner" style="width: 50px; height: 50px;"></div>
+      <p style="color: white; font-size: 18px;">Verificando tu pago...</p>
+    `;
+    document.body.appendChild(loadingDiv);
+    
+    const verificarPago = firebase.functions().httpsCallable('verificarPago');
+    const resultado = await verificarPago({ sessionId: sessionId });
+    
+    document.body.removeChild(loadingDiv);
+    
+    if (resultado.data.success) {
+      await cargarSuscripcionesUsuario();
+      
+      alert(`🎉 ¡Pago exitoso!\n\n` +
+            `Plan: ${resultado.data.plan}\n` +
+            `Categoría: ${resultado.data.categoria}\n\n` +
+            `Ya puedes usar tus tests ilimitados.`);
+      
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+  } catch (error) {
+    console.error('Error verificando pago:', error);
+    alert('⚠️ Hubo un problema verificando tu pago.\n\nContacta con soporte.');
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+}
   </script>
 </body>
 </html>
