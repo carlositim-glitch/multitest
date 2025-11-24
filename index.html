@@ -2221,10 +2221,10 @@ console.log('🔥 Firebase configurado correctamente');
       <div class="card">
         <div class="user-info">
           <div class="user-content">
-            <div class="user-label">Versión 0.11 - Conectado como:</div>
+            <div class="user-label">Versión BETA 0.11 - Conectado como:</div>
             <div class="email" id="userEmailSeleccion"></div>
           </div>
-<button class="logout" onclick="volverCategorias()">Salir</button>       
+<button class="logout" onclick="cerrarSesion()">🔄</button>
 </div>
 <div id="testsContratadosSeleccion" class="tests-contratados" style="display:none;">
   <h3>👑 Tus Tests Activos</h3>
@@ -2259,7 +2259,7 @@ console.log('🔥 Firebase configurado correctamente');
 
           <div class="planes-grid">
             <!-- Plan Gratuito -->
-            <div class="plan-card" onclick="seleccionarPlan('free')" id="planFree">
+            <div class="plan-card" onclick="seleccionarPlan('gratuito')" id="plangratuito">
               <div style="display:flex; align-items:center; gap:12px;">
                 <div class="plan-icon">🎁</div>
                 <div>
@@ -2287,7 +2287,7 @@ console.log('🔥 Firebase configurado correctamente');
                 </div>
               </div>
               <ul class="plan-features">
-                <li>Acceso ilimitado</li>
+                <li>Acceso ilimitado a tu test</li>
                 <li>Sin límite de tandas</li>
                 <li>Cancela cuando quieras</li>
               </ul>
@@ -2305,7 +2305,7 @@ console.log('🔥 Firebase configurado correctamente');
               </div>
               <ul class="plan-features">
                 <li>Ahorra 25%</li>
-                <li>Acceso ilimitado</li>
+                <li>Acceso ilimitado a tu test</li>
                 <li>Pago cada 3 meses</li>
               </ul>
             </div>
@@ -2321,7 +2321,7 @@ console.log('🔥 Firebase configurado correctamente');
               </div>
               <ul class="plan-features">
                 <li>Ahorra 33%</li>
-                <li>Acceso ilimitado</li>
+                <li>Acceso ilimitado a tu test</li>
                 <li>Mejor precio</li>
               </ul>
             </div>
@@ -2586,8 +2586,8 @@ console.log('🔑 Stripe inicializado con:', STRIPE_PUBLIC_KEY.substring(0, 20) 
     // IDs de precios de Stripe (crear en Dashboard de Stripe)
     const STRIPE_PRICES = {
       mensual: 'price_1SVGnbRsnNtATP9UMZTNCg0v',
-    //  trimestral: 'price_1SVEi2RtyqAYsH2H02GArUFC',
-     // anual: 'price_1SVEjnRtyqAYsH2HVK2QqziS'
+    trimestral: 'price_1SWu42RsnNtATP9UPeHj3GxP',
+      anual: 'price_1SWu4uRsnNtATP9UP3YCCjvK'
     };
 
     let suscripcionesUsuario = {}; // { testId: { plan, tandasUsadas, fechaActivacion, etc } }
@@ -3193,23 +3193,23 @@ function actualizarTestsContratados(containerId, listId, titulo) {
   if (h3) h3.textContent = titulo;
   
   list.innerHTML = testsActivos.map(([testId, data]) => {
-    const planIcon = data.plan === 'free' ? '🎁' : 
+    const planIcon = data.plan === 'gratuito' ? '🎁' : 
                     data.plan === 'mensual' ? '📅' : 
                     data.plan === 'trimestral' ? '🔥' : '👑';
-    const planText = data.plan === 'free' ? 'Gratis' : 
+    const planText = data.plan === 'gratuito' ? 'Gratis' : 
                     data.plan === 'mensual' ? 'Mensual' : 
                     data.plan === 'trimestral' ? 'Trimestral' : 'Anual';
-    const tandasInfo = data.plan === 'free' ? 
+    const tandasInfo = data.plan === 'gratuito' ? 
       `${data.tandasUsadas || 0}/${TANDAS_GRATUITAS} tandas usadas` : 
       'Acceso ilimitado';
 
     return `
-      <div class="test-card-quick ${data.plan === 'free' ? '' : 'premium'}" onclick="accederTestDirecto('${testId}')">
+      <div class="test-card-quick ${data.plan === 'gratuito' ? '' : 'premium'}" onclick="accederTestDirecto('${testId}')">
         <div class="test-card-info">
           <h4>${data.nombre || testId}</h4>
           <p>${tandasInfo}</p>
         </div>
-        <span class="test-badge ${data.plan === 'free' ? 'free' : 'premium'}">
+        <span class="test-badge ${data.plan === 'gratuito' ? 'gratuito' : 'premium'}">
           ${planIcon} ${planText}
         </span>
       </div>
@@ -3241,7 +3241,7 @@ function actualizarTestsContratados(containerId, listId, titulo) {
   }
   
   // Si tiene plan gratuito, verificar límite de tandas
-  if (suscripcion.plan === 'free' && suscripcion.tandasUsadas >= TANDAS_GRATUITAS) {
+  if (suscripcion.plan === 'gratuito' && suscripcion.tandasUsadas >= TANDAS_GRATUITAS) {
     alert(`⚠️ Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar con acceso ilimitado.`);
     testSeleccionado = testId;
     document.getElementById('testSelect').value = testId;
@@ -3253,154 +3253,141 @@ function actualizarTestsContratados(containerId, listId, titulo) {
   // Acceso permitido
   categoriaActual = testId;
   iniciarTest();
-}
-
-// Función mostrarPlanes modificada para bloquear planes inferiores
+}// mostrarPlanes actualizado: marca el plan activo con "✅ Ya activado" 
+// y bloquea todos los inferiores con overlay (gratuito incluido se muestra igual si es activo)
 function mostrarPlanes() {
-  const testId = document.getElementById('testSelect').value;
+  const testSelect = document.getElementById('testSelect');
   const planesContainer = document.getElementById('planesContainer');
+  if (!testSelect || !planesContainer) return;
 
+  const testId = testSelect.value;
   if (!testId) {
     planesContainer.classList.remove('show');
     return;
   }
 
   testSeleccionado = testId;
-  
-  // Mostrar los planes
   planesContainer.classList.add('show');
 
-  // Limpiar selección anterior y estilos
+  // Jerarquía de planes (de menor a mayor)
+  const planOrder = ['gratuito', 'mensual', 'trimestral', 'anual'];
+
+  // Obtener plan activo para este test (si existe)
+  const sub = suscripcionesUsuario && suscripcionesUsuario[testId] ? suscripcionesUsuario[testId] : null;
+  const activePlan = sub && sub.plan ? String(sub.plan).toLowerCase() : null;
+  const activeIndex = activePlan ? planOrder.indexOf(activePlan) : -1;
+
+  // Limpiar estado visual de todas las tarjetas
   document.querySelectorAll('.plan-card').forEach(card => {
-    card.classList.remove('selected', 'disabled', 'disabled-by-superior');
-    card.style.opacity = '1';
-    card.style.pointerEvents = 'auto';
-    card.style.filter = 'none';
-    
-    // Remover badges si existen
-    const badges = card.querySelectorAll('.ya-activado');
-    badges.forEach(badge => badge.remove());
+    card.classList.remove('selected', 'disabled', 'disabled-by-superior', 'active-plan');
+    card.style.opacity = '';
+    card.style.pointerEvents = '';
+    card.style.filter = '';
+    card.style.boxShadow = '';
+    // eliminar overlays o badges previos
+    const overlays = card.querySelectorAll('.ya-activado, .blocked-overlay');
+    overlays.forEach(o => o.remove());
   });
-  
-  planSeleccionado = null;
 
-  // ✅ BLOQUEAR EL PLAN QUE YA TIENE ACTIVO Y SU INFERIOR
-  if (suscripcionesUsuario[testId]) {
-    const sub = suscripcionesUsuario[testId];
-    const planActivo = sub.plan; // 'free', 'mensual', 'trimestral', 'anual'
-    
-    if (planActivo && planActivo !== 'none') {
-      // Mapear el plan activo al ID de la card
-      const planCardId = {
-        'free': 'planFree',
-        'mensual': 'planMensual',
-        'trimestral': 'planTrimestral',
-        'anual': 'planAnual'
-      }[planActivo];
-      
-      const planCard = document.getElementById(planCardId);
-      if (planCard) {
-        // Bloquear visualmente el plan activo
-        planCard.classList.add('disabled');
-        planCard.style.opacity = '0.5';
-        planCard.style.pointerEvents = 'none';
-        planCard.style.filter = 'grayscale(1)';
-        
-        // Agregar badge "Ya Activado"
-        const yaActivado = document.createElement('div');
-        yaActivado.className = 'ya-activado';
-        yaActivado.style.cssText = `
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: rgba(0,0,0,0.8);
-          color: white;
-          padding: 8px 12px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 600;
-          z-index: 10;
-        `;
-        yaActivado.textContent = '✅ Ya Activado';
-        planCard.appendChild(yaActivado);
-        
-        console.log(`🔒 Plan bloqueado: ${planActivo}`);
-      }
-
-      // --------- NUEVO: bloquear también el plan inmediatamente inferior ---------
-      // Definir la jerarquía (inmediato inferior)
-      const inferiorDe = {
-        'anual': 'trimestral',
-        'trimestral': 'mensual',
-        'mensual': 'free',
-        'free': null
-      };
-
-      const inferior = inferiorDe[planActivo];
-      if (inferior) {
-        const inferiorCardId = {
-          'free': 'planFree',
-          'mensual': 'planMensual',
-          'trimestral': 'planTrimestral',
-          'anual': 'planAnual'
-        }[inferior];
-
-        const inferiorCard = document.getElementById(inferiorCardId);
-        if (inferiorCard) {
-          // Evitar volver a bloquear si ya está bloqueado por otra razón
-          if (!inferiorCard.classList.contains('disabled-by-superior')) {
-            inferiorCard.classList.add('disabled', 'disabled-by-superior');
-            inferiorCard.style.opacity = '0.45';
-            inferiorCard.style.pointerEvents = 'none';
-            inferiorCard.style.filter = 'grayscale(1)';
-
-            // Agregar badge explicativa
-            const badgeInferior = document.createElement('div');
-            badgeInferior.className = 'ya-activado';
-            badgeInferior.style.cssText = `
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              background: rgba(0,0,0,0.75);
-              color: white;
-              padding: 8px 12px;
-              border-radius: 20px;
-              font-size: 12px;
-              font-weight: 600;
-              z-index: 10;
-            `;
-            badgeInferior.textContent = '🔒 Bloqueado por plan superior';
-            inferiorCard.appendChild(badgeInferior);
-
-            console.log(`🔒 También bloqueado el plan inferior: ${inferior}`);
-          }
-        }
+  // Recorrer tarjetas y aplicar bloqueo según jerarquía
+  document.querySelectorAll('.plan-card').forEach(card => {
+    // Determinar key del plan de la tarjeta
+    let cardPlan = null;
+    if (card.dataset && card.dataset.plan) {
+      cardPlan = String(card.dataset.plan).toLowerCase();
+    } else if (card.id) {
+      const m = card.id.match(/^plan(.+)$/i);
+      if (m && m[1]) {
+        // Ej: planMensual -> mensual ; plangratuito -> gratuito
+        cardPlan = m[1].charAt(0).toLowerCase() + m[1].slice(1);
+        cardPlan = cardPlan.toLowerCase();
       }
     }
-  }
+    if (!cardPlan) return;
+
+    const idx = planOrder.indexOf(cardPlan);
+
+    // Si existe un plan activo, bloquear todos los de menor índice
+    if (activeIndex >= 0 && idx >= 0) {
+      if (idx < activeIndex) {
+        // Plan inferior -> bloquear
+        card.classList.add('disabled-by-superior');
+        card.style.opacity = '0.45';
+        card.style.pointerEvents = 'none';
+        card.style.filter = 'grayscale(1)';
+
+        if (!card.querySelector('.blocked-overlay')) {
+          const ov = document.createElement('div');
+          ov.className = 'blocked-overlay';
+          ov.style.cssText = 'position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; background:rgba(0,0,0,0.5); pointer-events:none; z-index:12; border-radius:12px;';
+          ov.textContent = '🔒 Bloqueado por plan activo';
+          card.style.position = card.style.position || 'relative';
+          card.appendChild(ov);
+        }
+      } else if (idx === activeIndex) {
+        // Plan activo -> marcar con badge "Ya activado" (aplica también a gratuito)
+        card.classList.add('disabled', 'active-plan');
+        card.style.opacity = '0.5';
+        card.style.pointerEvents = 'none';
+        card.style.filter = 'grayscale(1)';
+
+        if (!card.querySelector('.ya-activado')) {
+          const badge = document.createElement('div');
+          badge.className = 'ya-activado';
+          badge.style.cssText = 'position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.75); color:#fff; padding:6px 8px; border-radius:12px; font-weight:700; z-index:13; font-size:12px;';
+          badge.textContent = '✅ Ya activado';
+          card.style.position = card.style.position || 'relative';
+          card.appendChild(badge);
+        }
+      } else {
+        // Plan superior -> dejar habilitado
+        card.style.pointerEvents = 'auto';
+      }
+    } else {
+      // No hay suscripción activa -> todos habilitados
+      card.style.pointerEvents = 'auto';
+    }
+  });
 }
-    
-// Función seleccionarPlan modificada para evitar seleccionar planes bloqueados
-function seleccionarPlan(plan) {  
-  // Nombre del elemento de tarjeta del plan  
-  const planElementId = `plan${plan.charAt(0).toUpperCase() + plan.slice(1)}`;  
-  
-  // Primera comprobación: obtener elemento para verificar bloqueo  
-  const checkCard = document.getElementById(planElementId);  
-  if (checkCard && (checkCard.classList.contains('disabled-by-superior') || checkCard.classList.contains('disabled'))) {  
-    alert('🔒 Este plan está bloqueado porque ya tienes un plan superior activo o ya está activado.\n\nPara cambiar de plan, primero cancela tu suscripción actual.');  
+
+// seleccionarPlan actualizado: previene selección si la tarjeta está bloqueada;
+// mantiene el mensaje y comportamiento igual; gratuito muestra badge igual al resto si ya está activo
+function seleccionarPlan(plan) {
+  if (!plan) return;
+  const planLower = String(plan).toLowerCase();
+
+  // Buscar la tarjeta: primero por data-plan, luego por id / sufijo
+  let planCard = document.querySelector(`.plan-card[data-plan="${planLower}"]`) || null;
+
+  if (!planCard) {
+    // Buscar por id con sufijo (case-insensitive)
+    const all = Array.from(document.querySelectorAll('.plan-card'));
+    planCard = all.find(card => {
+      if (card.id) {
+        const m = card.id.match(/^plan(.+)$/i);
+        if (m && m[1]) {
+          const derived = m[1].charAt(0).toLowerCase() + m[1].slice(1);
+          return derived.toLowerCase() === planLower;
+        }
+      }
+      // fallback: comprobar dataset.plan con normalización
+      if (card.dataset && card.dataset.plan) {
+        return String(card.dataset.plan).toLowerCase() === planLower;
+      }
+      return false;
+    }) || null;
+  }
+
+  // Si la tarjeta está bloqueada por plan superior o ya activada => impedir selección
+  if (planCard && (planCard.classList.contains('disabled-by-superior') || planCard.classList.contains('disabled'))) {
+    alert('🔒 Este plan está bloqueado porque ya tienes un plan superior activo o ya está activado.\n\nPara cambiar de plan, primero cancela la suscripción actual.');
     return;
   }
 
-  // 🚫 BLOQUEAR si es plan gratuito y ya lo tiene
-  if (plan === 'free' && suscripcionesUsuario[testSeleccionado]) {
-    const sub = suscripcionesUsuario[testSeleccionado];
-    if (sub.plan === 'free') {
-      alert('✅ Ya tienes el plan gratuito activado.\n\n🚀 Selecciona un plan superior para upgrade.');
-      return;
-    }
+  // Excepción: si intentan activar gratuito cuando ya lo tienen
+  if (planLower === 'gratuito' && suscripcionesUsuario[testSeleccionado] && suscripcionesUsuario[testSeleccionado].plan === 'gratuito') {
+    alert('✅ Ya tienes el plan gratuito activado.\n\nSelecciona un plan superior para hacer upgrade.');
+    return;
   }
 
   if (!testSeleccionado) {
@@ -3408,51 +3395,36 @@ function seleccionarPlan(plan) {
     return;
   }
 
-  // El resto de la función permanece igual
+  // Limpiar estilo previo
   document.querySelectorAll('.plan-card').forEach(card => {
+    card.classList.remove('selected');
     card.style.transform = 'translateY(0) scale(1)';
     card.style.borderColor = 'var(--border)';
+    card.style.boxShadow = 'none';
   });
-  
- const planCard = document.getElementById(planElementId);  
-  if (planCard) {  
-    planCard.style.transform = 'translateY(-4px) scale(1.02)';  
-    planCard.style.borderColor = 'var(--accent)';  
-    planCard.style.boxShadow = '0 12px 32px rgba(52, 195, 255, 0.3)';  
+
+  // Aplicar estilo de preselección
+  if (planCard) {
+    planCard.classList.add('selected');
+    planCard.style.transform = 'translateY(-4px) scale(1.02)';
+    planCard.style.borderColor = 'var(--accent)';
+    planCard.style.boxShadow = '0 12px 32px rgba(52,195,255,0.18)';
   }
 
+  // Info de los planes (texto usado en confirm)
   const planesInfo = {
-    free: { 
-      nombre: 'Plan Gratuito', 
-      precio: 'Gratis', 
-      descripcion: '2 tandas de prueba',
-      accion: 'activar'
-    },
-    mensual: { 
-      nombre: 'Plan Mensual', 
-      precio: '9,99€/mes', 
-      descripcion: 'Acceso ilimitado',
-      accion: 'contratar'
-    },
-    trimestral: { 
-      nombre: 'Plan Trimestral', 
-      precio: '24,99€/3 meses', 
-      descripcion: 'Ahorra 25%',
-      accion: 'contratar'
-    },
-    anual: { 
-      nombre: 'Plan Anual', 
-      precio: '79,99€/año', 
-      descripcion: 'Ahorra 33%',
-      accion: 'contratar'
-    }
+    gratuito: { nombre: 'Plan Gratuito', precio: 'Gratis', descripcion: '2 tandas de prueba' },
+    mensual: { nombre: 'Plan Mensual', precio: '9,99€/mes', descripcion: 'Acceso ilimitado' },
+    trimestral: { nombre: 'Plan Trimestral', precio: '24,99€/3 meses', descripcion: 'Ahorra 25%' },
+    anual: { nombre: 'Plan Anual', precio: '79,99€/año', descripcion: 'Ahorra 33%' }
   };
 
-  const planInfo = planesInfo[plan];
-  const testNombre = document.getElementById('testSelect').options[document.getElementById('testSelect').selectedIndex].text;
+  const planInfo = planesInfo[planLower] || { nombre: plan, precio: '-', descripcion: '' };
+  const select = document.getElementById('testSelect');
+  const testNombre = select && select.options[select.selectedIndex] ? select.options[select.selectedIndex].text : (testSeleccionado || '');
 
   let confirmMsg;
-  if (plan === 'free') {
+  if (planLower === 'gratuito') {
     confirmMsg = `🎁 ¿Confirmas la activación?\n\n` +
       `📚 Test: ${testNombre}\n` +
       `💳 Plan: ${planInfo.nombre}\n` +
@@ -3469,34 +3441,23 @@ function seleccionarPlan(plan) {
   }
 
   if (confirm(confirmMsg)) {
-    planSeleccionado = plan;
-    
-    if (plan === 'free') {
+    planSeleccionado = planLower;
+    if (planLower === 'gratuito') {
       activarPlanGratuito();
     } else {
       procesarPagoStripe();
     }
   } else {
+    // cancelar selección visual si el usuario no confirma
     if (planCard) {
+      planCard.classList.remove('selected');
       planCard.style.transform = '';
       planCard.style.borderColor = '';
       planCard.style.boxShadow = '';
     }
+    planSeleccionado = null;
   }
 }
-    // Activar plan seleccionado
-    async function activarPlan() {
-      if (!testSeleccionado || !planSeleccionado) {
-        alert('⚠️ Selecciona un test y un plan primero');
-        return;
-      }
-
-      if (planSeleccionado === 'free') {
-        await activarPlanGratuito();
-      } else {
-        await procesarPagoStripe();
-      }
-    }
 
    // Activar plan gratuito (sin pago)
 async function activarPlanGratuito() {
@@ -3506,7 +3467,7 @@ async function activarPlanGratuito() {
     await db.collection('suscripciones').doc(usuarioActual.uid).set({
         email: usuarioActual.email, // ✅ AÑADIR ESTO
       [testSeleccionado]: {
-        plan: 'free',
+        plan: 'gratuito',
         tandasUsadas: 0,
         fechaActivacion: Date.now(),
         nombre: testNombre
@@ -3514,7 +3475,7 @@ async function activarPlanGratuito() {
     }, { merge: true });
 
     suscripcionesUsuario[testSeleccionado] = {
-      plan: 'free',
+      plan: 'gratuito',
       tandasUsadas: 0,
       nombre: testNombre
     };
@@ -3594,7 +3555,7 @@ const crearSesionCheckout = functions.httpsCallable('crearCheckoutSession');
 
       const sub = suscripcionesUsuario[categoriaActual];
 
-      if (sub.plan === 'free') {
+      if (sub.plan === 'gratuito') {
         if (sub.tandasUsadas >= TANDAS_GRATUITAS) {
           alert(`⚠️ Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar.`);
           return false;
@@ -3612,7 +3573,7 @@ const crearSesionCheckout = functions.httpsCallable('crearCheckoutSession');
 
       const sub = suscripcionesUsuario[categoriaActual];
 
-      if (sub.plan === 'free') {
+      if (sub.plan === 'gratuito') {
         sub.tandasUsadas = (sub.tandasUsadas || 0) + 1;
 
         try {
@@ -3663,7 +3624,7 @@ function verificarAccesoTest(testId) {
   }
 
   // Verificar límites del plan gratuito
-  if (suscripcion.plan === 'free' && suscripcion.tandasUsadas >= TANDAS_GRATUITAS) {
+  if (suscripcion.plan === 'gratuito' && suscripcion.tandasUsadas >= TANDAS_GRATUITAS) {
     return { acceso: false, motivo: 'Has agotado tus tandas gratuitas para este test' };
   }
 
