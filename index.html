@@ -32,8 +32,8 @@ const db = firebase.firestore();
 const analytics = firebase.analytics();
 
 // ✅ MÉTODO ALTERNATIVO para especificar región
-const functions = firebase.app().functions('europe-west6');
-
+const functions = firebase.functions('europe-west6');
+const verificarPago = functions.httpsCallable('verificarPago');
 const IS_DEVELOPMENT = false;
 console.log('🔥 Firebase configurado correctamente');
     // ==================== CONFIGURACIÓN DESARROLLO ====================
@@ -2585,7 +2585,7 @@ console.log('🔥 Firebase configurado correctamente');
 console.log('🔑 Stripe inicializado con:', STRIPE_PUBLIC_KEY.substring(0, 20) + '...');
     // IDs de precios de Stripe (crear en Dashboard de Stripe)
     const STRIPE_PRICES = {
-      mensual: 'price_1SVGnbRsnNtATP9UMZTNCg0v',
+      mensual: 'price_1SVEbuRtyqAYsH2HaPpWMASN',
     trimestral: 'price_1SWu42RsnNtATP9UPeHj3GxP',
       anual: 'price_1SWu4uRsnNtATP9UP3YCCjvK'
     };
@@ -4957,7 +4957,7 @@ async function verificarPagoStripe(sessionId) {
     `;
     document.body.appendChild(loadingDiv);
     
-    const verificarPago = firebase.functions().httpsCallable('verificarPago');
+const verificarPago = firebase.functions('europe-west6').httpsCallable('verificarPago');
     const resultado = await verificarPago({ sessionId: sessionId });
     
     document.body.removeChild(loadingDiv);
