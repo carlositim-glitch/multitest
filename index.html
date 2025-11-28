@@ -2225,7 +2225,7 @@ console.log('🔥 Firebase configurado correctamente');
             <div class="user-label" style="font-size: 11px; margin-bottom: 2px;">
               📧 <a href="mailto:multitest.gobcan@gmail.com" style="color: var(--accent); text-decoration: none;" title="Enviar correo de contacto">multitest.gobcan@gmail.com</a>
             </div>
-            <div class="user-label">Versión BETA 0.11c - Conectado como:</div>  
+            <div class="user-label">Versión BETA 0.11d - Conectado como:</div>  
             <div class="email" id="userEmailSeleccion"></div>  
           </div>  
           <button class="logout" onclick="cerrarSesion()">🔄</button>
@@ -3050,9 +3050,9 @@ function mostrarBotonIniciarTest(testNombre) {
     btn.style.marginTop = '12px';
     btn.textContent = `🚀 Iniciar Test`;
 
-    // ✅ CAMBIO: Llamar a accederTestDirecto en vez de iniciarTest directo
     btn.onclick = function() {
-      accederTestDirecto(testSeleccionado);
+      categoriaActual = testSeleccionado;
+      iniciarTest();
     };
 
     const infoCategoria = document.createElement('div');
@@ -3091,6 +3091,7 @@ function mostrarBotonIniciarTest(testNombre) {
     console.error('Error mostrando botón iniciar test:', e);
   }
 }
+    
     // ---------------------- BOTÓN DE ACCESO TOTAL PARA TESTER ----------------------
     function renderTestAccessButtonIfTester() {
       try {
@@ -3223,7 +3224,7 @@ function actualizarTestsContratados(containerId, listId, titulo) {
 }
 
     // Acceder directamente a un test contratado
-  async function accederTestDirecto(testId) {
+   async function accederTestDirecto(testId) {
   // ✅ EXCEPCIÓN PARA DESARROLLADOR - Acceso total sin restricciones
   if (usuarioActual && usuarioActual.email === 'carlos.itim@gmail.com') {
     console.log('🔧 Acceso de desarrollador - saltando verificaciones');
@@ -3232,41 +3233,34 @@ function actualizarTestsContratados(containerId, listId, titulo) {
     return;
   }
   
-  // ✅ VERIFICAR EN FIRESTORE (NO EN CACHÉ LOCAL)
-  try {
-    const doc = await db.collection('suscripciones').doc(usuarioActual.uid).get();
-    const subsFirestore = doc.exists ? doc.data() : {};
-    const suscripcion = subsFirestore[testId];
-    
-    // Verificar que tenga suscripción válida para ESTE test específico
-    if (!suscripcion || !suscripcion.plan || suscripcion.plan === 'none') {
-      alert('🚫 No tienes acceso a este test. Debes activar un plan primero.');
-      testSeleccionado = testId;
-      document.getElementById('testSelect').value = testId;
-      mostrarPlanes();
-      mostrarPantalla('screenSeleccionTest');
-      return;
-    }
-    
-    // Si tiene plan gratuito, verificar límite de tandas EN FIRESTORE
-    if (suscripcion.plan === 'gratuito' && suscripcion.tandasUsadas >= TANDAS_GRATUITAS) {
-      alert(`⚠️ Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar con acceso ilimitado.`);
-      testSeleccionado = testId;
-      document.getElementById('testSelect').value = testId;
-      mostrarPlanes();
-      mostrarPantalla('screenSeleccionTest');
-      return;
-    }
-
-    // Acceso permitido
-    categoriaActual = testId;
-    iniciarTest();
-    
-  } catch (error) {
-    console.error('❌ Error verificando acceso:', error);
-    alert('Error verificando tu suscripción. Intenta de nuevo.');
+  // ✅ VERIFICACIONES DE SEGURIDAD PARA USUARIOS NORMALES
+  const suscripcion = suscripcionesUsuario[testId];
+  
+  // Verificar que tenga suscripción válida para ESTE test específico
+  if (!suscripcion || !suscripcion.plan || suscripcion.plan === 'none') {
+    alert('🚫 No tienes acceso a este test. Debes activar un plan primero.');
+    testSeleccionado = testId;
+    document.getElementById('testSelect').value = testId;
+    mostrarPlanes();
+    mostrarPantalla('screenSeleccionTest');
+    return;
   }
-}
+  
+  // Si tiene plan gratuito, verificar límite de tandas
+  if (suscripcion.plan === 'gratuito' && suscripcion.tandasUsadas >= TANDAS_GRATUITAS) {
+    alert(`⚠️ Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar con acceso ilimitado.`);
+    testSeleccionado = testId;
+    document.getElementById('testSelect').value = testId;
+    mostrarPlanes();
+    mostrarPantalla('screenSeleccionTest');
+    return;
+  }
+
+  // Acceso permitido
+  categoriaActual = testId;
+  iniciarTest();
+}// mostrarPlanes actualizado: marca el plan activo con "✅ Ya activado" 
+// y bloquea todos los inferiores con overlay (gratuito incluido se muestra igual si es activo)
 function mostrarPlanes() {
   const testSelect = document.getElementById('testSelect');
   const planesContainer = document.getElementById('planesContainer');
@@ -3552,77 +3546,51 @@ async function activarPlanGratuito() {
   }
 }
     // Verificar si puede usar el test (límite de tandas)
-   async function verificarLimiteTandas() {
-  if (!categoriaActual) return true;
-  
-  // ✅ VERIFICAR EN FIRESTORE (NO EN CACHÉ LOCAL)
-  try {
-    const doc = await db.collection('suscripciones').doc(usuarioActual.uid).get();
-    const subsFirestore = doc.exists ? doc.data() : {};
-    const sub = subsFirestore[categoriaActual];
-    
-    // ✅ ACTUALIZAR CACHÉ LOCAL CON DATOS REALES
-    if (sub) {
-      suscripcionesUsuario[categoriaActual] = sub;
-    }
-    
-    // ✅ SI NO TIENE SUSCRIPCIÓN → BLOQUEAR
-    if (!sub || !sub.plan || sub.plan === 'none') {
-      alert('🚫 No tienes acceso a este test. Activa un plan primero.');
-      return false;
-    }
-
-    // ✅ SI ES GRATUITO → VERIFICAR LÍMITE
-    if (sub.plan === 'gratuito') {
-      if (sub.tandasUsadas >= TANDAS_GRATUITAS) {
-        alert(`⚠️ Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar.`);
-        return false;
+    function verificarLimiteTandas() {
+      if (!categoriaActual || !suscripcionesUsuario[categoriaActual]) {
+        return true; // No hay restricción si no hay suscripción
       }
-    }
 
-    return true;
-  } catch (error) {
-    console.error('❌ Error verificando límite:', error);
-    alert('Error al verificar tu plan. Por favor, intenta de nuevo.');
-    return false;
-  }
-}
-    // Incrementar contador de tandas usadas
-   async function incrementarTandaUsada() {
-  if (!categoriaActual || !suscripcionesUsuario[categoriaActual]) {
-    return;
-  }
+      const sub = suscripcionesUsuario[categoriaActual];
 
-  const sub = suscripcionesUsuario[categoriaActual];
-
-  if (sub.plan === 'gratuito') {
-    try {
-      // Incrementar en Firestore
-      await db.collection('suscripciones').doc(usuarioActual.uid).set({
-        email: usuarioActual.email,
-        [categoriaActual]: {
-          ...sub,
-          tandasUsadas: (sub.tandasUsadas || 0) + 1
+      if (sub.plan === 'gratuito') {
+        if (sub.tandasUsadas >= TANDAS_GRATUITAS) {
+          alert(`⚠️ Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar.`);
+          return false;
         }
-      }, { merge: true });
-
-      // ✅ RECARGAR DESDE FIRESTORE PARA SINCRONIZAR CACHÉ
-      const doc = await db.collection('suscripciones').doc(usuarioActual.uid).get();
-      if (doc.exists) {
-        suscripcionesUsuario = doc.data();
       }
 
-      const tandasUsadas = suscripcionesUsuario[categoriaActual].tandasUsadas;
-      console.log(`📊 Tandas usadas: ${tandasUsadas}/${TANDAS_GRATUITAS}`);
-
-      if (tandasUsadas >= TANDAS_GRATUITAS) {
-        alert(`⚠️ Has completado tus ${TANDAS_GRATUITAS} tandas gratuitas.\n\nPara continuar, actualiza a un plan de pago con acceso ilimitado.`);
-      }
-    } catch (error) {
-      console.error('Error actualizando tandas:', error);
+      return true;
     }
-  }
-}
+
+    // Incrementar contador de tandas usadas
+    async function incrementarTandaUsada() {
+      if (!categoriaActual || !suscripcionesUsuario[categoriaActual]) {
+        return;
+      }
+
+      const sub = suscripcionesUsuario[categoriaActual];
+
+      if (sub.plan === 'gratuito') {
+        sub.tandasUsadas = (sub.tandasUsadas || 0) + 1;
+
+        try {
+          await db.collection('suscripciones').doc(usuarioActual.uid).set({
+              email: usuarioActual.email, // ✅ AÑADIR ESTO
+            [categoriaActual]: sub
+          }, { merge: true });
+
+          console.log(`📊 Tandas usadas: ${sub.tandasUsadas}/${TANDAS_GRATUITAS}`);
+
+          if (sub.tandasUsadas >= TANDAS_GRATUITAS) {
+            alert(`⚠️ Has completado tus ${TANDAS_GRATUITAS} tandas gratuitas.\n\nPara continuar, actualiza a un plan de pago con acceso ilimitado.`);
+          }
+        } catch (error) {
+          console.error('Error actualizando tandas:', error);
+        }
+      }
+    }
+
     // Modificar hideErrorMessage para soportar múltiples contenedores
     function hideErrorMessage(elementId = 'errorMessage') {
       const errorDiv = document.getElementById(elementId);
@@ -3663,65 +3631,47 @@ function verificarAccesoTest(testId) {
     // ==================== NUEVO SISTEMA DE TANDAS SECUENCIALES ====================
 
     // Función principal para iniciar el test con el nuevo sistema
-   async function iniciarTest() {
-  console.log('🚀 Iniciando test con nuevo sistema de tandas para categoría:', categoriaActual);
+    function iniciarTest() {
+      console.log('🚀 Iniciando test con nuevo sistema de tandas para categoría:', categoriaActual);
   
-  // ✅ VERIFICACIÓN DE SEGURIDAD CONTRA FIRESTORE
-  try {
-    const doc = await db.collection('suscripciones').doc(usuarioActual.uid).get();
-    const subsFirestore = doc.exists ? doc.data() : {};
-    const suscripcion = subsFirestore[categoriaActual];
-    
-    // Verificar acceso
-    if (!suscripcion || !suscripcion.plan || suscripcion.plan === 'none') {
-      alert('🚫 No tienes acceso a este test.');
-      volverCategorias();
-      return;
-    }
-    
-    // Verificar límite gratuito
-    if (suscripcion.plan === 'gratuito' && suscripcion.tandasUsadas >= TANDAS_GRATUITAS) {
-      alert(`🚫 Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.`);
-      volverCategorias();
-      return;
-    }
-  } catch (error) {
-    console.error('❌ Error verificando acceso:', error);
-    alert('Error al verificar tu suscripción.');
+  // ✅ AÑADIR VERIFICACIÓN DE SEGURIDAD
+  const verificacion = verificarAccesoTest(categoriaActual);
+  if (!verificacion.acceso) {
+    alert(`🚫 Acceso denegado: ${verificacion.motivo}`);
     volverCategorias();
     return;
   }
-  
-  mostrarPantalla('screenTest');
+      mostrarPantalla('screenTest');
 
-  // Ocultar panel de planes
-  const planesContainer = document.getElementById('planesContainer');
-  if (planesContainer) planesContainer.classList.remove('show');
+      // Ocultar panel de planes
+      const planesContainer = document.getElementById('planesContainer');
+      if (planesContainer) planesContainer.classList.remove('show');
 
-  // Reiniciar variables del nuevo sistema
-  masterPool = [];
-  preguntasPendientes = [];
-  preguntasCompletadas = [];
-  preguntasFalladas = [];
-  tandaActual = [];
-  indicePreguntaActual = 0;
-  respuestasUsuario = [];
-  numeroTanda = 0;
-  preguntasRealizadasGlobal = 0;
-  aciertosGlobal = 0;
-  esTandaRepeticion = false;
-  inicioTestTimestamp = Date.now();
+      // Reiniciar variables del nuevo sistema
+      masterPool = [];
+      preguntasPendientes = [];
+      preguntasCompletadas = [];
+      preguntasFalladas = [];
+      tandaActual = [];
+      indicePreguntaActual = 0;
+      respuestasUsuario = [];
+      numeroTanda = 0;
+      preguntasRealizadasGlobal = 0;
+      aciertosGlobal = 0;
+      esTandaRepeticion = false;
+      inicioTestTimestamp = Date.now();
 
-  // Verificar límite de tandas
-  const puedeIniciar = await verificarLimiteTandas();
-  if (!puedeIniciar) {
-    volverCategorias();
-    return;
-  }
+      // Verificar límite de tandas
+      if (!verificarLimiteTandas()) {
+        volverCategorias();
+        return;
+      }
 
-  // Cargar preguntas desde Firebase
-  cargarPreguntasDesdeFirebase();
-}
+      // Cargar preguntas desde Firebase
+      cargarPreguntasDesdeFirebase();
+    }
+
+    // Cargar preguntas desde Firebase
     function cargarPreguntasDesdeFirebase() {
       db.collection('categorias').doc(categoriaActual).get()
         .then((doc) => {
@@ -3795,12 +3745,11 @@ masterPool = mezclarArray(masterPool);
 
     // Preparar una nueva tanda secuencial
     // ==================== PREPARAR NUEVA TANDA - CORREGIDO ====================
-async function prepararNuevaTanda() {
+function prepararNuevaTanda() {
   console.log('🔄 Preparando nueva tanda secuencial...');
   
-  // ✅ VERIFICAR LÍMITE DE TANDAS GRATUITAS EN FIRESTORE
-  const puedeIniciar = await verificarLimiteTandas();
-  if (!puedeIniciar) {
+  // ✅ VERIFICAR LÍMITE DE TANDAS GRATUITAS
+  if (!verificarLimiteTandas()) {
     alert(`🚫 Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar.`);
     volverCategorias();
     return;
@@ -3836,7 +3785,7 @@ async function prepararNuevaTanda() {
   
   // ✅ TOMAR LAS PRIMERAS X PREGUNTAS Y ELIMINARLAS DEL POOL
   const cantidadATomar = Math.min(preguntasPorTanda, preguntasPendientes.length);
-  tandaActual = preguntasPendientes.splice(0, cantidadATomar);
+  tandaActual = preguntasPendientes.splice(0, cantidadATomar); // ← splice ELIMINA del array
   
   // Inicializar respuestas
   respuestasUsuario = new Array(tandaActual.length).fill(null);
@@ -3851,6 +3800,7 @@ async function prepararNuevaTanda() {
   restoreStatsPreference();
   mostrarPregunta();
 }
+    // Preparar tanda de repetición (solo fallos)
    function prepararTandaRepeticion() {
   console.log('🔄 Preparando tanda de repetición de fallos...');
   
@@ -4272,71 +4222,70 @@ function siguientePregunta() {
     }
 
     // Saltar tanda (continuar sin repetir fallos)
-   async function saltarTanda() {
-  // ✅ VERIFICAR LÍMITE ANTES DE SALTAR
-  const puedeIniciar = await verificarLimiteTandas();
-  if (!puedeIniciar) {
+    function saltarTanda() {
+      // ✅ VERIFICAR LÍMITE ANTES DE SALTAR
+  if (!verificarLimiteTandas()) {
     alert(`🚫 Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar.`);
     volverCategorias();
     return;
   }
-  
-  const panel = document.getElementById('tandaOptions');
-  if (panel) panel.style.display = 'none';
-  
-  const feedback = document.getElementById('feedbackContainer');
-  if (feedback) feedback.style.display = 'none';
+      const panel = document.getElementById('tandaOptions');
+           if (panel) panel.style.display = 'none';
+      
+      const feedback = document.getElementById('feedbackContainer');
+      if (feedback) feedback.style.display = 'none';
 
-  // Continuar con siguiente tanda normal
-  prepararNuevaTanda();
-}
-   // Finalizar el test completo
-function finalizarTest() {
-  console.log('🎉 Test completado!');
-  
-  const totalMaster = masterPool.length;
-  const totalRealizadas = preguntasRealizadasGlobal;
-  const correctas = aciertosGlobal;
-  const incorrectas = Math.max(0, totalRealizadas - correctas);
-  const fallosRestantes = preguntasFalladas.length;
+      // Continuar con siguiente tanda normal
+      prepararNuevaTanda();
+    }
 
-  const duracionSegundos = inicioTestTimestamp ? Math.round((Date.now() - inicioTestTimestamp) / 1000) : null;
-  const porcentaje = totalMaster > 0 ? Math.round((correctas / totalMaster) * 100) : 0;
+    // Finalizar el test completo
+    function finalizarTest() {
+      console.log('🎉 Test completado!');
+      
+      const totalMaster = masterPool.length;
+      const totalRealizadas = preguntasRealizadasGlobal;
+      const correctas = aciertosGlobal;
+      const incorrectas = Math.max(0, totalRealizadas - correctas);
+      const fallosRestantes = preguntasFalladas.length;
 
-  const resultado = {
-    email: usuarioActual?.email || null,           // ✅ AÑADIDO
-    usuarioId: usuarioActual?.uid || null,         // ✅ Mejorado (opcional chaining)
-    categoria: categoriaActual || null,
-    fecha: Date.now(),
-    totalPreguntas: totalMaster,
-    realizadas: totalRealizadas,
-    correctas,
-    incorrectas,
-    fallosRestantes,
-    porcentajeAcierto: porcentaje,
-    duracionSegundos,
-    numeroTanda,
-    sistema: 'tandas-secuenciales-v2'
-  };
+      const duracionSegundos = inicioTestTimestamp ? Math.round((Date.now() - inicioTestTimestamp) / 1000) : null;
+      const porcentaje = totalMaster > 0 ? Math.round((correctas / totalMaster) * 100) : 0;
 
-  guardarProgreso();
-  guardarResultadoFinal(resultado);
+      const resultado = {
+        usuarioId: (usuarioActual && usuarioActual.uid) ? usuarioActual.uid : null,
+        categoria: categoriaActual || null,
+        fecha: Date.now(),
+        totalPreguntas: totalMaster,
+        realizadas: totalRealizadas,
+        correctas,
+        incorrectas,
+        fallosRestantes,
+        porcentajeAcierto: porcentaje,
+        duracionSegundos,
+        numeroTanda,
+        sistema: 'tandas-secuenciales-v2'
+      };
 
-  // Actualizar UI de resultados
-  document.getElementById('resultadoPorcentaje').textContent = porcentaje + '%';
-  document.getElementById('resultadoCorrectas').textContent = correctas;
-  document.getElementById('resultadoIncorrectas').textContent = incorrectas;
-  document.getElementById('resultadoTotal').textContent = totalMaster;
+      guardarProgreso();
+      guardarResultadoFinal(resultado);
 
-  // Cargar estadísticas
-  obtenerEstadisticasUsuario().then(stats => {
-    mostrarEstadisticasDetalladas(stats, correctas, incorrectas, totalMaster, porcentaje || 0);
-  });
+      // Actualizar UI de resultados
+      document.getElementById('resultadoPorcentaje').textContent = porcentaje + '%';
+      document.getElementById('resultadoCorrectas').textContent = correctas;
+      document.getElementById('resultadoIncorrectas').textContent = incorrectas;
+      document.getElementById('resultadoTotal').textContent = totalMaster;
 
-  mostrarPantalla('screenResultado');
+      // Cargar estadísticas
+      obtenerEstadisticasUsuario().then(stats => {
+        mostrarEstadisticasDetalladas(stats, correctas, incorrectas, totalMaster, porcentaje || 0);
+      });
 
-  console.log('✅ Resultado final guardado:', resultado);
-}
+      mostrarPantalla('screenResultado');
+
+      console.log('✅ Resultado final guardado:', resultado);
+    }
+
     // ==================== FUNCIONES AUXILIARES ====================
 
     // Mezclar array
@@ -4445,52 +4394,52 @@ function finalizarTest() {
     // ==================== GUARDADO Y CARGA DE PROGRESO ====================
 
     // Función principal de guardado
-   function guardarProgresoEnNube() {
-  if (!usuarioActual || !categoriaActual) {
-    console.log('❌ No hay usuario o categoría para guardar progreso');
-    return;
-  }
+    function guardarProgresoEnNube() {
+      if (!usuarioActual || !categoriaActual) {
+        console.log('❌ No hay usuario o categoría para guardar progreso');
+        return;
+      }
 
-  try {
-    const estado = {
-      // Nuevo sistema de tandas
-      masterPoolIds: masterPool.map(p => p.id || null),
-      preguntasPendientesIds: preguntasPendientes.map(p => p.id || null),
-      preguntasCompletadasIds: preguntasCompletadas.map(p => p.id || null),
-      preguntasFalladasIds: preguntasFalladas.map(p => p.id || null),
-      tandaActualIds: tandaActual.map(p => p.id || null),
-      respuestasUsuario: respuestasUsuario || [],
-      indicePreguntaActual: indicePreguntaActual || 0,
-      numeroTanda: numeroTanda || 0,
-      esTandaRepeticion: esTandaRepeticion || false,
-      
-      // Estadísticas
-      preguntasPorTanda: preguntasPorTanda || 30,
-      preguntasRealizadasGlobal: preguntasRealizadasGlobal || 0,
-      aciertosGlobal: aciertosGlobal || 0,
-      
-      // Metadata
-      timestamp: Date.now(),
-      email: usuarioActual.email,              // ✅ AÑADIDO
-      usuarioId: usuarioActual.uid,
-      categoria: categoriaActual,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      sistema: 'tandas-secuenciales-v2'
-    };
+      try {
+        const estado = {
+          // Nuevo sistema de tandas
+          masterPoolIds: masterPool.map(p => p.id || null),
+          preguntasPendientesIds: preguntasPendientes.map(p => p.id || null),
+          preguntasCompletadasIds: preguntasCompletadas.map(p => p.id || null),
+          preguntasFalladasIds: preguntasFalladas.map(p => p.id || null),
+          tandaActualIds: tandaActual.map(p => p.id || null),
+          respuestasUsuario: respuestasUsuario || [],
+          indicePreguntaActual: indicePreguntaActual || 0,
+          numeroTanda: numeroTanda || 0,
+          esTandaRepeticion: esTandaRepeticion || false,
+          
+          // Estadísticas
+          preguntasPorTanda: preguntasPorTanda || 30,
+          preguntasRealizadasGlobal: preguntasRealizadasGlobal || 0,
+          aciertosGlobal: aciertosGlobal || 0,
+          
+          // Metadata
+          timestamp: Date.now(),
+          usuarioId: usuarioActual.uid,
+          categoria: categoriaActual,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          sistema: 'tandas-secuenciales-v2'
+        };
 
-    const docId = `${usuarioActual.uid}_${categoriaActual}`;
-    
-    db.collection('progresos').doc(docId).set(estado, { merge: true })
-    .then(() => {
-      console.log('💾 Progreso guardado en Firestore correctamente');
-    })
-    .catch(err => {
-      console.error('❌ Error guardando progreso:', err);
-    });
-  } catch (e) {
-    console.error('❌ Error en guardarProgresoEnNube:', e);
-  }
-}
+        const docId = `${usuarioActual.uid}_${categoriaActual}`;
+        
+        db.collection('progresos').doc(docId).set(estado, { merge: true })
+        .then(() => {
+          console.log('💾 Progreso guardado en Firestore correctamente');
+        })
+        .catch(err => {
+          console.error('❌ Error guardando progreso:', err);
+        });
+      } catch (e) {
+        console.error('❌ Error en guardarProgresoEnNube:', e);
+      }
+    }
+
     // Función principal de guardado
     function guardarProgreso() {
       console.log('💾 Guardando progreso...');
@@ -4836,24 +4785,28 @@ function finalizarTest() {
       return { icono: '📖', texto: 'Necesita mejorar' };
     }
 
-    async function nuevoTest() {
-  // ✅ Verificar límite antes de iniciar nuevo test
-  if (!categoriaActual) {
-    alert('Selecciona primero un test');
-    volverCategorias();
-    return;
-  }
-  
-  // ✅ Verificar en Firestore
-  const puedeIniciar = await verificarLimiteTandas();
-  if (!puedeIniciar) {
-    alert(`🚫 Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar.`);
-    volverCategorias();
-    return;
-  }
-  
-  iniciarTest();
-}
+    function nuevoTest() {
+      iniciarTest();
+    }
+
+    function consultarChatGPT() {
+      const pregunta = encodeURIComponent('Tengo dudas sobre el test que acabo de realizar. ¿Puedes ayudarme a entender mejor los conceptos?');
+      window.open('https://chat.openai.com/?q=' + pregunta, '_blank');
+    }
+
+    function toggleStats() {
+      const content = document.getElementById('statsContent');
+      const icon = document.getElementById('statsIcon');
+
+      if(content.classList.contains('open')) {
+        content.classList.remove('open');
+        icon.classList.remove('open');
+      } else {
+        content.classList.add('open');
+        icon.classList.add('open');
+      }
+    }
+
     function volverCategorias() {
       try {
         // Guardar progreso antes de salir
