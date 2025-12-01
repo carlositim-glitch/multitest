@@ -139,6 +139,9 @@
     }
     .stat-box .label { color: #aab3b8; font-size: 14px; }
     .stat-box.premium .number { color: #FFD700; }
+    .stat-box.mensual .number { color: #2e8b57; }
+    .stat-box.trimestral .number { color: #ffc107; }
+    .stat-box.anual .number { color: #FFD700; }
     
     .tabs {
       display: flex;
@@ -227,6 +230,10 @@
       align-items: center;
     }
     .list-item:hover { border-color: #34c3ff; }
+    .list-item.bloqueado {
+      border-left: 4px solid #b22222;
+      opacity: 0.7;
+    }
     .list-item .info { flex: 1; }
     .list-item .nombre {
       color: #34c3ff;
@@ -246,13 +253,14 @@
       font-weight: 600;
       margin-left: 8px;
     }
-    .badge.free { background: rgba(52, 195, 255, 0.2); color: #34c3ff; }
+    .badge.gratuito { background: rgba(52, 195, 255, 0.2); color: #34c3ff; }
     .badge.mensual { background: rgba(46, 139, 87, 0.2); color: #2e8b57; }
     .badge.trimestral { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
     .badge.anual { background: rgba(255, 215, 0, 0.2); color: #FFD700; }
     .badge.oculta { background: rgba(178, 34, 34, 0.2); color: #ff6b6b; }
     .badge.archivada { background: rgba(128, 128, 128, 0.2); color: #aaa; }
     .badge.activa { background: rgba(46, 139, 87, 0.2); color: #5dff9a; }
+    .badge.bloqueado { background: rgba(178, 34, 34, 0.3); color: #ff6b6b; }
     
     .info-box {
       background: rgba(52, 195, 255, 0.1);
@@ -291,7 +299,6 @@
       cursor: pointer;
       margin: 0;
     }
-
     .list-item.dragging {
       opacity: 0.5;
       cursor: move;
@@ -305,7 +312,6 @@
       margin-right: 10px;
       cursor: move;
     }
-
     .cat-stats-box {
       background: #26292d;
       border-radius: 8px;
@@ -335,13 +341,25 @@
     .cat-stat-item.premium .value {
       color: #FFD700;
     }
+    .file-upload-btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #2e8b57;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+    .file-upload-btn:hover {
+      background: #25724a;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🔧 Panel Admin - MultiTest</h1>
     <p class="subtitle">Gestión completa del sistema</p>
-
     <div id="userInfo" class="user-info" style="display:none;">
       <div>
         <div style="font-size: 14px; color: #aab3b8; margin-bottom: 5px;">Admin:</div>
@@ -349,12 +367,10 @@
       </div>
       <button onclick="cerrarSesion()">Cerrar sesión</button>
     </div>
-
     <div id="loginCard" class="card">
       <h2>🔐 Iniciar Sesión</h2>
       <button onclick="iniciarSesion()">Entrar con Google</button>
     </div>
-
     <div id="adminPanel" style="display:none;">
       <div class="tabs">
         <button class="tab active" onclick="cambiarTab('categorias')">📚 Categorías</button>
@@ -362,7 +378,6 @@
         <button class="tab" onclick="cambiarTab('usuarios')">👥 Usuarios</button>
         <button class="tab" onclick="cambiarTab('stats')">📊 Stats</button>
       </div>
-
       <!-- TAB CATEGORÍAS -->
       <div id="tabCategorias" class="tab-content active">
         <div class="card">
@@ -393,7 +408,6 @@
           <div id="logCat" class="log"></div>
         </div>
       </div>
-
       <!-- TAB PREGUNTAS -->
       <div id="tabPreguntas" class="tab-content">
         <div class="card">
@@ -424,7 +438,6 @@
           <div id="logPreg" class="log"></div>
         </div>
       </div>
-
       <!-- TAB USUARIOS -->
       <div id="tabUsuarios" class="tab-content">
         <div class="card">
@@ -439,23 +452,31 @@
               <div class="label">Suscripciones</div>
             </div>
             <div class="stat-box">
-              <div class="number" id="totalFree">0</div>
+              <div class="number" id="totalgratuito">0</div>
               <div class="label">Gratuitas</div>
             </div>
-            <div class="stat-box premium">
-              <div class="number" id="totalPaid">0</div>
-              <div class="label">Premium</div>
+            <div class="stat-box mensual">
+              <div class="number" id="totalMensual">0</div>
+              <div class="label">Mensuales</div>
+            </div>
+            <div class="stat-box trimestral">
+              <div class="number" id="totalTrimestral">0</div>
+              <div class="label">Trimestrales</div>
+            </div>
+            <div class="stat-box anual">
+              <div class="number" id="totalAnual">0</div>
+              <div class="label">Anuales</div>
             </div>
           </div>
           <div style="margin-top: 20px;">
             <button onclick="verUsuarios()">👥 Ver Usuarios</button>
             <button onclick="otorgarAcceso()" class="premium">👑 Otorgar Acceso</button>
             <button onclick="actualizarStatsUsers()">🔄 Actualizar</button>
+            <button onclick="limpiarLogsUsuarios()" class="danger">🗑️ Limpiar Log</button>
           </div>
           <div id="logUsers" class="log"></div>
         </div>
       </div>
-
       <!-- TAB STATS -->
       <div id="tabStats" class="tab-content">
         <div class="card">
@@ -486,7 +507,6 @@
       </div>
     </div>
   </div>
-
   <!-- MODALES -->
   <div id="modalCat" class="modal">
     <div class="modal-content">
@@ -496,6 +516,13 @@
       </div>
       <form id="formCat" onsubmit="guardarCat(event)">
         <input type="hidden" id="catIdOld">
+        
+        <div class="form-group">
+          <label for="filePDFCat" class="file-upload-btn">📄 Cargar JSON de categoría</label>
+          <input type="file" id="filePDFCat" accept=".json" onchange="cargarJSONCat()" style="display:none;">
+          <small id="pdfFileName" style="color: #5dff9a;"></small>
+        </div>
+        
         <div class="form-group">
           <label>ID:</label>
           <input type="text" id="catId" placeholder="matematicas" required>
@@ -537,7 +564,6 @@
       </form>
     </div>
   </div>
-
   <div id="modalListCat" class="modal">
     <div class="modal-content" style="max-width: 900px;">
       <div class="modal-header">
@@ -547,7 +573,6 @@
       <div id="listCat"></div>
     </div>
   </div>
-
   <div id="modalReordenar" class="modal">
     <div class="modal-content" style="max-width: 700px;">
       <div class="modal-header">
@@ -563,7 +588,6 @@
       </div>
     </div>
   </div>
-
   <div id="modalEstatus" class="modal">
     <div class="modal-content" style="max-width: 800px;">
       <div class="modal-header">
@@ -573,7 +597,6 @@
       <div id="estatusContenido"></div>
     </div>
   </div>
-
   <div id="modalUsers" class="modal">
     <div class="modal-content" style="max-width: 900px;">
       <div class="modal-header">
@@ -583,7 +606,6 @@
       <div id="listUsers"></div>
     </div>
   </div>
-
   <div id="modalAcceso" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -604,7 +626,7 @@
         <div class="form-group">
           <label>Plan:</label>
           <select id="planAcceso" required>
-            <option value="free">🎁 Gratuito</option>
+            <option value="gratuito">🎁 Gratuito</option>
             <option value="mensual">📅 Mensual</option>
             <option value="trimestral">🔥 Trimestral</option>
             <option value="anual">👑 Anual</option>
@@ -617,11 +639,9 @@
       </form>
     </div>
   </div>
-
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCQ5u2bs7kv7KNsS7HQ_T2HYNNnhI-KbG4",
@@ -636,26 +656,38 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-
     const ADMIN_EMAIL = 'carlos.itim@gmail.com';
     let catActual = null;
     let modoEdit = false;
-
+    
     function log(id, msg, type = 'info') {
       const el = document.getElementById(id);
       if (!el) return;
+      
       const div = document.createElement('div');
       div.className = `log-item ${type}`;
       div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
       el.appendChild(div);
+      
+      const items = el.querySelectorAll('.log-item');
+      if (items.length > 200) {
+        for (let i = 0; i < items.length - 200; i++) {
+          items[i].remove();
+        }
+      }
+      
       el.scrollTop = el.scrollHeight;
+      
+      if (id === 'logUsers') {
+        guardarLogs();
+      }
     }
-
+    
     function clearLog(id) {
       const el = document.getElementById(id);
       if (el) el.innerHTML = '';
     }
-
+    
     function cambiarTab(tab) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -667,16 +699,16 @@
       if (tab === 'preguntas') cargarCatSelect();
       if (tab === 'categorias') actualizarStatsCategorias();
     }
-
+    
     function iniciarSesion() {
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider).catch(e => alert('Error: ' + e.message));
     }
-
+    
     function cerrarSesion() {
       auth.signOut().then(() => location.reload());
     }
-
+    
     auth.onAuthStateChanged(user => {
       if (user) {
         if (user.email !== ADMIN_EMAIL) {
@@ -689,6 +721,9 @@
         document.getElementById('userInfo').style.display = 'flex';
         document.getElementById('adminPanel').style.display = 'block';
         document.getElementById('userEmail').textContent = user.email;
+        
+        cargarLogsGuardados();
+        
         cargarCatSelect();
         actualizarStats();
         actualizarStatsUsers();
@@ -699,7 +734,40 @@
         document.getElementById('adminPanel').style.display = 'none';
       }
     });
-
+    
+    function cargarLogsGuardados() {
+      const logsGuardados = localStorage.getItem('adminLogs');
+      if (logsGuardados) {
+        try {
+          const logs = JSON.parse(logsGuardados);
+          if (logs.logUsers) {
+            document.getElementById('logUsers').innerHTML = logs.logUsers;
+          }
+        } catch (e) {
+          console.error('Error cargando logs:', e);
+        }
+      }
+    }
+    
+    function guardarLogs() {
+      try {
+        const logs = {
+          logUsers: document.getElementById('logUsers').innerHTML,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('adminLogs', JSON.stringify(logs));
+      } catch (e) {
+        console.error('Error guardando logs:', e);
+      }
+    }
+    
+    function limpiarLogsUsuarios() {
+      if (!confirm('¿Limpiar historial de logs?')) return;
+      document.getElementById('logUsers').innerHTML = '';
+      localStorage.removeItem('adminLogs');
+      log('logUsers', 'Historial limpiado', 'info');
+    }
+    
     async function cargarCatSelect() {
       const s1 = document.getElementById('catSelect');
       const s2 = document.getElementById('catAcceso');
@@ -709,7 +777,9 @@
       s2.innerHTML = '<option value="">-- Selecciona --</option>';
       
       try {
+        console.log('🔍 Cargando categorías...');
         const snap = await db.collection('categorias').get();
+        console.log('✅ Categorías obtenidas:', snap.size);
         snap.forEach(doc => {
           const cat = doc.data();
           if (!cat.archivada) {
@@ -718,149 +788,263 @@
           }
         });
       } catch (e) {
-        console.error('Error cargando categorías:', e);
+        console.error('❌ Error cargando categorías:', e);
+        alert('Error al cargar categorías: ' + e.message);
       }
     }
-
-    async function actualizarStatsCategorias() {
-      try {
-        const snap = await db.collection('categorias').get();
-        let total = 0, activas = 0, ocultas = 0, archivadas = 0;
-        
-        snap.forEach(doc => {
-          const d = doc.data();
-          total++;
-          if (d.archivada) archivadas++;
-          else if (d.activa !== false) activas++;
-          if (d.visible === false) ocultas++;
-        });
-        
-        document.getElementById('catCount').textContent = total;
-        document.getElementById('catActivas').textContent = activas;
-        document.getElementById('catOcultas').textContent = ocultas;
-        document.getElementById('catArchivadas').textContent = archivadas;
-      } catch (e) {
-        console.error('Error stats categorías:', e);
+    
+   async function actualizarStatsCategorias() {
+  try {
+    const snap = await db.collection('categorias').get();
+    let total = 0, activas = 0, ocultas = 0, archivadas = 0;
+    
+    snap.forEach(doc => {
+      const d = doc.data();
+      total++;
+      if (d.archivada) archivadas++;
+      else if (d.activa !== false) activas++;
+      if (d.visible === false) ocultas++;
+    });
+    
+    document.getElementById('catCount').textContent = total;
+    document.getElementById('catActivas').textContent = activas;
+    document.getElementById('catOcultas').textContent = ocultas;
+    document.getElementById('catArchivadas').textContent = archivadas;
+  } catch (e) {
+    console.error('Error stats categorías:', e);
+  }
+}
+function cargarJSONCat() {
+  const file = document.getElementById('filePDFCat').files[0];
+  if (!file) return;
+  
+  document.getElementById('pdfFileName').textContent = `📄 ${file.name}`;
+  
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const preguntas = JSON.parse(e.target.result);
+      
+      if (!Array.isArray(preguntas) || preguntas.length === 0) {
+        alert('❌ El JSON debe contener un array de preguntas');
+        preguntasCategoriaJSON = null;
+        return;
       }
+      
+      // Guardar las preguntas en variable global
+      preguntasCategoriaJSON = preguntas;
+      
+      // Extraer el nombre del PDF (sin extensión .json)
+      const nombrePDF = file.name.replace('.json', '');
+      
+      // Generar ID: convertir a minúsculas, reemplazar espacios y caracteres especiales con guiones
+      const idCategoria = nombrePDF
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
+        .replace(/[^a-z0-9]+/g, '-') // Reemplazar caracteres no válidos con guiones
+        .replace(/^-+|-+$/g, ''); // Eliminar guiones al inicio y final
+      
+      // Contar preguntas
+      const numPreguntas = preguntas.length;
+      
+      // Rellenar campos
+      document.getElementById('catId').value = idCategoria;
+      document.getElementById('catNom').value = nombrePDF;
+      document.getElementById('catTot').value = numPreguntas;
+      
+      alert(`✅ JSON cargado exitosamente\n\nID: ${idCategoria}\nNombre: ${nombrePDF}\nPreguntas: ${numPreguntas}\n\n✨ Las preguntas se subirán automáticamente al crear la categoría.`);
+      
+    } catch (err) {
+      alert('❌ Error al procesar el JSON: ' + err.message);
+      preguntasCategoriaJSON = null;
     }
-
+  };
+  reader.readAsText(file);
+}
+    
     function nuevaCategoria() {
-      modoEdit = false;
-      document.getElementById('modalCatTitle').textContent = 'Nueva Categoría';
-      document.getElementById('catIdOld').value = '';
-      document.getElementById('catId').value = '';
-      document.getElementById('catId').disabled = false;
-      document.getElementById('catNom').value = '';
-      document.getElementById('catTot').value = '0';
-      document.getElementById('catPorT').value = '30';
-      document.getElementById('catOrden').value = '0';
-      document.getElementById('catActiva').checked = true;
-      document.getElementById('catVisible').checked = true;
-      document.getElementById('catArchivada').checked = false;
-      document.getElementById('modalCat').classList.add('show');
-    }
-
+  modoEdit = false;
+  preguntasCategoriaJSON = null; // Limpiar preguntas almacenadas
+  document.getElementById('modalCatTitle').textContent = 'Nueva Categoría';
+  document.getElementById('catIdOld').value = '';
+  document.getElementById('catId').value = '';
+  document.getElementById('catId').disabled = false;
+  document.getElementById('catNom').value = '';
+  document.getElementById('catTot').value = '0';
+  document.getElementById('catPorT').value = '30';
+  document.getElementById('catOrden').value = '0';
+  document.getElementById('catActiva').checked = true;
+  document.getElementById('catVisible').checked = true;
+  document.getElementById('catArchivada').checked = false;
+  document.getElementById('filePDFCat').value = '';
+  document.getElementById('pdfFileName').textContent = '';
+  document.getElementById('modalCat').classList.add('show');
+}
+    
     async function editarCat(id) {
-      modoEdit = true;
-      try {
-        const doc = await db.collection('categorias').doc(id).get();
-        if (!doc.exists) return alert('No encontrada');
-        
-        const d = doc.data();
-        document.getElementById('modalCatTitle').textContent = 'Editar Categoría';
-        document.getElementById('catIdOld').value = id;
-        document.getElementById('catId').value = id;
-        document.getElementById('catId').disabled = true;
-        document.getElementById('catNom').value = d.nombre || '';
-        document.getElementById('catTot').value = d.totalPreguntas || 0;
-        document.getElementById('catPorT').value = d.preguntasPorTanda || 30;
-        document.getElementById('catOrden').value = d.orden || 0;
-        document.getElementById('catActiva').checked = d.activa !== false;
-        document.getElementById('catVisible').checked = d.visible !== false;
-        document.getElementById('catArchivada').checked = d.archivada === true;
-        document.getElementById('modalCat').classList.add('show');
-      } catch (e) {
-        alert('Error: ' + e.message);
+  modoEdit = true;
+  preguntasCategoriaJSON = null; // Limpiar preguntas en modo edición
+  try {
+    const doc = await db.collection('categorias').doc(id).get();
+    if (!doc.exists) return alert('No encontrada');
+    
+    const d = doc.data();
+    document.getElementById('modalCatTitle').textContent = 'Editar Categoría';
+    document.getElementById('catIdOld').value = id;
+    document.getElementById('catId').value = id;
+    document.getElementById('catId').disabled = true;
+    document.getElementById('catNom').value = d.nombre || '';
+    document.getElementById('catTot').value = d.totalPreguntas || 0;
+    document.getElementById('catPorT').value = d.preguntasPorTanda || 30;
+    document.getElementById('catOrden').value = d.orden || 0;
+    document.getElementById('catActiva').checked = d.activa !== false;
+    document.getElementById('catVisible').checked = d.visible !== false;
+    document.getElementById('catArchivada').checked = d.archivada === true;
+    document.getElementById('filePDFCat').value = '';
+    document.getElementById('pdfFileName').textContent = '';
+    document.getElementById('modalCat').classList.add('show');
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+    
+   async function guardarCat(e) {
+  e.preventDefault();
+  const id = modoEdit ? document.getElementById('catIdOld').value : document.getElementById('catId').value;
+  const nombre = document.getElementById('catNom').value;
+  const totalPreguntas = parseInt(document.getElementById('catTot').value);
+  const preguntasPorTanda = parseInt(document.getElementById('catPorT').value);
+  const orden = parseInt(document.getElementById('catOrden').value);
+  const activa = document.getElementById('catActiva').checked;
+  const visible = document.getElementById('catVisible').checked;
+  const archivada = document.getElementById('catArchivada').checked;
+  
+  if (!/^[a-z0-9\-]+$/.test(id)) return alert('ID inválido');
+  
+  const datos = {
+    nombre,
+    totalPreguntas,
+    preguntasPorTanda,
+    orden,
+    activa,
+    visible,
+    archivada,
+    actualizadaEn: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  
+  if (!modoEdit) datos.creadaEn = firebase.firestore.FieldValue.serverTimestamp();
+  
+  try {
+    // Guardar categoría
+    await db.collection('categorias').doc(id).set(datos, { merge: true });
+    
+    // Si hay preguntas cargadas, subirlas automáticamente
+    if (preguntasCategoriaJSON && preguntasCategoriaJSON.length > 0 && !modoEdit) {
+      clearLog('logCat');
+      log('logCat', '📤 Subiendo preguntas automáticamente...', 'info');
+      
+      let ok = 0, err = 0;
+      for (const p of preguntasCategoriaJSON) {
+        try {
+          await db.collection('preguntas').add({
+            id: p.id,
+            pregunta: p.pregunta,
+            opciones: p.opciones,
+            respuestaCorrecta: p.respuestaCorrecta,
+            categoria: id,
+            activa: p.activa !== false,
+            creadaEn: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          ok++;
+          if (ok % 25 === 0) log('logCat', `${ok}/${preguntasCategoriaJSON.length} preguntas...`, 'info');
+        } catch (e) {
+          err++;
+        }
       }
+      
+      log('logCat', `✅ ${ok} preguntas subidas, ${err} errores`, ok > 0 ? 'success' : 'error');
+      
+      alert(`✅ Categoría ${modoEdit ? 'actualizada' : 'creada'} exitosamente\n\n📤 ${ok} preguntas subidas\n${err > 0 ? `⚠️ ${err} errores` : ''}`);
+      
+      // Limpiar variable
+      preguntasCategoriaJSON = null;
+    } else {
+      alert(`✅ ${modoEdit ? 'Actualizada' : 'Creada'}`);
     }
-
-    async function guardarCat(e) {
-      e.preventDefault();
-      const id = modoEdit ? document.getElementById('catIdOld').value : document.getElementById('catId').value;
-      const nombre = document.getElementById('catNom').value;
-      const totalPreguntas = parseInt(document.getElementById('catTot').value);
-      const preguntasPorTanda = parseInt(document.getElementById('catPorT').value);
-      const orden = parseInt(document.getElementById('catOrden').value);
-      const activa = document.getElementById('catActiva').checked;
-      const visible = document.getElementById('catVisible').checked;
-      const archivada = document.getElementById('catArchivada').checked;
+    
+    cerrarModalCat();
+    await cargarCatSelect();
+    await actualizarStats();
+    await actualizarStatsCategorias();
+    
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+    
+   async function verCategorias() {
+  try {
+    const snap = await db.collection('categorias').get();
+    if (snap.empty) return alert('No hay categorías');
+    
+    let html = '';
+    
+    // Obtener conteos reales de preguntas para todas las categorías
+    for (const doc of snap.docs) {
+      const d = doc.data();
+      const catId = doc.id;
       
-      if (!/^[a-z0-9\-]+$/.test(id)) return alert('ID inválido');
+      // Contar preguntas reales en BD
+      const pregSnap = await db.collection('preguntas').where('categoria', '==', catId).get();
+      const preguntasReales = pregSnap.size;
+      const preguntasEnCat = d.totalPreguntas || 0;
+      const hayDiscrepancia = preguntasReales !== preguntasEnCat;
       
-      const datos = {
-        nombre,
-        totalPreguntas,
-        preguntasPorTanda,
-        orden,
-        activa,
-        visible,
-        archivada,
-        actualizadaEn: firebase.firestore.FieldValue.serverTimestamp()
-      };
+      const badges = [];
       
-      if (!modoEdit) datos.creadaEn = firebase.firestore.FieldValue.serverTimestamp();
+      if (d.archivada) badges.push('<span class="badge archivada">📦 Archivada</span>');
+      else if (d.activa !== false) badges.push('<span class="badge activa">✅ Activa</span>');
+      else badges.push('<span class="badge oculta">❌ Inactiva</span>');
       
-      try {
-        await db.collection('categorias').doc(id).set(datos, { merge: true });
-        alert(`✅ ${modoEdit ? 'Actualizada' : 'Creada'}`);
-        cerrarModalCat();
-        await cargarCatSelect();
-        await actualizarStats();
-        await actualizarStatsCategorias();
-      } catch (e) {
-        alert('Error: ' + e.message);
+      if (d.visible === false) badges.push('<span class="badge oculta">👁️ Oculta</span>');
+      
+      if (hayDiscrepancia) {
+        badges.push(`<span class="badge" style="background: rgba(255, 107, 107, 0.3); color: #ff6b6b;">⚠️ Desincronizada</span>`);
       }
-    }
-
-    async function verCategorias() {
-      try {
-        const snap = await db.collection('categorias').get();
-        if (snap.empty) return alert('No hay categorías');
-        
-        let html = '';
-        snap.forEach(doc => {
-          const d = doc.data();
-          const badges = [];
-          
-          if (d.archivada) badges.push('<span class="badge archivada">📦 Archivada</span>');
-          else if (d.activa !== false) badges.push('<span class="badge activa">✅ Activa</span>');
-          else badges.push('<span class="badge oculta">❌ Inactiva</span>');
-          
-          if (d.visible === false) badges.push('<span class="badge oculta">👁️ Oculta</span>');
-          
-          html += `
-            <div class="list-item">
-              <div class="info">
-                <div class="nombre">${d.nombre} ${badges.join(' ')}</div>
-                <div class="detalles">
-                  ID: ${doc.id} | Orden: ${d.orden || 0} | ${d.totalPreguntas || 0} preguntas
-                </div>
-              </div>
-              <div class="acciones">
-                <button onclick="verEstatus('${doc.id}')" class="btn-small premium">📊</button>
-                <button onclick="editarCat('${doc.id}')" class="btn-small warning">✏️</button>
-                <button onclick="eliminarCat('${doc.id}', '${d.nombre}')" class="btn-small danger">🗑️</button>
-              </div>
+      
+      html += `
+        <div class="list-item" style="${hayDiscrepancia ? 'border-left: 4px solid #ff6b6b;' : ''}">
+          <div class="info">
+            <div class="nombre">${d.nombre} ${badges.join(' ')}</div>
+            <div class="detalles">
+              ID: ${catId} | Orden: ${d.orden || 0} | 
+              ${hayDiscrepancia ? 
+                `<span style="color: #ff6b6b; font-weight: 600;">BD: ${preguntasReales} ≠ Cat: ${preguntasEnCat}</span>` : 
+                `${preguntasReales} preguntas`
+              }
             </div>
-          `;
-        });
-        document.getElementById('listCat').innerHTML = html;
-        document.getElementById('modalListCat').classList.add('show');
-      } catch (e) {
-        alert('Error: ' + e.message);
-      }
+          </div>
+          <div class="acciones">
+            <button onclick="verEstatus('${catId}')" class="btn-small premium">📊</button>
+            <button onclick="editarCat('${catId}')" class="btn-small warning">✏️</button>
+            ${hayDiscrepancia ? 
+              `<button onclick="sincronizarPreguntas('${catId}', ${preguntasReales})" class="btn-small success" title="Sincronizar">🔄</button>` : 
+              ''
+            }
+            <button onclick="eliminarCat('${catId}', '${d.nombre}')" class="btn-small danger">🗑️</button>
+          </div>
+        </div>
+      `;
     }
-
+    
+    document.getElementById('listCat').innerHTML = html;
+    document.getElementById('modalListCat').classList.add('show');
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+    
     async function eliminarCat(id, nom) {
       if (!confirm(`¿Eliminar "${nom}"?`)) return;
       try {
@@ -874,7 +1058,7 @@
         alert('Error: ' + e.message);
       }
     }
-
+    
     async function reordenarCategorias() {
       try {
         const snap = await db.collection('categorias').get();
@@ -910,21 +1094,18 @@
         alert('Error: ' + e.message);
       }
     }
-
+    
     let draggedElement = null;
-
     function handleDragStart(e) {
       draggedElement = this;
       this.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
     }
-
     function handleDragOver(e) {
       if (e.preventDefault) e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       return false;
     }
-
     function handleDrop(e) {
       if (e.stopPropagation) e.stopPropagation();
       
@@ -944,11 +1125,10 @@
       
       return false;
     }
-
     function handleDragEnd(e) {
       this.classList.remove('dragging');
     }
-
+    
     async function guardarNuevoOrden() {
       const items = document.querySelectorAll('#listReordenar .list-item');
       const batch = db.batch();
@@ -961,132 +1141,177 @@
       
       await batch.commit();
     }
-
+    
     async function verEstatus(catId) {
-      try {
-        const catDoc = await db.collection('categorias').doc(catId).get();
-        if (!catDoc.exists) return alert('No encontrada');
+  try {
+    const catDoc = await db.collection('categorias').doc(catId).get();
+    if (!catDoc.exists) return alert('No encontrada');
+    
+    const cat = catDoc.data();
+    document.getElementById('estatusTitulo').textContent = `📊 ${cat.nombre}`;
+    
+    const susSnap = await db.collection('suscripciones').get();
+    
+    let totalUsuarios = 0;
+    let totalgratuito = 0, totalMensual = 0, totalTrimestral = 0, totalAnual = 0;
+    let ultimaFecha = null;
+    const usuariosDetalle = [];
+    
+    susSnap.forEach(doc => {
+      const data = doc.data();
+      const email = data.email || 'Sin email';
+      
+      if (data[catId]) {
+        const sub = data[catId];
+        totalUsuarios++;
         
-        const cat = catDoc.data();
-        document.getElementById('estatusTitulo').textContent = `📊 ${cat.nombre}`;
-        
-        const susSnap = await db.collection('suscripciones').get();
-        
-        let totalUsuarios = 0;
-        let totalFree = 0, totalMensual = 0, totalTrimestral = 0, totalAnual = 0;
-        let ultimaFecha = null;
-        const usuariosDetalle = [];
-        
-        susSnap.forEach(doc => {
-          const data = doc.data();
-          const email = data.email || 'Sin email';
-          
-          if (data[catId]) {
-            const sub = data[catId];
-            totalUsuarios++;
-            
-            switch(sub.plan) {
-              case 'free': totalFree++; break;
-              case 'mensual': totalMensual++; break;
-              case 'trimestral': totalTrimestral++; break;
-              case 'anual': totalAnual++; break;
-            }
-            
-            let vencimiento = null;
-            if (sub.plan !== 'free' && sub.fechaActivacion) {
-              const dias = sub.plan === 'mensual' ? 30 : sub.plan === 'trimestral' ? 90 : 365;
-              vencimiento = new Date(sub.fechaActivacion + (dias * 24 * 60 * 60 * 1000));
-              
-              if (!ultimaFecha || vencimiento > ultimaFecha) {
-                ultimaFecha = vencimiento;
-              }
-            }
-            
-            usuariosDetalle.push({
-              email,
-              plan: sub.plan,
-              tandas: sub.tandasUsadas || 0,
-              vencimiento
-            });
-          }
-        });
-        
-        const pregSnap = await db.collection('preguntas').where('categoria', '==', catId).get();
-        const resSnap = await db.collection('resultados').where('categoria', '==', catId).get();
-        
-        let html = `
-          <div class="cat-stats-box">
-            <h3 style="color: #34c3ff; margin-bottom: 15px;">📊 Resumen</h3>
-            <div class="cat-stats-grid">
-              <div class="cat-stat-item premium">
-                <div class="label">Usuarios</div>
-                <div class="value">${totalUsuarios}</div>
-              </div>
-              <div class="cat-stat-item">
-                <div class="label">Preguntas</div>
-                <div class="value">${pregSnap.size}</div>
-              </div>
-              <div class="cat-stat-item">
-                <div class="label">Tests</div>
-                <div class="value">${resSnap.size}</div>
-              </div>
-              <div class="cat-stat-item">
-                <div class="label">Última Renovación</div>
-                <div class="value" style="font-size: 16px;">${ultimaFecha ? ultimaFecha.toLocaleDateString('es-ES') : 'N/A'}</div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="cat-stats-box">
-            <h3 style="color: #34c3ff; margin-bottom: 15px;">👥 Planes</h3>
-            <div class="cat-stats-grid">
-              <div class="cat-stat-item">
-                <div class="label">🎁 Gratis</div>
-                <div class="value">${totalFree}</div>
-              </div>
-              <div class="cat-stat-item">
-                <div class="label">📅 Mensual</div>
-                <div class="value">${totalMensual}</div>
-              </div>
-              <div class="cat-stat-item">
-                <div class="label">🔥 Trimestral</div>
-                <div class="value">${totalTrimestral}</div>
-              </div>
-              <div class="cat-stat-item premium">
-                <div class="label">👑 Anual</div>
-                <div class="value">${totalAnual}</div>
-              </div>
-            </div>
-          </div>
-        `;
-        
-        if (usuariosDetalle.length > 0) {
-          html += `<div class="cat-stats-box"><h3 style="color: #34c3ff; margin-bottom: 15px;">📋 Usuarios</h3>`;
-          usuariosDetalle.forEach(u => {
-            const planBadge = `<span class="badge ${u.plan}">${u.plan}</span>`;
-            const vencTxt = u.vencimiento ? `Vence: ${u.vencimiento.toLocaleDateString('es-ES')}` : 
-                            u.plan === 'free' ? `Tandas: ${u.tandas}/2` : 'Activo';
-            
-            html += `
-              <div style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between;">
-                <div>
-                  <div style="color: #34c3ff; font-weight: 600;">${u.email}</div>
-                  <div style="color: #aab3b8; font-size: 13px;">${vencTxt}</div>
-                </div>
-                ${planBadge}
-              </div>
-            `;
-          });
-          html += `</div>`;
+        switch(sub.plan) {
+          case 'gratuito': totalgratuito++; break;
+          case 'mensual': totalMensual++; break;
+          case 'trimestral': totalTrimestral++; break;
+          case 'anual': totalAnual++; break;
         }
         
-        document.getElementById('estatusContenido').innerHTML = html;
-        document.getElementById('modalEstatus').classList.add('show');
-      } catch (e) {
-        alert('Error: ' + e.message);
+        let vencimiento = null;
+        if (sub.plan !== 'gratuito' && sub.fechaActivacion) {
+          const dias = sub.plan === 'mensual' ? 30 : sub.plan === 'trimestral' ? 90 : 365;
+          vencimiento = new Date(sub.fechaActivacion + (dias * 24 * 60 * 60 * 1000));
+          
+          if (!ultimaFecha || vencimiento > ultimaFecha) {
+            ultimaFecha = vencimiento;
+          }
+        }
+        
+        usuariosDetalle.push({
+          email,
+          plan: sub.plan,
+          tandas: sub.tandasUsadas || 0,
+          vencimiento
+        });
       }
+    });
+    
+    // VERIFICACIÓN EXACTA DE PREGUNTAS EN BD
+    const pregSnap = await db.collection('preguntas').where('categoria', '==', catId).get();
+    const preguntasReales = pregSnap.size;
+    const preguntasEnCat = cat.totalPreguntas || 0;
+    
+    const resSnap = await db.collection('resultados').where('categoria', '==', catId).get();
+    
+    // Verificar discrepancia
+    const hayDiscrepancia = preguntasReales !== preguntasEnCat;
+    
+    let html = `
+      <div class="cat-stats-box">
+        <h3 style="color: #34c3ff; margin-bottom: 15px;">📊 Resumen</h3>
+        <div class="cat-stats-grid">
+          <div class="cat-stat-item premium">
+            <div class="label">Usuarios</div>
+            <div class="value">${totalUsuarios}</div>
+          </div>
+          <div class="cat-stat-item ${hayDiscrepancia ? 'premium' : ''}">
+            <div class="label">Preguntas en BD</div>
+            <div class="value" style="${hayDiscrepancia ? 'color: #ff6b6b;' : ''}">${preguntasReales}</div>
+          </div>
+          <div class="cat-stat-item">
+            <div class="label">En Categoría</div>
+            <div class="value">${preguntasEnCat}</div>
+          </div>
+          <div class="cat-stat-item">
+            <div class="label">Tests Realizados</div>
+            <div class="value">${resSnap.size}</div>
+          </div>
+          <div class="cat-stat-item">
+            <div class="label">Última Renovación</div>
+            <div class="value" style="font-size: 16px;">${ultimaFecha ? ultimaFecha.toLocaleDateString('es-ES') : 'N/A'}</div>
+          </div>
+        </div>
+        ${hayDiscrepancia ? `
+          <div style="background: rgba(255, 107, 107, 0.1); border: 1px solid rgba(255, 107, 107, 0.3); padding: 15px; border-radius: 8px; margin-top: 15px;">
+            <div style="color: #ff6b6b; font-weight: 600; margin-bottom: 5px;">⚠️ DISCREPANCIA DETECTADA</div>
+            <div style="color: #aab3b8; font-size: 14px;">
+              La categoría indica ${preguntasEnCat} preguntas, pero en la BD hay ${preguntasReales} preguntas.
+            </div>
+            <button onclick="sincronizarPreguntas('${catId}', ${preguntasReales})" class="warning" style="margin-top: 10px;">
+              🔄 Sincronizar Categoría
+            </button>
+          </div>
+        ` : `
+          <div style="background: rgba(46, 139, 87, 0.1); border: 1px solid rgba(46, 139, 87, 0.3); padding: 15px; border-radius: 8px; margin-top: 15px; color: #5dff9a;">
+            ✅ La categoría está sincronizada correctamente
+          </div>
+        `}
+      </div>
+      
+      <div class="cat-stats-box">
+        <h3 style="color: #34c3ff; margin-bottom: 15px;">👥 Planes</h3>
+        <div class="cat-stats-grid">
+          <div class="cat-stat-item">
+            <div class="label">🎁 Gratis</div>
+            <div class="value">${totalgratuito}</div>
+          </div>
+          <div class="cat-stat-item">
+            <div class="label">📅 Mensual</div>
+            <div class="value">${totalMensual}</div>
+          </div>
+          <div class="cat-stat-item">
+            <div class="label">🔥 Trimestral</div>
+            <div class="value">${totalTrimestral}</div>
+          </div>
+          <div class="cat-stat-item premium">
+            <div class="label">👑 Anual</div>
+            <div class="value">${totalAnual}</div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    if (usuariosDetalle.length > 0) {
+      html += `<div class="cat-stats-box"><h3 style="color: #34c3ff; margin-bottom: 15px;">📋 Usuarios</h3>`;
+      usuariosDetalle.forEach(u => {
+        const planBadge = `<span class="badge ${u.plan}">${u.plan}</span>`;
+        const vencTxt = u.vencimiento ? `Vence: ${u.vencimiento.toLocaleDateString('es-ES')}` : 
+                        u.plan === 'gratuito' ? `Tandas: ${u.tandas}/2` : 'Activo';
+        
+        html += `
+          <div style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between;">
+            <div>
+              <div style="color: #34c3ff; font-weight: 600;">${u.email}</div>
+              <div style="color: #aab3b8; font-size: 13px;">${vencTxt}</div>
+            </div>
+            ${planBadge}
+          </div>
+        `;
+      });
+      html += `</div>`;
     }
-
+    
+    document.getElementById('estatusContenido').innerHTML = html;
+    document.getElementById('modalEstatus').classList.add('show');
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+async function sincronizarPreguntas(catId, preguntasReales) {
+  if (!confirm(`¿Actualizar el contador de la categoría a ${preguntasReales} preguntas?`)) return;
+  
+  try {
+    await db.collection('categorias').doc(catId).update({
+      totalPreguntas: preguntasReales,
+      actualizadaEn: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    alert(`✅ Categoría sincronizada\n\nAhora muestra ${preguntasReales} preguntas correctamente.`);
+    
+    // Cerrar modal y recargar
+    cerrarModalEstatus();
+    await actualizarStatsCategorias();
+    await actualizarStats();
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+    
     async function catSeleccionada() {
       catActual = document.getElementById('catSelect').value;
       if (!catActual) {
@@ -1096,7 +1321,6 @@
         document.getElementById('btnExportar').disabled = true;
         return;
       }
-
       try {
         const doc = await db.collection('categorias').doc(catActual).get();
         if (!doc.exists) return;
@@ -1119,7 +1343,7 @@
         console.error('Error:', e);
       }
     }
-
+    
     function cargarJSON() {
       const file = document.getElementById('fileJSON').files[0];
       if (!file) return;
@@ -1140,14 +1364,14 @@
       };
       reader.readAsText(file);
     }
-
+    
     function limpiarJSON() {
       document.getElementById('jsonText').value = '';
       document.getElementById('fileJSON').value = '';
       document.getElementById('fileName').textContent = '';
       clearLog('logPreg');
     }
-
+    
     function validarJSON() {
       clearLog('logPreg');
       const texto = document.getElementById('jsonText').value.trim();
@@ -1162,7 +1386,7 @@
         log('logPreg', `❌ ${e.message}`, 'error');
       }
     }
-
+    
     async function subirPreguntas() {
       if (!catActual) return alert('Selecciona categoría');
       
@@ -1208,7 +1432,7 @@
         log('logPreg', `❌ ${e.message}`, 'error');
       }
     }
-
+    
     async function exportarPreguntas() {
       if (!catActual) return;
       
@@ -1244,7 +1468,7 @@
         log('logPreg', `❌ ${e.message}`, 'error');
       }
     }
-
+    
     async function borrarPreguntas() {
       if (!catActual) return;
       if (!confirm('¿Borrar TODAS las preguntas?')) return;
@@ -1267,211 +1491,456 @@
         log('logPreg', `❌ ${e.message}`, 'error');
       }
     }
-
+    
     async function actualizarStatsUsers() {
-      clearLog('logUsers');
-      log('logUsers', 'Actualizando...', 'info');
+      log('logUsers', 'Actualizando estadísticas...', 'info');
+      console.log('🔍 Iniciando actualizarStatsUsers');
       
       try {
+        console.log('📊 Obteniendo usuarios...');
         const uSnap = await db.collection('usuarios').get();
-        const sSnap = await db.collection('suscripciones').get();
+        console.log('✅ Usuarios:', uSnap.size);
         
-        let totalSubs = 0, totalFree = 0, totalPaid = 0;
+        console.log('📊 Obteniendo suscripciones...');
+        const sSnap = await db.collection('suscripciones').get();
+        console.log('✅ Suscripciones:', sSnap.size);
+        
+        console.log('📊 Obteniendo aciertos globales...');
+        const aciertosSnap = await db.collection('aciertosglobales').get();
+        console.log('✅ Aciertos globales:', aciertosSnap.size);
+        
+        let totalSubs = 0, totalgratuito = 0, totalMensual = 0, totalTrimestral = 0, totalAnual = 0;
+        const usuariosConPlanes = new Set();
+        
         sSnap.forEach(doc => {
           const d = doc.data();
+          const userId = doc.id;
+          
           Object.entries(d).forEach(([k, v]) => {
-            if (k !== 'email' && v.plan && v.plan !== 'none') {
+            if (k !== 'email' && v && typeof v === 'object' && v.plan) {
               totalSubs++;
-              if (v.plan === 'free') totalFree++;
-              else totalPaid++;
+              usuariosConPlanes.add(userId);
+              
+              switch(v.plan) {
+                case 'gratuito': totalgratuito++; break;
+                case 'mensual': totalMensual++; break;
+                case 'trimestral': totalTrimestral++; break;
+                case 'anual': totalAnual++; break;
+              }
             }
           });
         });
         
+        console.log('📈 Planes contabilizados:', {totalSubs, totalgratuito, totalMensual, totalTrimestral, totalAnual});
+        
+        const aciertosPorUsuario = {};
+        aciertosSnap.forEach(doc => {
+          const userId = doc.id;
+          const data = doc.data();
+          let total = 0;
+          
+          Object.entries(data).forEach(([k, v]) => {
+            if (k !== 'email' && typeof v === 'number') {
+              total += v;
+            }
+          });
+          
+          aciertosPorUsuario[userId] = total;
+        });
+        
+        console.log('📈 Aciertos procesados:', Object.keys(aciertosPorUsuario).length, 'usuarios');
+        
+        await detectarUsoExcesivo(sSnap, aciertosPorUsuario);
+        
         document.getElementById('totalUsers').textContent = uSnap.size;
         document.getElementById('totalSubs').textContent = totalSubs;
-        document.getElementById('totalFree').textContent = totalFree;
-        document.getElementById('totalPaid').textContent = totalPaid;
+        document.getElementById('totalgratuito').textContent = totalgratuito;
+        document.getElementById('totalMensual').textContent = totalMensual;
+        document.getElementById('totalTrimestral').textContent = totalTrimestral;
+        document.getElementById('totalAnual').textContent = totalAnual;
         
-        log('logUsers', `✅ ${uSnap.size} usuarios | ${totalSubs} subs`, 'success');
+        log('logUsers', `✅ ${uSnap.size} usuarios | ${totalSubs} suscripciones`, 'success');
+        console.log('✅ actualizarStatsUsers completada');
       } catch (e) {
+        console.error('❌ Error en actualizarStatsUsers:', e);
         log('logUsers', `❌ ${e.message}`, 'error');
+        alert('Error al actualizar estadísticas: ' + e.message);
       }
     }
-
-   async function verUsuarios() {
-  try {
-    // Obtener TODOS los usuarios
-    const usersSnap = await db.collection('usuarios').get();
     
-    if (usersSnap.empty) return alert('No hay usuarios registrados');
-    
-    // Obtener todas las suscripciones
-    const subsSnap = await db.collection('suscripciones').get();
-    const suscripciones = {};
-    subsSnap.forEach(doc => {
-      suscripciones[doc.id] = doc.data();
-    });
-    
-    let html = '';
-    
-    usersSnap.forEach(doc => {
-      const user = doc.data();
-      const userId = doc.id;
-      const email = user.email || 'Sin email';
-      const displayName = user.displayName || 'Sin nombre';
-      const fechaRegistro = user.fechaRegistro ? 
-        new Date(user.fechaRegistro.toDate()).toLocaleDateString('es-ES') : 
-        'Desconocida';
+    async function detectarUsoExcesivo(sSnap, aciertosPorUsuario) {
+      const ahora = Date.now();
+      const unDia = 24 * 60 * 60 * 1000;
       
-      // Buscar suscripciones de este usuario
-      let subs = '';
-      const userSubs = suscripciones[userId];
-      
-      if (userSubs) {
-        Object.entries(userSubs).forEach(([k, v]) => {
-          if (k !== 'email' && v && v.plan) {
-            const planIcon = v.plan === 'free' ? '🎁' : 
-                           v.plan === 'mensual' ? '📅' : 
-                           v.plan === 'trimestral' ? '🔥' : '👑';
-            subs += `<div style="margin-top:5px;">${v.nombre || k} <span class="badge ${v.plan}">${planIcon} ${v.plan}</span></div>`;
+      sSnap.forEach(doc => {
+        const userId = doc.id;
+        const data = doc.data();
+        const email = data.email || 'Sin email';
+        const totalAciertos = aciertosPorUsuario[userId] || 0;
+        
+        Object.entries(data).forEach(([catId, sub]) => {
+          if (catId === 'email' || !sub || typeof sub !== 'object' || !sub.plan) return;
+          
+          const plan = sub.plan;
+          const catNombre = sub.nombre || catId;
+          const fechaActivacion = sub.fechaActivacion || 0;
+          const diasActivo = Math.floor((ahora - fechaActivacion) / unDia);
+          
+          if (plan === 'gratuito') {
+            if (totalAciertos >= 60) {
+              log('logUsers', `🚨 ${email} (GRATUITO) HA ALCANZADO LÍMITE: ${totalAciertos}/60 preguntas - Test: ${catNombre}`, 'error');
+            } else if (totalAciertos >= 50) {
+              log('logUsers', `⚠️ ${email} (GRATUITO) cerca del límite: ${totalAciertos}/60 preguntas - Test: ${catNombre}`, 'warning');
+            }
+          }
+          
+          if (plan === 'mensual') {
+            const preguntasPorDia = diasActivo > 0 ? totalAciertos / diasActivo : totalAciertos;
+            if (preguntasPorDia > 300) {
+              log('logUsers', `⚠️ ${email} (MENSUAL) uso excesivo: ${Math.round(preguntasPorDia)} preguntas/día (límite: 300) - Test: ${catNombre}`, 'warning');
+            }
+          }
+          
+          if (plan === 'trimestral') {
+            const preguntasPorDia = diasActivo > 0 ? totalAciertos / diasActivo : totalAciertos;
+            if (preguntasPorDia > 400) {
+              log('logUsers', `⚠️ ${email} (TRIMESTRAL) uso excesivo: ${Math.round(preguntasPorDia)} preguntas/día (límite: 400) - Test: ${catNombre}`, 'warning');
+            }
+          }
+          
+          if (plan === 'anual') {
+            const preguntasPorDia = diasActivo > 0 ? totalAciertos / diasActivo : totalAciertos;
+            if (preguntasPorDia > 500) {
+              log('logUsers', `⚠️ ${email} (ANUAL) uso excesivo: ${Math.round(preguntasPorDia)} preguntas/día (límite: 500) - Test: ${catNombre}`, 'warning');
+            }
+          }
+          
+          if (totalAciertos > 1000) {
+            log('logUsers', `🚨 ${email} alto volumen: ${totalAciertos} preguntas totales - Test: ${catNombre}`, 'error');
           }
         });
-      }
-      
-      if (!subs) {
-        subs = '<div style="margin-top:5px; color: var(--muted); font-size: 12px;">Sin suscripciones</div>';
-      }
-      
-      html += `
-        <div class="list-item">
-          <div class="info">
-            <div class="nombre">${email}</div>
-            <div class="detalles" style="font-size: 13px; color: var(--muted);">
-              <div>👤 ${displayName}</div>
-              <div>🆔 ${userId}</div>
-              <div>📅 Registro: ${fechaRegistro}</div>
-              ${subs}
+      });
+    }
+    
+    async function verUsuarios() {
+      console.log('🔍 Iniciando verUsuarios');
+      try {
+        console.log('📊 Obteniendo usuarios...');
+        const usersSnap = await db.collection('usuarios').get();
+        console.log('✅ Usuarios obtenidos:', usersSnap.size);
+        
+        if (usersSnap.empty) {
+          alert('No hay usuarios registrados');
+          return;
+        }
+        
+        console.log('📊 Obteniendo suscripciones...');
+        const subsSnap = await db.collection('suscripciones').get();
+        console.log('✅ Suscripciones obtenidas:', subsSnap.size);
+        const suscripciones = {};
+        subsSnap.forEach(doc => {
+          suscripciones[doc.id] = doc.data();
+        });
+        
+        console.log('📊 Obteniendo aciertos globales...');
+        const aciertosSnap = await db.collection('aciertosglobales').get();
+        console.log('✅ Aciertos globales obtenidos:', aciertosSnap.size);
+        const preguntasPorUsuario = {};
+        aciertosSnap.forEach(doc => {
+          const userId = doc.id;
+          const data = doc.data();
+          let total = 0;
+          
+          Object.entries(data).forEach(([k, v]) => {
+            if (k !== 'email' && typeof v === 'number') {
+              total += v;
+            }
+          });
+          
+          preguntasPorUsuario[userId] = total;
+        });
+        
+        console.log('📈 Procesando usuarios...');
+        let html = '';
+        
+        usersSnap.forEach(doc => {
+          const user = doc.data();
+          const userId = doc.id;
+          const email = user.email || 'Sin email';
+          const displayName = user.displayName || 'Sin nombre';
+          const bloqueado = user.bloqueado === true;
+          const fechaRegistro = user.fechaRegistro ? 
+            new Date(user.fechaRegistro.toDate()).toLocaleDateString('es-ES') : 
+            'Desconocida';
+          
+          const totalPreguntas = preguntasPorUsuario[userId] || 0;
+          
+          let subs = '';
+          const userSubs = suscripciones[userId];
+          
+          if (userSubs) {
+            Object.entries(userSubs).forEach(([k, v]) => {
+              if (k !== 'email' && v && v.plan) {
+                const planIcon = v.plan === 'gratuito' ? '🎁' : 
+                               v.plan === 'mensual' ? '📅' : 
+                               v.plan === 'trimestral' ? '🔥' : '👑';
+                subs += `<div style="margin-top:5px;">${v.nombre || k} <span class="badge ${v.plan}">${planIcon} ${v.plan}</span></div>`;
+              }
+            });
+          }
+          
+          if (!subs) {
+            subs = '<div style="margin-top:5px; color: #aab3b8; font-size: 12px;">Sin suscripciones</div>';
+          }
+          
+          const bloqueadoBadge = bloqueado ? '<span class="badge bloqueado">🚫 Bloqueado</span>' : '';
+          
+          html += `
+            <div class="list-item ${bloqueado ? 'bloqueado' : ''}">
+              <div class="info">
+                <div class="nombre">${email} ${bloqueadoBadge}</div>
+                <div class="detalles" style="font-size: 13px; color: #aab3b8;">
+                  <div>👤 ${displayName}</div>
+                  <div>🆔 ${userId}</div>
+                  <div>📅 Registro: ${fechaRegistro}</div>
+                  <div>❓ Preguntas realizadas: <strong>${totalPreguntas}</strong></div>
+                  ${subs}
+                </div>
+              </div>
+              <div class="acciones">
+                <button onclick="otorgarAccesoDirecto('${userId}', '${email}')" class="btn-small premium" title="Otorgar acceso">
+                  👑
+                </button>
+                ${!bloqueado ? `
+                  <button onclick="bloquearUsuario('${userId}', '${email}')" class="btn-small danger" title="Bloquear">
+                    🚫
+                  </button>
+                ` : `
+                  <button onclick="desbloquearUsuario('${userId}', '${email}')" class="btn-small success" title="Desbloquear">
+                    ✅
+                  </button>
+                `}
+                <button onclick="desuscribirUsuario('${userId}', '${email}')" class="btn-small warning" title="Desuscribir">
+                  ⚠️
+                </button>
+                <button onclick="eliminarUsuario('${userId}', '${email}')" class="btn-small danger" title="Eliminar">
+                  🗑️
+                </button>
+              </div>
             </div>
-          </div>
-          <div class="acciones">
-            <button onclick="otorgarAccesoDirecto('${userId}', '${email}')" class="btn-small premium" title="Otorgar acceso">
-              👑
-            </button>
-          </div>
-        </div>
-      `;
-    });
+          `;
+        });
+        
+        console.log('✅ HTML generado, mostrando modal');
+        document.getElementById('listUsers').innerHTML = html;
+        document.getElementById('modalUsers').classList.add('show');
+        
+      } catch (e) {
+        console.error('❌ Error en verUsuarios:', e);
+        alert('Error: ' + e.message);
+      }
+    }
     
-    document.getElementById('listUsers').innerHTML = html;
-    document.getElementById('modalUsers').classList.add('show');
+    async function bloquearUsuario(userId, email) {
+      if (!confirm(`¿Bloquear a ${email}?\n\nEl usuario no podrá acceder al sistema hasta que lo desbloquees.`)) return;
+      
+      try {
+        await db.collection('usuarios').doc(userId).update({
+          bloqueado: true,
+          fechaBloqueo: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        log('logUsers', `✅ Usuario ${email} bloqueado`, 'success');
+        alert(`✅ Usuario ${email} bloqueado exitosamente`);
+        verUsuarios();
+      } catch (e) {
+        log('logUsers', `❌ Error: ${e.message}`, 'error');
+        alert('Error: ' + e.message);
+      }
+    }
     
-  } catch (e) {
-    alert('Error: ' + e.message);
-    console.error(e);
-  }
-}
-// Función para otorgar acceso directo desde la lista de usuarios
-function otorgarAccesoDirecto(userId, email) {
-  cerrarModalUsers();
-  document.getElementById('emailAcceso').value = email;
-  document.getElementById('emailAcceso').disabled = true; // Bloquear email
-  document.getElementById('catAcceso').value = '';
-  document.getElementById('planAcceso').value = 'free';
-  document.getElementById('modalAcceso').classList.add('show');
-  
-  // Guardar userId temporalmente para usarlo en procesarAcceso
-  window._tempUserId = userId;
-}
+    async function desbloquearUsuario(userId, email) {
+      if (!confirm(`¿Desbloquear a ${email}?`)) return;
+      
+      try {
+        await db.collection('usuarios').doc(userId).update({
+          bloqueado: false,
+          fechaDesbloqueo: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        log('logUsers', `✅ Usuario ${email} desbloqueado`, 'success');
+        alert(`✅ Usuario ${email} desbloqueado exitosamente`);
+        verUsuarios();
+      } catch (e) {
+        log('logUsers', `❌ Error: ${e.message}`, 'error');
+        alert('Error: ' + e.message);
+      }
+    }
+    
+    async function desuscribirUsuario(userId, email) {
+      if (!confirm(`¿Desuscribir a ${email}?\n\nSus planes seguirán activos hasta que venzan, pero no podrá renovarlos.`)) return;
+      
+      try {
+        const subsDoc = await db.collection('suscripciones').doc(userId).get();
+        if (!subsDoc.exists) return alert('No tiene suscripciones');
+        
+        const data = subsDoc.data();
+        const updates = {};
+        
+        Object.entries(data).forEach(([k, v]) => {
+          if (k !== 'email' && v && v.plan) {
+            updates[`${k}.desuscrito`] = true;
+            updates[`${k}.fechaDesuscripcion`] = Date.now();
+          }
+        });
+        
+        await db.collection('suscripciones').doc(userId).update(updates);
+        
+        log('logUsers', `✅ Usuario ${email} desuscrito`, 'success');
+        alert(`✅ ${email} desuscrito exitosamente\n\nSus planes seguirán activos hasta que venzan.`);
+        verUsuarios();
+      } catch (e) {
+        log('logUsers', `❌ Error: ${e.message}`, 'error');
+        alert('Error: ' + e.message);
+      }
+    }
+    
+    async function eliminarUsuario(userId, email) {
+      const confirmText = `⚠️ ELIMINAR USUARIO
+      
+Usuario: ${email}
+
+Esto eliminará:
+✗ Datos del usuario
+✗ Todas sus suscripciones
+✗ Todos sus resultados
+✗ Todo su progreso
+
+Esta acción NO se puede deshacer.
+
+¿Estás SEGURO?`;
+      
+      if (!confirm(confirmText)) return;
+      
+      if (!confirm(`ÚLTIMA CONFIRMACIÓN\n\n¿Eliminar definitivamente a ${email}?`)) return;
+      
+      try {
+        log('logUsers', `Eliminando usuario ${email}...`, 'warning');
+        
+        await db.collection('usuarios').doc(userId).delete();
+        log('logUsers', '✓ Datos de usuario eliminados', 'info');
+        
+        await db.collection('suscripciones').doc(userId).delete();
+        log('logUsers', '✓ Suscripciones eliminadas', 'info');
+        
+        const resSnap = await db.collection('resultados').where('userId', '==', userId).get();
+        for (const doc of resSnap.docs) {
+          await doc.ref.delete();
+        }
+        log('logUsers', `✓ ${resSnap.size} resultados eliminados`, 'info');
+        
+        const progSnap = await db.collection('progresos').where('userId', '==', userId).get();
+        for (const doc of progSnap.docs) {
+          await doc.ref.delete();
+        }
+        log('logUsers', `✓ ${progSnap.size} progresos eliminados`, 'info');
+        
+        await db.collection('aciertosglobales').doc(userId).delete();
+        log('logUsers', '✓ Aciertos globales eliminados', 'info');
+        
+        log('logUsers', `✅ Usuario ${email} eliminado completamente`, 'success');
+        alert(`✅ Usuario ${email} eliminado exitosamente`);
+        
+        cerrarModalUsers();
+        await actualizarStatsUsers();
+      } catch (e) {
+        log('logUsers', `❌ Error: ${e.message}`, 'error');
+        alert('Error: ' + e.message);
+      }
+    }
+    
+    function otorgarAccesoDirecto(userId, email) {
+      cerrarModalUsers();
+      document.getElementById('emailAcceso').value = email;
+      document.getElementById('emailAcceso').disabled = true;
+      document.getElementById('catAcceso').value = '';
+      document.getElementById('planAcceso').value = 'gratuito';
+      document.getElementById('modalAcceso').classList.add('show');
+      
+      window._tempUserId = userId;
+    }
+    
     function otorgarAcceso() {
       document.getElementById('emailAcceso').value = '';
+      document.getElementById('emailAcceso').disabled = false;
       document.getElementById('catAcceso').value = '';
-      document.getElementById('planAcceso').value = 'free';
+      document.getElementById('planAcceso').value = 'gratuito';
       document.getElementById('modalAcceso').classList.add('show');
-    }
-
-   async function procesarAcceso(e) {
-  e.preventDefault();
-  
-  const email = document.getElementById('emailAcceso').value.trim();
-  const cat = document.getElementById('catAcceso').value;
-  const plan = document.getElementById('planAcceso').value;
-  
-  clearLog('logUsers');
-  log('logUsers', `Procesando acceso para ${email}...`, 'info');
-  
-  try {
-    // 1. Buscar usuario existente
-    const uSnap = await db.collection('usuarios').where('email', '==', email).limit(1).get();
-    
-    let userId;
-
-// Si viene de otorgarAccesoDirecto, usar ese userId
-if (window._tempUserId) {
-  userId = window._tempUserId;
-  window._tempUserId = null; // Limpiar
-  log('logUsers', `Usando usuario existente: ${userId}`, 'info');
-} else if (uSnap.empty) {
-      // 2. Usuario NO existe -> Crearlo
-      log('logUsers', `Usuario no encontrado. Creando nuevo usuario...`, 'warning');
-      
-      // Generar un ID único para el usuario
-      userId = email.replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now();
-      
-      // Crear documento en colección usuarios
-      await db.collection('usuarios').doc(userId).set({
-        email: email,
-        displayName: email.split('@')[0], // Usar parte antes del @ como nombre
-        fechaRegistro: firebase.firestore.FieldValue.serverTimestamp(),
-        ultimoAcceso: firebase.firestore.FieldValue.serverTimestamp(),
-        creadoPorAdmin: true
-      });
-      
-      log('logUsers', `✅ Usuario creado con ID: ${userId}`, 'success');
-    } else {
-      // 3. Usuario YA existe
-      userId = uSnap.docs[0].id;
-      log('logUsers', `Usuario encontrado: ${userId}`, 'info');
+      window._tempUserId = null;
     }
     
-    // 4. Obtener datos de la categoría
-    const catDoc = await db.collection('categorias').doc(cat).get();
-    const catNom = catDoc.exists ? catDoc.data().nombre : cat;
-    
-    // 5. Otorgar suscripción
-    await db.collection('suscripciones').doc(userId).set({
-      email: email,
-      [cat]: {
-        plan: plan,
-        tandasUsadas: 0,
-        fechaActivacion: Date.now(),
-        nombre: catNom
+    async function procesarAcceso(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('emailAcceso').value.trim();
+      const cat = document.getElementById('catAcceso').value;
+      const plan = document.getElementById('planAcceso').value;
+      
+      log('logUsers', `Procesando acceso para ${email}...`, 'info');
+      
+      try {
+        const uSnap = await db.collection('usuarios').where('email', '==', email).limit(1).get();
+        
+        let userId;
+        if (window._tempUserId) {
+          userId = window._tempUserId;
+          window._tempUserId = null;
+          log('logUsers', `Usando usuario existente: ${userId}`, 'info');
+        } else if (uSnap.empty) {
+          log('logUsers', `Usuario no encontrado. Creando nuevo usuario...`, 'warning');
+          
+          userId = email.replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now();
+          
+          await db.collection('usuarios').doc(userId).set({
+            email: email,
+            displayName: email.split('@')[0],
+            fechaRegistro: firebase.firestore.FieldValue.serverTimestamp(),
+            ultimoAcceso: firebase.firestore.FieldValue.serverTimestamp(),
+            creadoPorAdmin: true
+          });
+          
+          log('logUsers', `✅ Usuario creado con ID: ${userId}`, 'success');
+        } else {
+          userId = uSnap.docs[0].id;
+          log('logUsers', `Usuario encontrado: ${userId}`, 'info');
+        }
+        
+        const catDoc = await db.collection('categorias').doc(cat).get();
+        const catNom = catDoc.exists ? catDoc.data().nombre : cat;
+        
+        await db.collection('suscripciones').doc(userId).set({
+          email: email,
+          [cat]: {
+            plan: plan,
+            tandasUsadas: 0,
+            fechaActivacion: Date.now(),
+            nombre: catNom
+          }
+        }, { merge: true });
+        
+        log('logUsers', `✅ Acceso otorgado: ${plan} para ${catNom}`, 'success');
+        
+        alert(`✅ Acceso otorgado exitosamente\n\nEmail: ${email}\nTest: ${catNom}\nPlan: ${plan}\n${uSnap.empty ? '\n⚠️ Usuario creado automáticamente' : ''}`);
+        
+        cerrarModalAcceso();
+        await actualizarStatsUsers();
+        
+      } catch (e) {
+        log('logUsers', `❌ ${e.message}`, 'error');
+        alert('Error: ' + e.message);
       }
-    }, { merge: true });
+    }
     
-    log('logUsers', `✅ Acceso otorgado: ${plan} para ${catNom}`, 'success');
-    
-    // 6. Mostrar resumen
-    alert(`✅ Acceso otorgado exitosamente\n\n` +
-          `Email: ${email}\n` +
-          `Test: ${catNom}\n` +
-          `Plan: ${plan}\n` +
-          `${uSnap.empty ? '\n⚠️ Usuario creado automáticamente' : ''}`);
-    
-    cerrarModalAcceso(); { 
-  document.getElementById('modalAcceso').classList.remove('show');
-  document.getElementById('emailAcceso').disabled = false; // Desbloquear
-  window._tempUserId = null; // Limpiar
-}
-
-    await actualizarStatsUsers();
-    
-  } catch (e) {
-    log('logUsers', `❌ ${e.message}`, 'error');
-    alert('Error: ' + e.message);
-  }
-}
-
     async function actualizarStats() {
       try {
         const cSnap = await db.collection('categorias').get();
@@ -1494,62 +1963,97 @@ if (window._tempUserId) {
         console.error('Error:', e);
       }
     }
-
+    
     async function hacerBackupCompleto() {
       clearLog('logStats');
-      log('logStats', '💾 Iniciando backup...', 'info');
+      log('logStats', '💾 Iniciando backup completo...', 'info');
       
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const backup = {
         fecha: new Date().toISOString(),
+        version: '1.0',
         datos: {}
       };
       
       try {
-        log('logStats', 'Exportando categorías...', 'info');
+        log('logStats', '📚 Exportando categorías...', 'info');
         const catSnap = await db.collection('categorias').get();
         backup.datos.categorias = {};
         catSnap.forEach(doc => {
           backup.datos.categorias[doc.id] = doc.data();
         });
+        log('logStats', `✓ ${Object.keys(backup.datos.categorias).length} categorías`, 'success');
         
-        log('logStats', 'Exportando preguntas...', 'info');
+        log('logStats', '❓ Exportando preguntas...', 'info');
         const pregSnap = await db.collection('preguntas').get();
         backup.datos.preguntas = [];
         pregSnap.forEach(doc => {
           backup.datos.preguntas.push({id: doc.id, ...doc.data()});
         });
+        log('logStats', `✓ ${backup.datos.preguntas.length} preguntas`, 'success');
         
-        log('logStats', 'Exportando suscripciones...', 'info');
-        const susSnap = await db.collection('suscripciones').get();
-        backup.datos.suscripciones = {};
-        susSnap.forEach(doc => {
-          backup.datos.suscripciones[doc.id] = doc.data();
-        });
-        
-        log('logStats', 'Exportando usuarios...', 'info');
+        log('logStats', '👥 Exportando usuarios...', 'info');
         const userSnap = await db.collection('usuarios').get();
         backup.datos.usuarios = {};
         userSnap.forEach(doc => {
           backup.datos.usuarios[doc.id] = doc.data();
         });
+        log('logStats', `✓ ${Object.keys(backup.datos.usuarios).length} usuarios`, 'success');
+        
+        log('logStats', '👑 Exportando suscripciones...', 'info');
+        const susSnap = await db.collection('suscripciones').get();
+        backup.datos.suscripciones = {};
+        susSnap.forEach(doc => {
+          backup.datos.suscripciones[doc.id] = doc.data();
+        });
+        log('logStats', `✓ ${Object.keys(backup.datos.suscripciones).length} suscripciones`, 'success');
+        
+        log('logStats', '📊 Exportando resultados...', 'info');
+        const resSnap = await db.collection('resultados').get();
+        backup.datos.resultados = [];
+        resSnap.forEach(doc => {
+          backup.datos.resultados.push({id: doc.id, ...doc.data()});
+        });
+        log('logStats', `✓ ${backup.datos.resultados.length} resultados`, 'success');
+        
+        log('logStats', '💾 Exportando progresos...', 'info');
+        const progSnap = await db.collection('progresos').get();
+        backup.datos.progresos = [];
+        progSnap.forEach(doc => {
+          backup.datos.progresos.push({id: doc.id, ...doc.data()});
+        });
+        log('logStats', `✓ ${backup.datos.progresos.length} progresos`, 'success');
+        
+        log('logStats', '🎯 Exportando aciertos globales...', 'info');
+        const aciertosSnap = await db.collection('aciertosglobales').get();
+        backup.datos.aciertosglobales = {};
+        aciertosSnap.forEach(doc => {
+          backup.datos.aciertosglobales[doc.id] = doc.data();
+        });
+        log('logStats', `✓ ${Object.keys(backup.datos.aciertosglobales).length} registros`, 'success');
         
         const json = JSON.stringify(backup, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `multitest-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `multitest-backup-${timestamp}.json`;
         a.click();
         URL.revokeObjectURL(url);
         
-        log('logStats', '✅ Backup completado', 'success');
-        log('logStats', `📦 Categorías: ${Object.keys(backup.datos.categorias).length}`, 'info');
-        log('logStats', `❓ Preguntas: ${backup.datos.preguntas.length}`, 'info');
+        log('logStats', '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+        log('logStats', '✅ BACKUP COMPLETADO', 'success');
+        log('logStats', `📦 Archivo: multitest-backup-${timestamp}.json`, 'info');
+        log('logStats', '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+        
+        alert(`✅ Backup completado exitosamente\n\n📦 Archivo descargado:\nmultitest-backup-${timestamp}.json\n\nGuárdalo en un lugar seguro.`);
+        
       } catch (e) {
-        log('logStats', `❌ ${e.message}`, 'error');
+        log('logStats', `❌ Error: ${e.message}`, 'error');
+        alert('❌ Error al crear backup: ' + e.message);
       }
     }
-
+    
     async function restaurarBackup() {
       const input = document.createElement('input');
       input.type = 'file';
@@ -1597,7 +2101,7 @@ if (window._tempUserId) {
       
       input.click();
     }
-
+    
     function cerrarModalCat() { document.getElementById('modalCat').classList.remove('show'); }
     function cerrarModalListCat() { document.getElementById('modalListCat').classList.remove('show'); }
     function cerrarModalReordenar() { 
@@ -1607,41 +2111,38 @@ if (window._tempUserId) {
     }
     function cerrarModalEstatus() { document.getElementById('modalEstatus').classList.remove('show'); }
     function cerrarModalUsers() { document.getElementById('modalUsers').classList.remove('show'); }
-    function cerrarModalAcceso() { document.getElementById('modalAcceso').classList.remove('show'); }
-
-function instruccionesBackupLocal() {
-  const instrucciones = `
+    function cerrarModalAcceso() { 
+      document.getElementById('modalAcceso').classList.remove('show'); 
+      document.getElementById('emailAcceso').disabled = false;
+      window._tempUserId = null;
+    }
+    
+    function instruccionesBackupLocal() {
+      const instrucciones = `
 🚀 BACKUP COMPLETO DEL SISTEMA
-
 Para hacer un backup completo (Firestore + código):
-
 1️⃣ Abre tu terminal/CMD en la carpeta del proyecto
-
 2️⃣ Ejecuta:
    npm run backup
-
 3️⃣ El backup se guardará en:
    C:/Backup-Multitest/backup-YYYY-MM-DD-TIMESTAMP/
-
 📦 Incluye:
    ✅ Todas las colecciones de Firestore
    ✅ index.html y admin.html
    ✅ Reglas de seguridad
    ✅ Configuración del proyecto
    ✅ Functions (si existen)
-
 ⚠️  Necesitas tener instalado:
    • Node.js
    • firebase-admin (npm install)
    • serviceAccountKey.json
-
 ¿Quieres hacer un backup solo de Firestore desde aquí?
 `;
-
-  if (confirm(instrucciones)) {
-    hacerBackupCompleto(); // Función existente
-  }
-}
+      if (confirm(instrucciones)) {
+        hacerBackupCompleto();
+      }
+    }
+    
     window.onclick = e => {
       if (e.target.classList.contains('modal')) {
         e.target.classList.remove('show');
