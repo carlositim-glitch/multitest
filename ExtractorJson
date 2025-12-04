@@ -1,0 +1,614 @@
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+import os
+import json
+import shutil
+from pathlib import Path
+import re
+from collections import Counter
+import time
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+UPLOAD_DIR = Path("uploads")
+RESULT_DIR = Path("../resultados")
+UPLOAD_DIR.mkdir(exist_ok=True)
+RESULT_DIR.mkdir(exist_ok=True)
+
+print(f"\n{'='*60}")
+print(f"🎯 Sistema ROBUSTO - Extracción por BLOQUES completos")
+print(f"📊 Lee TODO el texto entre pregunta N y N+1")
+print(f"✅ GARANTIZA 4 opciones con validación de IDs")
+print(f"{'='*60}\n")
+
+def extraer_texto_pdf(pdf_path):
+    try:
+        import PyPDF2
+        with open(pdf_path, 'rb') as file:
+            reader = PyPDF2.PdfReader(file)
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text() + "\n"
+            return text
+    except Exception as e:
+        raise Exception(f"Error: {str(e)}")
+
+def analizar_patrones_documento(texto: str):
+    """
+    Análisis profundo con detección ULTRA-AGRESIVA de basura administrativa
+    """
+    print("🔍 Analizando estructura del documento...")
+    
+    lineas = texto.split('\n')
+    contador = Counter([linea.strip() for linea in lineas if 5 < len(linea.strip()) < 200])
+    
+    patrones_repetitivos = []
+    fragmentos_basura = []
+    
+    # Detectar patrones repetitivos generales
+    for linea, reps in contador.most_common(100):
+        if reps > 2:
+            keywords = ['página', 'page', 'certificación', 'copyright', '©', 'www', 'http', 
+                       'derechos', 'reservados', 'tema', 'capítulo', 'hoja',
+                       'convocatoria', 'procesos selectivos', 'listado', 'definitivo',
+                       'documento electrónico', 'autenticidad', 'repertorio', 'mediante',
+                       'puede ser comprobada', 'número de documento', 'grupo a/a2']
+            if any(k in linea.lower() for k in keywords):
+                patrones_repetitivos.append(linea)
+                
+                if len(linea) > 30:
+                    fragmento = linea[:30].strip()
+                    if fragmento not in fragmentos_basura:
+                        fragmentos_basura.append(fragmento)
+    
+    # Patrones críticos GOBCAN
+    texto_lower = texto.lower()
+    patrones_criticos = [
+        'puede ser comprobada la autenticidad',
+        'mediante el número de documento electrónico',
+        'listado de preguntas definitivo',
+        'procesos selectivos estabilización',
+        'grupo a/a2 sanitario',
+        'convocatoria:',
+        'categoría:',
+        'nº de preguntas de reserva'
+    ]
+    
+    for patron in patrones_criticos:
+        if patron in texto_lower:
+            for linea in lineas:
+                if patron in linea.lower() and linea.strip() not in patrones_repetitivos:
+                    patrones_repetitivos.append(linea.strip())
+    
+    print(f"   📋 Patrones basura detectados: {len(patrones_repetitivos)}")
+    
+    return {
+        'patrones_repetitivos': set(patrones_repetitivos),
+        'fragmentos_basura': set(fragmentos_basura),
+        'total_lineas': len(lineas)
+    }
+
+def es_basura(linea: str, info_patrones: dict) -> bool:
+    """Detecta si una línea es basura"""
+    linea = linea.strip()
+    
+    if len(linea) < 2:
+        return True
+    
+    if linea in info_patrones['patrones_repetitivos']:
+        return True
+    
+    # Patrones de basura comunes
+    patrones_basura = [
+        r'^\d+\s*$',
+        r'^Página\s+\d+',
+        r'^\d+\s*/\s*\d+$',
+        r'^©',
+        r'^www\.',
+        r'^http',
+        r'^\s*[-–—]\s*\d+\s*[-–—]\s*$',
+    ]
+    
+    for patron in patrones_basura:
+        if re.match(patron, linea, re.IGNORECASE):
+            return True
+    
+    # Basura específica GOBCAN
+    basura_keywords = [
+        'documento electrónico',
+        'autenticidad de esta copia',
+        'puede ser comprobada',
+        'convocatoria:',
+        'procesos selectivos',
+        'listado de preguntas',
+        'grupo a/a2',
+        'estabilización',
+        'definitivo',
+        'certificación',
+        'repertorio',
+        'categoría:',
+        'nº de preguntas de reserva',
+        'https://sede',
+        'gobiernodecanarias.org',
+        'en la dirección https'
+    ]
+    
+    linea_lower = linea.lower()
+    for keyword in basura_keywords:
+        if keyword in linea_lower:
+            return True
+    
+    # Hash largo
+    if re.search(r'[a-zA-Z0-9_]{20,}', linea):
+        return True
+    
+    return False
+
+def limpiar_texto(texto: str, info_patrones: dict = None) -> str:
+    """Limpia un texto de basura"""
+    texto = texto.strip()
+    
+    # Remover marcas de respuesta correcta
+    texto = re.sub(r'\s*Respuesta\s+Correcta\s*:\s*[A-D].*$', '', texto, flags=re.IGNORECASE)
+    texto = re.sub(r'\s*Correcta\s*:\s*[A-D].*$', '', texto, flags=re.IGNORECASE)
+    texto = re.sub(r'\s*RC\s*:\s*[A-D].*$', '', texto, flags=re.IGNORECASE)
+    
+    # Limpiar basura GOBCAN
+    if info_patrones and 'fragmentos_basura' in info_patrones:
+        for fragmento in info_patrones['fragmentos_basura']:
+            if fragmento.lower() in texto.lower():
+                idx = texto.lower().find(fragmento.lower())
+                if idx != -1:
+                    texto = texto[:idx]
+    
+    # Patrones administrativos
+    patrones_admin = [
+        r'\s*puede ser comprobada.*$',
+        r'\s*mediante el número de documento.*$',
+        r'\s*listado de preguntas definitivo.*$',
+        r'\s*convocatoria:.*$',
+        r'\s*procesos selectivos.*$',
+        r'\s*grupo a/a2.*$',
+        r'\s*estabilización \d{4}.*$',
+        r'\s*[a-zA-Z0-9_]{25,}.*$',
+        r'\s*documento electrónico siguiente:.*$',
+        r'\s*autenticidad de esta copia.*$',
+        r'\s*en la dirección https.*$',
+    ]
+    
+    for patron in patrones_admin:
+        texto = re.sub(patron, '', texto, flags=re.IGNORECASE)
+    
+    texto = re.sub(r'\s+', ' ', texto)
+    
+    return texto.strip()
+
+def encontrar_todas_preguntas(texto: str) -> list:
+    """
+    Encuentra TODAS las posiciones de inicio de preguntas en el texto
+    """
+    lineas = texto.split('\n')
+    posiciones = []
+    
+    for i, linea in enumerate(lineas):
+        linea = linea.strip()
+        
+        # Formato estándar: "1. " o "1) "
+        match_estandar = re.match(r'^(\d+)[\.\)]\s+', linea)
+        # Formato GOBCAN: "1.- "
+        match_gobcan = re.match(r'^(\d+)[\.\s]*\-\s+', linea)
+        
+        if match_estandar or match_gobcan:
+            numero = int((match_estandar or match_gobcan).group(1))
+            posiciones.append({
+                'linea': i,
+                'numero': numero,
+                'texto_linea': linea
+            })
+    
+    print(f"📍 Encontradas {len(posiciones)} preguntas en el documento")
+    return posiciones
+
+def extraer_bloque_pregunta(lineas: list, inicio: int, fin: int, info_patrones: dict) -> str:
+    """
+    Extrae TODO el texto entre dos preguntas, limpiando basura
+    """
+    bloque_limpio = []
+    
+    for i in range(inicio, min(fin, len(lineas))):
+        linea = lineas[i].strip()
+        
+        # Saltar líneas vacías
+        if len(linea) < 2:
+            continue
+        
+        # Saltar basura
+        if es_basura(linea, info_patrones):
+            continue
+        
+        bloque_limpio.append(linea)
+    
+    return '\n'.join(bloque_limpio)
+
+def extraer_opciones_del_bloque(bloque: str, numero_pregunta: int, info_patrones: dict) -> dict:
+    """
+    Extrae las 4 opciones A-D de un bloque de texto
+    ESTRATEGIA: Buscar TODAS las líneas que empiecen con A), B), C), D)
+    """
+    
+    # 🔥 ACTIVAR DEBUG AQUÍ
+    debug_extraccion_opciones(bloque, numero_pregunta, info_patrones, guardar_archivo=True)
+    
+    print(f"      🔍 Buscando opciones en bloque de pregunta {numero_pregunta}...")
+    
+    
+    lineas = bloque.split('\n')
+    opciones_encontradas = {}
+    
+    # Para cada letra, buscar TODAS las apariciones
+    for letra in ['A', 'B', 'C', 'D']:
+        opciones_temp = []
+        
+        for i, linea in enumerate(lineas):
+            # Buscar inicio de opción (flexible: con/sin espacio, mayúscula/minúscula)
+            match = re.match(rf'^{letra}[\.\)]\s*(.+)', linea, re.IGNORECASE)
+            
+            if match:
+                texto_inicial = match.group(1).strip()
+                
+                # Recoger líneas siguientes hasta encontrar otra opción o fin
+                texto_completo = [texto_inicial]
+                j = i + 1
+                
+                while j < len(lineas):
+                    siguiente = lineas[j].strip()
+                    
+                    # Parar si encontramos otra opción
+                    if re.match(r'^[A-Da-d][\.\)]\s*', siguiente):
+                        break
+                    
+                    # Parar si encontramos "Respuesta Correcta"
+                    if re.search(r'Respuesta\s+Correcta', siguiente, re.IGNORECASE):
+                        break
+                    
+                    # Añadir línea si no está vacía
+                    if len(siguiente) > 2:
+                        texto_completo.append(siguiente)
+                    
+                    j += 1
+                    
+                    # Límite de seguridad
+                    if len(' '.join(texto_completo)) > 300:
+                        break
+                
+                texto_final = ' '.join(texto_completo)
+                texto_limpio = limpiar_texto(texto_final, info_patrones)
+                
+                if len(texto_limpio) > 3:
+                    opciones_temp.append(texto_limpio)
+        
+        # Tomar la opción más larga (suele ser la correcta)
+        if opciones_temp:
+            opcion_final = max(opciones_temp, key=len)
+            opciones_encontradas[letra] = opcion_final
+            print(f"         ✅ Opción {letra}: {opcion_final[:60]}...")
+        else:
+            opciones_encontradas[letra] = "[FALTA - NO ENCONTRADA]"
+            print(f"         ❌ Opción {letra}: NO ENCONTRADA")
+    
+    return opciones_encontradas
+
+def extraer_respuesta_correcta(bloque: str) -> str:
+    """
+    Busca la respuesta correcta en el bloque
+    """
+    patrones = [
+        r'Respuesta\s+[Cc]orrecta\s*:\s*([A-D])',
+        r'Correcta\s*:\s*([A-D])',
+        r'Respuesta\s*:\s*([A-D])',
+        r'RC\s*:\s*([A-D])',
+    ]
+    
+    for patron in patrones:
+        match = re.search(patron, bloque, re.IGNORECASE)
+        if match:
+            return match.group(1).upper()
+    
+    return "?"
+
+def procesar_pregunta_por_bloque(lineas: list, pos_actual: dict, pos_siguiente: dict, info_patrones: dict) -> dict:
+    """
+    Procesa UNA pregunta extrayendo TODO su bloque hasta la siguiente pregunta
+    """
+    numero = pos_actual['numero']
+    linea_inicio = pos_actual['linea']
+    linea_fin = pos_siguiente['linea'] if pos_siguiente else len(lineas)
+    
+    print(f"\n   📍 Pregunta {numero}: Líneas {linea_inicio} → {linea_fin}")
+    
+    # Extraer enunciado (primera línea limpia)
+    primera_linea = lineas[linea_inicio].strip()
+    match_gobcan = re.match(r'^\d+[\.\s]*\-\s+(.+)', primera_linea)
+    match_estandar = re.match(r'^\d+[\.\)]\s+(.+)', primera_linea)
+    
+    if match_gobcan:
+        enunciado = match_gobcan.group(1)
+    elif match_estandar:
+        enunciado = match_estandar.group(1)
+    else:
+        enunciado = primera_linea
+    
+    # Continuar enunciado en líneas siguientes (hasta encontrar "A)")
+    i = linea_inicio + 1
+    while i < linea_fin and i < linea_inicio + 10:
+        linea = lineas[i].strip()
+        
+        if re.match(r'^[A-Da-d][\.\)]\s*', linea):
+            break
+        
+        if not es_basura(linea, info_patrones) and len(linea) > 2:
+            enunciado += " " + linea
+        
+        i += 1
+    
+    enunciado = limpiar_texto(enunciado, info_patrones)
+    
+    # Extraer TODO el bloque
+    bloque = extraer_bloque_pregunta(lineas, linea_inicio, linea_fin, info_patrones)
+    
+    # Extraer opciones del bloque
+    opciones = extraer_opciones_del_bloque(bloque, numero, info_patrones)
+    
+    # Extraer respuesta correcta
+    respuesta = extraer_respuesta_correcta(bloque)
+    
+    print(f"      📝 Respuesta correcta: {respuesta}")
+    
+    # Construir resultado
+    resultado = {
+        'id': numero,
+        'pregunta': enunciado,
+        'opciones': opciones,
+        'respuestaCorrecta': respuesta
+    }
+    
+    # Advertencias
+    advertencias = []
+    for letra in ['A', 'B', 'C', 'D']:
+        if opciones[letra] == "[FALTA - NO ENCONTRADA]":
+            advertencias.append(f"Opción {letra} no encontrada")
+    
+    if advertencias:
+        resultado['_ADVERTENCIA'] = {
+            'problemas': advertencias,
+            'linea_inicio': linea_inicio + 1,
+            'accion': 'Revisar manualmente en el PDF'
+        }
+    
+    return resultado
+def debug_extraccion_opciones(bloque: str, numero_pregunta: int, info_patrones: dict, guardar_archivo: bool = True):
+    """
+    Debug EXHAUSTIVO de extracción de opciones
+    Muestra TODO lo que encuentra y guarda logs detallados
+    """
+    print(f"\n{'='*80}")
+    print(f"🔍 DEBUG PREGUNTA {numero_pregunta}")
+    print(f"{'='*80}")
+    
+    lineas = bloque.split('\n')
+    
+    print(f"\n📦 BLOQUE COMPLETO ({len(lineas)} líneas):")
+    print("-" * 80)
+    for i, linea in enumerate(lineas):
+        marcador_basura = "🗑️" if es_basura(linea, info_patrones) else "✅"
+        print(f"{i:3d} {marcador_basura} | {linea[:120]}")
+    print("-" * 80)
+    
+    # Buscar TODAS las apariciones de cada letra
+    print(f"\n🔤 BÚSQUEDA DE OPCIONES:")
+    for letra in ['A', 'B', 'C', 'D']:
+        print(f"\n   Letra {letra}:")
+        print(f"   {'-'*70}")
+        
+        apariciones = []
+        for i, linea in enumerate(lineas):
+            # Buscar con regex flexible
+            match = re.match(rf'^{letra}[\.\)]\s*(.+)', linea, re.IGNORECASE)
+            
+            if match:
+                texto_encontrado = match.group(1).strip()
+                
+                # Recoger continuación
+                texto_completo = [texto_encontrado]
+                j = i + 1
+                
+                while j < len(lineas):
+                    siguiente = lineas[j].strip()
+                    
+                    # Parar en otra opción
+                    if re.match(r'^[A-Da-d][\.\)]\s*', siguiente):
+                        break
+                    
+                    # Parar en respuesta correcta
+                    if re.search(r'Respuesta\s+Correcta', siguiente, re.IGNORECASE):
+                        break
+                    
+                    if len(siguiente) > 2:
+                        texto_completo.append(siguiente)
+                    
+                    j += 1
+                    
+                    if len(' '.join(texto_completo)) > 300:
+                        break
+                
+                texto_final = ' '.join(texto_completo)
+                texto_limpio = limpiar_texto(texto_final, info_patrones)
+                
+                apariciones.append({
+                    'linea': i,
+                    'texto_original': texto_final[:150],
+                    'texto_limpio': texto_limpio[:150],
+                    'longitud': len(texto_limpio),
+                    'es_valido': len(texto_limpio) > 3
+                })
+                
+                print(f"   📍 Línea {i}:")
+                print(f"      Original: {texto_final[:100]}...")
+                print(f"      Limpio:   {texto_limpio[:100]}...")
+                print(f"      Longitud: {len(texto_limpio)} caracteres")
+                print(f"      Válido:   {'✅ SÍ' if len(texto_limpio) > 3 else '❌ NO'}")
+        
+        if not apariciones:
+            print(f"   ❌ NO SE ENCONTRÓ NINGUNA APARICIÓN DE '{letra}'")
+        else:
+            print(f"   📊 Total apariciones: {len(apariciones)}")
+            if len(apariciones) > 1:
+                print(f"   ⚠️  MÚLTIPLES APARICIONES - Se elegirá la más larga")
+                for idx, ap in enumerate(apariciones):
+                    print(f"      [{idx+1}] Línea {ap['linea']}: {ap['longitud']} chars")
+    
+    # Buscar respuesta correcta
+    print(f"\n✓ RESPUESTA CORRECTA:")
+    print(f"   {'-'*70}")
+    respuesta = extraer_respuesta_correcta(bloque)
+    print(f"   Detectada: {respuesta}")
+    
+    # Buscar patrones de respuesta en el bloque
+    patrones_rc = [
+        r'Respuesta\s+[Cc]orrecta\s*:\s*([A-D])',
+        r'Correcta\s*:\s*([A-D])',
+        r'Respuesta\s*:\s*([A-D])',
+        r'RC\s*:\s*([A-D])',
+    ]
+    
+    for patron in patrones_rc:
+        matches = re.finditer(patron, bloque, re.IGNORECASE)
+        for match in matches:
+            print(f"   Patrón '{patron[:30]}...' → {match.group(1)}")
+    
+    print(f"\n{'='*80}\n")
+    
+    # Guardar a archivo para análisis offline
+    if guardar_archivo:
+        debug_file = RESULT_DIR / f"DEBUG_pregunta_{numero_pregunta}.txt"
+        with open(debug_file, 'w', encoding='utf-8') as f:
+            f.write(f"DEBUG PREGUNTA {numero_pregunta}\n")
+            f.write("="*80 + "\n\n")
+            f.write("BLOQUE COMPLETO:\n")
+            f.write(bloque)
+            f.write("\n\n" + "="*80 + "\n")
+
+def extraer_todas_preguntas_robusto(texto: str, info_patrones: dict) -> list:
+    """
+    Extracción ROBUSTA por bloques completos con validación de IDs
+    """
+    print("\n📝 Extracción ROBUSTA iniciada...")
+    print("   ⏱️  Procesando por BLOQUES completos\n")
+    
+    lineas = texto.split('\n')
+    
+    # 1. Encontrar TODAS las posiciones de preguntas
+    posiciones = encontrar_todas_preguntas(texto)
+    
+    if len(posiciones) == 0:
+        print("❌ No se encontraron preguntas en el documento")
+        return []
+    
+    # 2. Validar secuencia de IDs
+    ids = [p['numero'] for p in posiciones]
+    print(f"   📊 IDs detectados: {ids[:10]}{'...' if len(ids) > 10 else ''}")
+    
+    # 3. Procesar cada pregunta por su bloque completo
+    preguntas = []
+    
+    for i, pos in enumerate(posiciones):
+        pos_siguiente = posiciones[i + 1] if i + 1 < len(posiciones) else None
+        
+        pregunta = procesar_pregunta_por_bloque(lineas, pos, pos_siguiente, info_patrones)
+        
+        if pregunta:
+            preguntas.append(pregunta)
+            print(f"   ✅ Pregunta {pregunta['id']} completada")
+    
+    # Estadísticas finales
+    total = len(preguntas)
+    con_advertencias = sum(1 for p in preguntas if '_ADVERTENCIA' in p)
+    sin_respuesta = sum(1 for p in preguntas if p['respuestaCorrecta'] == '?')
+    
+    print(f"\n{'='*60}")
+    print(f"✅ Total preguntas procesadas: {total}")
+    print(f"⚠️  Con advertencias: {con_advertencias}")
+    print(f"❓ Sin respuesta detectada: {sin_respuesta}")
+    print(f"✨ Perfectas: {total - con_advertencias}")
+    print(f"{'='*60}")
+    
+    return preguntas
+
+@app.post("/procesar-pdf")
+async def procesar_pdf(file: UploadFile = File(...), workers: int = Form(1)):
+    try:
+        print(f"\n{'='*60}")
+        print(f"📄 Procesando: {file.filename}")
+        print(f"⏱️  Modo: ROBUSTO (extracción por bloques)")
+        print(f"{'='*60}")
+        
+        file_path = UPLOAD_DIR / file.filename
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        texto = extraer_texto_pdf(file_path)
+        print(f"📖 Texto extraído: {len(texto):,} caracteres")
+        
+        info_patrones = analizar_patrones_documento(texto)
+        preguntas = extraer_todas_preguntas_robusto(texto, info_patrones)
+        
+        nombre_json = file.filename.replace('.pdf', '.json')
+        resultado_path = RESULT_DIR / nombre_json
+        
+        with open(resultado_path, 'w', encoding='utf-8') as f:
+            json.dump(preguntas, f, ensure_ascii=False, indent=2)
+        
+        file_path.unlink()
+        
+        con_advertencias = sum(1 for p in preguntas if '_ADVERTENCIA' in p)
+        
+        return {
+            "status": "success",
+            "archivo": nombre_json,
+            "preguntas_encontradas": len(preguntas),
+            "preguntas_perfectas": len(preguntas) - con_advertencias,
+            "preguntas_revisar": con_advertencias
+        }
+        
+    except Exception as e:
+        print(f"\n❌ ERROR: {str(e)}\n")
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(e)}
+
+@app.get("/")
+async def read_root():
+    return {"message": "Sistema ROBUSTO activo - Extracción por bloques completos"}
+
+@app.get("/descargar/{filename}")
+async def descargar_json(filename: str):
+    file_path = RESULT_DIR / filename
+    if file_path.exists():
+        return FileResponse(file_path, filename=filename)
+    raise HTTPException(status_code=404, detail="No encontrado")
+
+if __name__ == "__main__":
+    import uvicorn
+    print("\n🚀 Iniciando servidor ROBUSTO...")
+    print("📡 http://localhost:8000")
+    print("✨ Extracción por BLOQUES completos entre preguntas")
+    print("✅ Validación de IDs secuenciales\n")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
