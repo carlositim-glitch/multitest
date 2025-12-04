@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Admin - MultiTest</title>
+  <title>Admin 0.11 - MultiTest</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -354,12 +354,21 @@
     .file-upload-btn:hover {
       background: #25724a;
     }
+    .cache-indicator {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      background: rgba(46, 139, 87, 0.2);
+      color: #5dff9a;
+      margin-left: 10px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🔧 Panel Admin - MultiTest</h1>
-    <p class="subtitle">Gestión completa del sistema</p>
+    <p class="subtitle">Gestión completa del sistema (Optimizado)</p>
     <div id="userInfo" class="user-info" style="display:none;">
       <div>
         <div style="font-size: 14px; color: #aab3b8; margin-bottom: 5px;">Admin:</div>
@@ -404,6 +413,7 @@
             <button onclick="verCategorias()">👁️ Ver Todas</button>
             <button onclick="nuevaCategoria()" class="success">➕ Nueva</button>
             <button onclick="reordenarCategorias()" class="warning">🔄 Reordenar</button>
+            <button onclick="sincronizarTodasLasCategorias()" class="premium">⚡ Sincronizar Contadores</button>
           </div>
           <div id="logCat" class="log"></div>
         </div>
@@ -426,6 +436,7 @@
             <input type="file" id="fileJSON" accept=".json" onchange="cargarJSON()" style="display:none;">
             <button onclick="document.getElementById('fileJSON').click()" class="success">📁 Cargar JSON</button>
             <button onclick="exportarPreguntas()" class="warning" id="btnExportar" disabled>📥 Exportar</button>
+            <button onclick="cargarPreguntasConsola()" class="premium" id="btnCargarPreguntas" disabled>📝 Gestionar</button>
             <span id="fileName" style="margin-left: 15px; color: #aab3b8; font-size: 14px;"></span>
           </div>
           <textarea id="jsonText" placeholder='Pega aquí el JSON de preguntas...'></textarea>
@@ -441,37 +452,37 @@
       <!-- TAB USUARIOS -->
       <div id="tabUsuarios" class="tab-content">
         <div class="card">
-          <h2>👥 Usuarios y Suscripciones</h2>
+          <h2>👥 Usuarios y Suscripciones<span id="cacheIndicatorUsers"></span></h2>
           <div class="stats">
             <div class="stat-box">
-              <div class="number" id="totalUsers">0</div>
+              <div class="number" id="totalUsers">-</div>
               <div class="label">Usuarios</div>
             </div>
             <div class="stat-box premium">
-              <div class="number" id="totalSubs">0</div>
+              <div class="number" id="totalSubs">-</div>
               <div class="label">Suscripciones</div>
             </div>
             <div class="stat-box">
-              <div class="number" id="totalgratuito">0</div>
+              <div class="number" id="totalgratuito">-</div>
               <div class="label">Gratuitas</div>
             </div>
             <div class="stat-box mensual">
-              <div class="number" id="totalMensual">0</div>
+              <div class="number" id="totalMensual">-</div>
               <div class="label">Mensuales</div>
             </div>
             <div class="stat-box trimestral">
-              <div class="number" id="totalTrimestral">0</div>
+              <div class="number" id="totalTrimestral">-</div>
               <div class="label">Trimestrales</div>
             </div>
             <div class="stat-box anual">
-              <div class="number" id="totalAnual">0</div>
+              <div class="number" id="totalAnual">-</div>
               <div class="label">Anuales</div>
             </div>
           </div>
           <div style="margin-top: 20px;">
             <button onclick="verUsuarios()">👥 Ver Usuarios</button>
             <button onclick="otorgarAcceso()" class="premium">👑 Otorgar Acceso</button>
-            <button onclick="actualizarStatsUsers()">🔄 Actualizar</button>
+            <button onclick="actualizarStatsUsers(true)">🔄 Actualizar Stats</button>
             <button onclick="limpiarLogsUsuarios()" class="danger">🗑️ Limpiar Log</button>
           </div>
           <div id="logUsers" class="log"></div>
@@ -480,25 +491,25 @@
       <!-- TAB STATS -->
       <div id="tabStats" class="tab-content">
         <div class="card">
-          <h2>📊 Estadísticas Generales</h2>
-          <button onclick="actualizarStats()">🔄 Actualizar</button>
+          <h2>📊 Estadísticas Generales<span id="cacheIndicatorStats"></span></h2>
+          <button onclick="actualizarStats(true)">🔄 Actualizar</button>
           <button onclick="instruccionesBackupLocal()" class="success">💾 Backup Completo Local</button>
           <button onclick="restaurarBackup()" class="warning">📥 Restaurar</button>
           <div class="stats">
             <div class="stat-box">
-              <div class="number" id="sCat">0</div>
+              <div class="number" id="sCat">-</div>
               <div class="label">Categorías</div>
             </div>
             <div class="stat-box">
-              <div class="number" id="sPreg">0</div>
+              <div class="number" id="sPreg">-</div>
               <div class="label">Preguntas</div>
             </div>
             <div class="stat-box">
-              <div class="number" id="sRes">0</div>
+              <div class="number" id="sRes">-</div>
               <div class="label">Resultados</div>
             </div>
             <div class="stat-box">
-              <div class="number" id="sProg">0</div>
+              <div class="number" id="sProg">-</div>
               <div class="label">Progresos</div>
             </div>
           </div>
@@ -639,6 +650,112 @@
       </form>
     </div>
   </div>
+  <!-- MODAL LISTA DE PREGUNTAS -->
+  <div id="modalPreguntas" class="modal">
+    <div class="modal-content" style="max-width: 1000px;">
+      <div class="modal-header">
+        <h3>📝 Gestión de Preguntas</h3>
+        <button class="modal-close" onclick="cerrarModalPreguntas()">×</button>
+      </div>
+      <div style="margin-bottom: 20px;">
+        <button onclick="nuevaPregunta()" class="success">➕ Nueva Pregunta</button>
+        <button onclick="cargarPreguntasConsola()" class="warning">🔄 Recargar</button>
+        <button onclick="buscarDuplicadas()" class="danger">🔍 Buscar Duplicadas</button>
+        <button onclick="buscarPreguntasFaltantes()" class="warning">🔢 Buscar Faltantes</button>
+        <button onclick="cerrarModalPreguntas()" class="secondary">✓ Cerrar</button>
+      </div>
+      <div id="preguntasContenido" style="max-height: 600px; overflow-y: auto;"></div>
+    </div>
+  </div>
+  <!-- MODAL EDITAR PREGUNTA -->
+  <div id="modalEditPregunta" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3 id="modalEditTitulo">✏️ Editar Pregunta</h3>
+        <button class="modal-close" onclick="cerrarModalEditPregunta()">×</button>
+      </div>
+      <form id="formEditPregunta" onsubmit="guardarPreguntaForm(event)">
+        <input type="hidden" id="editIndex">
+        
+        <div class="form-group">
+          <label>ID:</label>
+          <input type="text" id="editId" placeholder="1" required>
+          <small>Número o identificador único</small>
+        </div>
+        
+        <div class="form-group">
+          <label>Pregunta:</label>
+          <textarea id="editPregunta" placeholder="Escribe la pregunta aquí..." required style="min-height: 100px;"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>Opción A:</label>
+          <input type="text" id="editOpcionA" placeholder="Primera opción" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Opción B:</label>
+          <input type="text" id="editOpcionB" placeholder="Segunda opción" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Opción C:</label>
+          <input type="text" id="editOpcionC" placeholder="Tercera opción" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Opción D:</label>
+          <input type="text" id="editOpcionD" placeholder="Cuarta opción" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Respuesta Correcta:</label>
+          <select id="editRespuesta" required>
+            <option value="0">A</option>
+            <option value="1">B</option>
+            <option value="2">C</option>
+            <option value="3">D</option>
+          </select>
+        </div>
+        
+        <div class="checkbox-group">
+          <input type="checkbox" id="editActiva" checked>
+          <label for="editActiva">✅ Activa</label>
+        </div>
+        
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+          <button type="submit" class="success" style="flex: 1;">💾 Guardar</button>
+          <button type="button" onclick="cerrarModalEditPregunta()" class="secondary" style="flex: 1;">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div id="modalDuplicados" class="modal">
+    <div class="modal-content" style="max-width: 900px;">
+      <div class="modal-header">
+        <h3>🔍 Preguntas Duplicadas</h3>
+        <button class="modal-close" onclick="cerrarModalDuplicados()">×</button>
+      </div>
+      <div style="margin-bottom: 20px;">
+        <button onclick="eliminarDuplicadas()" class="danger">🗑️ Eliminar <span id="totalDuplicadosEliminar">0</span> Duplicadas</button>
+        <button onclick="cerrarModalDuplicados()" class="secondary">Cancelar</button>
+      </div>
+      <div id="duplicadosContenido" style="max-height: 600px; overflow-y: auto;"></div>
+    </div>
+  </div>
+  <!-- MODAL FALTANTES -->
+  <div id="modalFaltantes" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <h3>🔍 Preguntas Faltantes</h3>
+        <button class="modal-close" onclick="cerrarModalFaltantes()">×</button>
+      </div>
+      <div id="faltantesContenido" style="max-height: 600px; overflow-y: auto;"></div>
+      <div style="margin-top: 20px;">
+        <button onclick="cerrarModalFaltantes()" class="secondary" style="width: 100%;">Cerrar</button>
+      </div>
+    </div>
+  </div>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -657,9 +774,45 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
     const ADMIN_EMAIL = 'carlos.itim@gmail.com';
+    
+    // ✅ VARIABLES GLOBALES
     let catActual = null;
     let modoEdit = false;
+    let preguntasCategoriaJSON = null;
+    let preguntasCargadas = [];
     
+    // ✅ SISTEMA DE CACHÉ OPTIMIZADO
+    const cache = {
+      usuarios: { data: null, timestamp: 0 },
+      stats: { data: null, timestamp: 0 },
+      categorias: { data: null, timestamp: 0 }
+    };
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+    
+    function esCacheValido(tipo) {
+      const ahora = Date.now();
+      return cache[tipo].data && (ahora - cache[tipo].timestamp) < CACHE_DURATION;
+    }
+    
+    function guardarEnCache(tipo, data) {
+      cache[tipo] = {
+        data: data,
+        timestamp: Date.now()
+      };
+    }
+    
+    function mostrarIndicadorCache(elemento, valido) {
+      const indicator = document.getElementById(elemento);
+      if (indicator) {
+        if (valido) {
+          indicator.innerHTML = '<span class="cache-indicator">📦 Caché</span>';
+        } else {
+          indicator.innerHTML = '';
+        }
+      }
+    }
+    
+    // ✅ FUNCIONES BÁSICAS
     function log(id, msg, type = 'info') {
       const el = document.getElementById(id);
       if (!el) return;
@@ -688,16 +841,45 @@
       if (el) el.innerHTML = '';
     }
     
+    // ✅ CAMBIO DE TAB SIN RECARGAS AUTOMÁTICAS
     function cambiarTab(tab) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       event.target.classList.add('active');
       document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
       
-      if (tab === 'usuarios') actualizarStatsUsers();
-      if (tab === 'stats') actualizarStats();
+      // ✅ SOLO CARGA INICIAL DE SELECT, NO RECARGA STATS
       if (tab === 'preguntas') cargarCatSelect();
-      if (tab === 'categorias') actualizarStatsCategorias();
+      
+      // ✅ MOSTRAR DATOS EN CACHÉ SI EXISTEN
+      if (tab === 'usuarios' && esCacheValido('usuarios')) {
+        mostrarStatsDesdeCache('usuarios');
+      }
+      if (tab === 'stats' && esCacheValido('stats')) {
+        mostrarStatsDesdeCache('stats');
+      }
+    }
+    
+    function mostrarStatsDesdeCache(tipo) {
+      const data = cache[tipo].data;
+      if (!data) return;
+      
+      if (tipo === 'usuarios') {
+        document.getElementById('totalUsers').textContent = data.totalUsers;
+        document.getElementById('totalSubs').textContent = data.totalSubs;
+        document.getElementById('totalgratuito').textContent = data.totalgratuito;
+        document.getElementById('totalMensual').textContent = data.totalMensual;
+        document.getElementById('totalTrimestral').textContent = data.totalTrimestral;
+        document.getElementById('totalAnual').textContent = data.totalAnual;
+        mostrarIndicadorCache('cacheIndicatorUsers', true);
+        log('logUsers', '📦 Mostrando datos en caché (actualizados hace ' + Math.round((Date.now() - cache.usuarios.timestamp) / 1000) + 's)', 'info');
+      } else if (tipo === 'stats') {
+        document.getElementById('sCat').textContent = data.sCat;
+        document.getElementById('sPreg').textContent = data.sPreg;
+        document.getElementById('sRes').textContent = data.sRes;
+        document.getElementById('sProg').textContent = data.sProg;
+        mostrarIndicadorCache('cacheIndicatorStats', true);
+      }
     }
     
     function iniciarSesion() {
@@ -723,11 +905,10 @@
         document.getElementById('userEmail').textContent = user.email;
         
         cargarLogsGuardados();
-        
         cargarCatSelect();
-        actualizarStats();
-        actualizarStatsUsers();
         actualizarStatsCategorias();
+        
+        // ✅ NO CARGA AUTOMÁTICA, SOLO CUANDO SE HAGA CLIC
       } else {
         document.getElementById('loginCard').style.display = 'block';
         document.getElementById('userInfo').style.display = 'none';
@@ -777,9 +958,7 @@
       s2.innerHTML = '<option value="">-- Selecciona --</option>';
       
       try {
-        console.log('🔍 Cargando categorías...');
         const snap = await db.collection('categorias').get();
-        console.log('✅ Categorías obtenidas:', snap.size);
         snap.forEach(doc => {
           const cat = doc.data();
           if (!cat.archivada) {
@@ -788,262 +967,271 @@
           }
         });
       } catch (e) {
-        console.error('❌ Error cargando categorías:', e);
+        console.error('Error cargando categorías:', e);
         alert('Error al cargar categorías: ' + e.message);
       }
     }
     
-   async function actualizarStatsCategorias() {
-  try {
-    const snap = await db.collection('categorias').get();
-    let total = 0, activas = 0, ocultas = 0, archivadas = 0;
-    
-    snap.forEach(doc => {
-      const d = doc.data();
-      total++;
-      if (d.archivada) archivadas++;
-      else if (d.activa !== false) activas++;
-      if (d.visible === false) ocultas++;
-    });
-    
-    document.getElementById('catCount').textContent = total;
-    document.getElementById('catActivas').textContent = activas;
-    document.getElementById('catOcultas').textContent = ocultas;
-    document.getElementById('catArchivadas').textContent = archivadas;
-  } catch (e) {
-    console.error('Error stats categorías:', e);
-  }
-}
-function cargarJSONCat() {
-  const file = document.getElementById('filePDFCat').files[0];
-  if (!file) return;
-  
-  document.getElementById('pdfFileName').textContent = `📄 ${file.name}`;
-  
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const preguntas = JSON.parse(e.target.result);
-      
-      if (!Array.isArray(preguntas) || preguntas.length === 0) {
-        alert('❌ El JSON debe contener un array de preguntas');
-        preguntasCategoriaJSON = null;
-        return;
+    async function actualizarStatsCategorias() {
+      try {
+        const snap = await db.collection('categorias').get();
+        let total = 0, activas = 0, ocultas = 0, archivadas = 0;
+        
+        snap.forEach(doc => {
+          const d = doc.data();
+          total++;
+          if (d.archivada) archivadas++;
+          else if (d.activa !== false) activas++;
+          if (d.visible === false) ocultas++;
+        });
+        
+        document.getElementById('catCount').textContent = total;
+        document.getElementById('catActivas').textContent = activas;
+        document.getElementById('catOcultas').textContent = ocultas;
+        document.getElementById('catArchivadas').textContent = archivadas;
+      } catch (e) {
+        console.error('Error stats categorías:', e);
       }
-      
-      // Guardar las preguntas en variable global
-      preguntasCategoriaJSON = preguntas;
-      
-      // Extraer el nombre del PDF (sin extensión .json)
-      const nombrePDF = file.name.replace('.json', '');
-      
-      // Generar ID: convertir a minúsculas, reemplazar espacios y caracteres especiales con guiones
-      const idCategoria = nombrePDF
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
-        .replace(/[^a-z0-9]+/g, '-') // Reemplazar caracteres no válidos con guiones
-        .replace(/^-+|-+$/g, ''); // Eliminar guiones al inicio y final
-      
-      // Contar preguntas
-      const numPreguntas = preguntas.length;
-      
-      // Rellenar campos
-      document.getElementById('catId').value = idCategoria;
-      document.getElementById('catNom').value = nombrePDF;
-      document.getElementById('catTot').value = numPreguntas;
-      
-      alert(`✅ JSON cargado exitosamente\n\nID: ${idCategoria}\nNombre: ${nombrePDF}\nPreguntas: ${numPreguntas}\n\n✨ Las preguntas se subirán automáticamente al crear la categoría.`);
-      
-    } catch (err) {
-      alert('❌ Error al procesar el JSON: ' + err.message);
-      preguntasCategoriaJSON = null;
     }
-  };
-  reader.readAsText(file);
-}
+    
+    // ✅ GESTIÓN DE CATEGORÍAS
+    function cargarJSONCat() {
+      const file = document.getElementById('filePDFCat').files[0];
+      if (!file) return;
+      
+      document.getElementById('pdfFileName').textContent = `📄 ${file.name}`;
+      
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const preguntas = JSON.parse(e.target.result);
+          
+          if (!Array.isArray(preguntas) || preguntas.length === 0) {
+            alert('❌ El JSON debe contener un array de preguntas');
+            preguntasCategoriaJSON = null;
+            return;
+          }
+          
+          preguntasCategoriaJSON = preguntas;
+          
+          const nombrePDF = file.name.replace('.json', '');
+          
+          const idCategoria = nombrePDF
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+          
+          const numPreguntas = preguntas.length;
+          
+          document.getElementById('catId').value = idCategoria;
+          document.getElementById('catNom').value = nombrePDF;
+          document.getElementById('catTot').value = numPreguntas;
+          
+          alert(`✅ JSON cargado exitosamente\n\nID: ${idCategoria}\nNombre: ${nombrePDF}\nPreguntas: ${numPreguntas}\n\n✨ Las preguntas se subirán automáticamente al crear la categoría.`);
+          
+        } catch (err) {
+          alert('❌ Error al procesar el JSON: ' + err.message);
+          preguntasCategoriaJSON = null;
+        }
+      };
+      reader.readAsText(file);
+    }
     
     function nuevaCategoria() {
-  modoEdit = false;
-  preguntasCategoriaJSON = null; // Limpiar preguntas almacenadas
-  document.getElementById('modalCatTitle').textContent = 'Nueva Categoría';
-  document.getElementById('catIdOld').value = '';
-  document.getElementById('catId').value = '';
-  document.getElementById('catId').disabled = false;
-  document.getElementById('catNom').value = '';
-  document.getElementById('catTot').value = '0';
-  document.getElementById('catPorT').value = '30';
-  document.getElementById('catOrden').value = '0';
-  document.getElementById('catActiva').checked = true;
-  document.getElementById('catVisible').checked = true;
-  document.getElementById('catArchivada').checked = false;
-  document.getElementById('filePDFCat').value = '';
-  document.getElementById('pdfFileName').textContent = '';
-  document.getElementById('modalCat').classList.add('show');
-}
+      modoEdit = false;
+      preguntasCategoriaJSON = null;
+      document.getElementById('modalCatTitle').textContent = 'Nueva Categoría';
+      document.getElementById('catIdOld').value = '';
+      document.getElementById('catId').value = '';
+      document.getElementById('catId').disabled = false;
+      document.getElementById('catNom').value = '';
+      document.getElementById('catTot').value = '0';
+      document.getElementById('catPorT').value = '30';
+      document.getElementById('catOrden').value = '0';
+      document.getElementById('catActiva').checked = true;
+      document.getElementById('catVisible').checked = true;
+      document.getElementById('catArchivada').checked = false;
+      document.getElementById('filePDFCat').value = '';
+      document.getElementById('pdfFileName').textContent = '';
+      document.getElementById('modalCat').classList.add('show');
+    }
     
     async function editarCat(id) {
-  modoEdit = true;
-  preguntasCategoriaJSON = null; // Limpiar preguntas en modo edición
-  try {
-    const doc = await db.collection('categorias').doc(id).get();
-    if (!doc.exists) return alert('No encontrada');
-    
-    const d = doc.data();
-    document.getElementById('modalCatTitle').textContent = 'Editar Categoría';
-    document.getElementById('catIdOld').value = id;
-    document.getElementById('catId').value = id;
-    document.getElementById('catId').disabled = true;
-    document.getElementById('catNom').value = d.nombre || '';
-    document.getElementById('catTot').value = d.totalPreguntas || 0;
-    document.getElementById('catPorT').value = d.preguntasPorTanda || 30;
-    document.getElementById('catOrden').value = d.orden || 0;
-    document.getElementById('catActiva').checked = d.activa !== false;
-    document.getElementById('catVisible').checked = d.visible !== false;
-    document.getElementById('catArchivada').checked = d.archivada === true;
-    document.getElementById('filePDFCat').value = '';
-    document.getElementById('pdfFileName').textContent = '';
-    document.getElementById('modalCat').classList.add('show');
-  } catch (e) {
-    alert('Error: ' + e.message);
-  }
-}
-    
-   async function guardarCat(e) {
-  e.preventDefault();
-  const id = modoEdit ? document.getElementById('catIdOld').value : document.getElementById('catId').value;
-  const nombre = document.getElementById('catNom').value;
-  const totalPreguntas = parseInt(document.getElementById('catTot').value);
-  const preguntasPorTanda = parseInt(document.getElementById('catPorT').value);
-  const orden = parseInt(document.getElementById('catOrden').value);
-  const activa = document.getElementById('catActiva').checked;
-  const visible = document.getElementById('catVisible').checked;
-  const archivada = document.getElementById('catArchivada').checked;
-  
-  if (!/^[a-z0-9\-]+$/.test(id)) return alert('ID inválido');
-  
-  const datos = {
-    nombre,
-    totalPreguntas,
-    preguntasPorTanda,
-    orden,
-    activa,
-    visible,
-    archivada,
-    actualizadaEn: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  
-  if (!modoEdit) datos.creadaEn = firebase.firestore.FieldValue.serverTimestamp();
-  
-  try {
-    // Guardar categoría
-    await db.collection('categorias').doc(id).set(datos, { merge: true });
-    
-    // Si hay preguntas cargadas, subirlas automáticamente
-    if (preguntasCategoriaJSON && preguntasCategoriaJSON.length > 0 && !modoEdit) {
-      clearLog('logCat');
-      log('logCat', '📤 Subiendo preguntas automáticamente...', 'info');
-      
-      let ok = 0, err = 0;
-      for (const p of preguntasCategoriaJSON) {
-        try {
-          await db.collection('preguntas').add({
-            id: p.id,
-            pregunta: p.pregunta,
-            opciones: p.opciones,
-            respuestaCorrecta: p.respuestaCorrecta,
-            categoria: id,
-            activa: p.activa !== false,
-            creadaEn: firebase.firestore.FieldValue.serverTimestamp()
-          });
-          ok++;
-          if (ok % 25 === 0) log('logCat', `${ok}/${preguntasCategoriaJSON.length} preguntas...`, 'info');
-        } catch (e) {
-          err++;
-        }
-      }
-      
-      log('logCat', `✅ ${ok} preguntas subidas, ${err} errores`, ok > 0 ? 'success' : 'error');
-      
-      alert(`✅ Categoría ${modoEdit ? 'actualizada' : 'creada'} exitosamente\n\n📤 ${ok} preguntas subidas\n${err > 0 ? `⚠️ ${err} errores` : ''}`);
-      
-      // Limpiar variable
+      modoEdit = true;
       preguntasCategoriaJSON = null;
-    } else {
-      alert(`✅ ${modoEdit ? 'Actualizada' : 'Creada'}`);
-    }
-    
-    cerrarModalCat();
-    await cargarCatSelect();
-    await actualizarStats();
-    await actualizarStatsCategorias();
-    
-  } catch (e) {
-    alert('Error: ' + e.message);
-  }
-}
-    
-   async function verCategorias() {
-  try {
-    const snap = await db.collection('categorias').get();
-    if (snap.empty) return alert('No hay categorías');
-    
-    let html = '';
-    
-    // Obtener conteos reales de preguntas para todas las categorías
-    for (const doc of snap.docs) {
-      const d = doc.data();
-      const catId = doc.id;
-      
-      // Contar preguntas reales en BD
-      const pregSnap = await db.collection('preguntas').where('categoria', '==', catId).get();
-      const preguntasReales = pregSnap.size;
-      const preguntasEnCat = d.totalPreguntas || 0;
-      const hayDiscrepancia = preguntasReales !== preguntasEnCat;
-      
-      const badges = [];
-      
-      if (d.archivada) badges.push('<span class="badge archivada">📦 Archivada</span>');
-      else if (d.activa !== false) badges.push('<span class="badge activa">✅ Activa</span>');
-      else badges.push('<span class="badge oculta">❌ Inactiva</span>');
-      
-      if (d.visible === false) badges.push('<span class="badge oculta">👁️ Oculta</span>');
-      
-      if (hayDiscrepancia) {
-        badges.push(`<span class="badge" style="background: rgba(255, 107, 107, 0.3); color: #ff6b6b;">⚠️ Desincronizada</span>`);
+      try {
+        const doc = await db.collection('categorias').doc(id).get();
+        if (!doc.exists) return alert('No encontrada');
+        
+        const d = doc.data();
+        document.getElementById('modalCatTitle').textContent = 'Editar Categoría';
+        document.getElementById('catIdOld').value = id;
+        document.getElementById('catId').value = id;
+        document.getElementById('catId').disabled = true;
+        document.getElementById('catNom').value = d.nombre || '';
+        document.getElementById('catTot').value = d.totalPreguntas || 0;
+        document.getElementById('catPorT').value = d.preguntasPorTanda || 30;
+        document.getElementById('catOrden').value = d.orden || 0;
+        document.getElementById('catActiva').checked = d.activa !== false;
+        document.getElementById('catVisible').checked = d.visible !== false;
+        document.getElementById('catArchivada').checked = d.archivada === true;
+        document.getElementById('filePDFCat').value = '';
+        document.getElementById('pdfFileName').textContent = '';
+        document.getElementById('modalCat').classList.add('show');
+      } catch (e) {
+        alert('Error: ' + e.message);
       }
-      
-      html += `
-        <div class="list-item" style="${hayDiscrepancia ? 'border-left: 4px solid #ff6b6b;' : ''}">
-          <div class="info">
-            <div class="nombre">${d.nombre} ${badges.join(' ')}</div>
-            <div class="detalles">
-              ID: ${catId} | Orden: ${d.orden || 0} | 
-              ${hayDiscrepancia ? 
-                `<span style="color: #ff6b6b; font-weight: 600;">BD: ${preguntasReales} ≠ Cat: ${preguntasEnCat}</span>` : 
-                `${preguntasReales} preguntas`
-              }
-            </div>
-          </div>
-          <div class="acciones">
-            <button onclick="verEstatus('${catId}')" class="btn-small premium">📊</button>
-            <button onclick="editarCat('${catId}')" class="btn-small warning">✏️</button>
-            ${hayDiscrepancia ? 
-              `<button onclick="sincronizarPreguntas('${catId}', ${preguntasReales})" class="btn-small success" title="Sincronizar">🔄</button>` : 
-              ''
-            }
-            <button onclick="eliminarCat('${catId}', '${d.nombre}')" class="btn-small danger">🗑️</button>
-          </div>
-        </div>
-      `;
     }
     
-    document.getElementById('listCat').innerHTML = html;
-    document.getElementById('modalListCat').classList.add('show');
-  } catch (e) {
-    alert('Error: ' + e.message);
-  }
-}
+    async function guardarCat(e) {
+      e.preventDefault();
+      const id = modoEdit ? document.getElementById('catIdOld').value : document.getElementById('catId').value;
+      const nombre = document.getElementById('catNom').value;
+      const totalPreguntas = parseInt(document.getElementById('catTot').value);
+      const preguntasPorTanda = parseInt(document.getElementById('catPorT').value);
+      const orden = parseInt(document.getElementById('catOrden').value);
+      const activa = document.getElementById('catActiva').checked;
+      const visible = document.getElementById('catVisible').checked;
+      const archivada = document.getElementById('catArchivada').checked;
+      
+      if (!/^[a-z0-9\-]+$/.test(id)) return alert('ID inválido');
+      
+      const datos = {
+        nombre,
+        totalPreguntas,
+        preguntasPorTanda,
+        orden,
+        activa,
+        visible,
+        archivada,
+        actualizadaEn: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      
+      if (!modoEdit) datos.creadaEn = firebase.firestore.FieldValue.serverTimestamp();
+      
+      try {
+        await db.collection('categorias').doc(id).set(datos, { merge: true });
+        
+        if (preguntasCategoriaJSON && preguntasCategoriaJSON.length > 0 && !modoEdit) {
+          clearLog('logCat');
+          log('logCat', '📤 Subiendo preguntas automáticamente...', 'info');
+          
+          let ok = 0, err = 0;
+          for (const p of preguntasCategoriaJSON) {
+            try {
+              await db.collection('preguntas').add({
+                id: p.id,
+                pregunta: p.pregunta,
+                opciones: p.opciones,
+                respuestaCorrecta: p.respuestaCorrecta,
+                categoria: id,
+                activa: p.activa !== false,
+                creadaEn: firebase.firestore.FieldValue.serverTimestamp()
+              });
+              ok++;
+              if (ok % 25 === 0) log('logCat', `${ok}/${preguntasCategoriaJSON.length} preguntas...`, 'info');
+            } catch (e) {
+              err++;
+            }
+          }
+          
+          log('logCat', `✅ ${ok} preguntas subidas, ${err} errores`, ok > 0 ? 'success' : 'error');
+          
+          await sincronizarContadorCategoria(id);
+          
+          alert(`✅ Categoría creada y sincronizada\n\n📤 ${ok} preguntas subidas\n${err > 0 ? `⚠️ ${err} errores` : ''}`);
+          preguntasCategoriaJSON = null;
+        } else {
+          alert(`✅ ${modoEdit ? 'Actualizada' : 'Creada'}`);
+        }
+        
+        cerrarModalCat();
+        await cargarCatSelect();
+        await actualizarStats(true);
+        await actualizarStatsCategorias();
+        
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+    
+    async function verCategorias() {
+      try {
+        const snap = await db.collection('categorias').get();
+        if (snap.empty) return alert('No hay categorías');
+        
+        let html = `
+          <div style="margin-bottom: 15px; padding: 12px; background: rgba(52, 195, 255, 0.1); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="color: #34c3ff; font-size: 14px;">
+              <strong>${snap.size}</strong> categorías encontradas
+            </div>
+            <button onclick="sincronizarTodasLasCategorias()" class="btn-small warning">🔄 Sincronizar Todas</button>
+          </div>
+        `;
+        
+        snap.forEach(doc => {
+          const d = doc.data();
+          const catId = doc.id;
+          
+          const preguntasReales = d.preguntasReales ?? d.totalPreguntas ?? 0;
+          const preguntasEnCat = d.totalPreguntas || 0;
+          const hayDiscrepancia = d.preguntasReales !== undefined && preguntasReales !== preguntasEnCat;
+          
+          const badges = [];
+          
+          if (d.archivada) badges.push('<span class="badge archivada">📦 Archivada</span>');
+          else if (d.activa !== false) badges.push('<span class="badge activa">✅ Activa</span>');
+          else badges.push('<span class="badge oculta">❌ Inactiva</span>');
+          
+          if (d.visible === false) badges.push('<span class="badge oculta">👁️ Oculta</span>');
+          
+          if (hayDiscrepancia) {
+            badges.push(`<span class="badge" style="background: rgba(255, 107, 107, 0.3); color: #ff6b6b;">⚠️ Desincronizada</span>`);
+          }
+          
+          html += `
+            <div class="list-item" style="${hayDiscrepancia ? 'border-left: 4px solid #ff6b6b;' : ''}">
+              <div class="info">
+                <div class="nombre">${d.nombre} ${badges.join(' ')}</div>
+                <div class="detalles">
+                  ID: ${catId} | Orden: ${d.orden || 0} | ${preguntasReales} preguntas
+                  ${hayDiscrepancia ? 
+                    `<span style="color: #ff6b6b; font-weight: 600;"> (Cat: ${preguntasEnCat})</span>` : 
+                    ''
+                  }
+                </div>
+              </div>
+              <div class="acciones">
+                <button onclick="verEstatus('${catId}')" class="btn-small premium">📊</button>
+                <button onclick="editarCat('${catId}')" class="btn-small warning">✏️</button>
+                ${hayDiscrepancia ? 
+                  `<button onclick="sincronizarUnaSola('${catId}')" class="btn-small success" title="Sincronizar">🔄</button>` : 
+                  ''
+                }
+                <button onclick="eliminarCat('${catId}', '${d.nombre}')" class="btn-small danger">🗑️</button>
+              </div>
+            </div>
+          `;
+        });
+        
+        document.getElementById('listCat').innerHTML = html;
+        document.getElementById('modalListCat').classList.add('show');
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+    
+    async function sincronizarUnaSola(catId) {
+      try {
+        const preguntasReales = await sincronizarContadorCategoria(catId);
+        alert(`✅ Sincronizada\n\n${preguntasReales} preguntas en BD`);
+        await verCategorias();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
     
     async function eliminarCat(id, nom) {
       if (!confirm(`¿Eliminar "${nom}"?`)) return;
@@ -1052,7 +1240,7 @@ function cargarJSONCat() {
         alert('Eliminada');
         await verCategorias();
         await cargarCatSelect();
-        await actualizarStats();
+        await actualizarStats(true);
         await actualizarStatsCategorias();
       } catch (e) {
         alert('Error: ' + e.message);
@@ -1143,175 +1331,228 @@ function cargarJSONCat() {
     }
     
     async function verEstatus(catId) {
-  try {
-    const catDoc = await db.collection('categorias').doc(catId).get();
-    if (!catDoc.exists) return alert('No encontrada');
-    
-    const cat = catDoc.data();
-    document.getElementById('estatusTitulo').textContent = `📊 ${cat.nombre}`;
-    
-    const susSnap = await db.collection('suscripciones').get();
-    
-    let totalUsuarios = 0;
-    let totalgratuito = 0, totalMensual = 0, totalTrimestral = 0, totalAnual = 0;
-    let ultimaFecha = null;
-    const usuariosDetalle = [];
-    
-    susSnap.forEach(doc => {
-      const data = doc.data();
-      const email = data.email || 'Sin email';
-      
-      if (data[catId]) {
-        const sub = data[catId];
-        totalUsuarios++;
+      try {
+        const catDoc = await db.collection('categorias').doc(catId).get();
+        if (!catDoc.exists) return alert('No encontrada');
         
-        switch(sub.plan) {
-          case 'gratuito': totalgratuito++; break;
-          case 'mensual': totalMensual++; break;
-          case 'trimestral': totalTrimestral++; break;
-          case 'anual': totalAnual++; break;
+        const cat = catDoc.data();
+        document.getElementById('estatusTitulo').textContent = `📊 ${cat.nombre}`;
+        
+        const susSnap = await db.collection('suscripciones').get();
+        
+        let totalUsuarios = 0;
+        let totalgratuito = 0, totalMensual = 0, totalTrimestral = 0, totalAnual = 0;
+        let ultimaFecha = null;
+        const usuariosDetalle = [];
+        
+        susSnap.forEach(doc => {
+          const data = doc.data();
+          const email = data.email || 'Sin email';
+          
+          if (data[catId]) {
+            const sub = data[catId];
+            totalUsuarios++;
+            
+            switch(sub.plan) {
+              case 'gratuito': totalgratuito++; break;
+              case 'mensual': totalMensual++; break;
+              case 'trimestral': totalTrimestral++; break;
+              case 'anual': totalAnual++; break;
+            }
+            
+            let vencimiento = null;
+            if (sub.plan !== 'gratuito' && sub.fechaActivacion) {
+              const dias = sub.plan === 'mensual' ? 30 : sub.plan === 'trimestral' ? 90 : 365;
+              vencimiento = new Date(sub.fechaActivacion + (dias * 24 * 60 * 60 * 1000));
+              
+              if (!ultimaFecha || vencimiento > ultimaFecha) {
+                ultimaFecha = vencimiento;
+              }
+            }
+            
+            usuariosDetalle.push({
+              email,
+              plan: sub.plan,
+              tandas: sub.tandasUsadas || 0,
+              vencimiento
+            });
+          }
+        });
+        
+        const pregSnap = await db.collection('preguntas').where('categoria', '==', catId).get();
+        const preguntasReales = pregSnap.size;
+        const preguntasEnCat = cat.totalPreguntas || 0;
+        
+        const resSnap = await db.collection('resultados').where('categoria', '==', catId).get();
+        
+        const hayDiscrepancia = preguntasReales !== preguntasEnCat;
+        
+        let html = `
+          <div class="cat-stats-box">
+            <h3 style="color: #34c3ff; margin-bottom: 15px;">📊 Resumen</h3>
+            <div class="cat-stats-grid">
+              <div class="cat-stat-item premium">
+                <div class="label">Usuarios</div>
+                <div class="value">${totalUsuarios}</div>
+              </div>
+              <div class="cat-stat-item ${hayDiscrepancia ? 'premium' : ''}">
+                <div class="label">Preguntas en BD</div>
+                <div class="value" style="${hayDiscrepancia ? 'color: #ff6b6b;' : ''}">${preguntasReales}</div>
+              </div>
+              <div class="cat-stat-item">
+                <div class="label">En Categoría</div>
+                <div class="value">${preguntasEnCat}</div>
+              </div>
+              <div class="cat-stat-item">
+                <div class="label">Tests Realizados</div>
+                <div class="value">${resSnap.size}</div>
+              </div>
+              <div class="cat-stat-item">
+                <div class="label">Última Renovación</div>
+                <div class="value" style="font-size: 16px;">${ultimaFecha ? ultimaFecha.toLocaleDateString('es-ES') : 'N/A'}</div>
+              </div>
+            </div>
+            ${hayDiscrepancia ? `
+              <div style="background: rgba(255, 107, 107, 0.1); border: 1px solid rgba(255, 107, 107, 0.3); padding: 15px; border-radius: 8px; margin-top: 15px;">
+                <div style="color: #ff6b6b; font-weight: 600; margin-bottom: 5px;">⚠️ DISCREPANCIA DETECTADA</div>
+                <div style="color: #aab3b8; font-size: 14px;">
+                  La categoría indica ${preguntasEnCat} preguntas, pero en la BD hay ${preguntasReales} preguntas.
+                </div>
+                <button onclick="sincronizarPreguntas('${catId}', ${preguntasReales})" class="warning" style="margin-top: 10px;">
+                  🔄 Sincronizar Categoría
+                </button>
+              </div>
+            ` : `
+              <div style="background: rgba(46, 139, 87, 0.1); border: 1px solid rgba(46, 139, 87, 0.3); padding: 15px; border-radius: 8px; margin-top: 15px; color: #5dff9a;">
+                ✅ La categoría está sincronizada correctamente
+              </div>
+            `}
+          </div>
+          
+          <div class="cat-stats-box">
+            <h3 style="color: #34c3ff; margin-bottom: 15px;">👥 Planes</h3>
+            <div class="cat-stats-grid">
+              <div class="cat-stat-item">
+                <div class="label">🎁 Gratis</div>
+                <div class="value">${totalgratuito}</div>
+              </div>
+              <div class="cat-stat-item">
+                <div class="label">📅 Mensual</div>
+                <div class="value">${totalMensual}</div>
+              </div>
+              <div class="cat-stat-item">
+                <div class="label">🔥 Trimestral</div>
+                <div class="value">${totalTrimestral}</div>
+              </div>
+              <div class="cat-stat-item premium">
+                <div class="label">👑 Anual</div>
+                <div class="value">${totalAnual}</div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        if (usuariosDetalle.length > 0) {
+          html += `<div class="cat-stats-box"><h3 style="color: #34c3ff; margin-bottom: 15px;">📋 Usuarios</h3>`;
+          usuariosDetalle.forEach(u => {
+            const planBadge = `<span class="badge ${u.plan}">${u.plan}</span>`;
+            const vencTxt = u.vencimiento ? `Vence: ${u.vencimiento.toLocaleDateString('es-ES')}` : 
+                            u.plan === 'gratuito' ? `Tandas: ${u.tandas}/2` : 'Activo';
+            
+            html += `
+              <div style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between;">
+                <div>
+                  <div style="color: #34c3ff; font-weight: 600;">${u.email}</div>
+                  <div style="color: #aab3b8; font-size: 13px;">${vencTxt}</div>
+                </div>
+                ${planBadge}
+              </div>
+            `;
+          });
+          html += `</div>`;
         }
         
-        let vencimiento = null;
-        if (sub.plan !== 'gratuito' && sub.fechaActivacion) {
-          const dias = sub.plan === 'mensual' ? 30 : sub.plan === 'trimestral' ? 90 : 365;
-          vencimiento = new Date(sub.fechaActivacion + (dias * 24 * 60 * 60 * 1000));
+        document.getElementById('estatusContenido').innerHTML = html;
+        document.getElementById('modalEstatus').classList.add('show');
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+    
+    async function sincronizarContadorCategoria(catId) {
+      try {
+        const pregSnap = await db.collection('preguntas').where('categoria', '==', catId).get();
+        const preguntasReales = pregSnap.size;
+        
+        await db.collection('categorias').doc(catId).update({
+          preguntasReales: preguntasReales,
+          totalPreguntas: preguntasReales,
+          ultimaSincronizacion: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        return preguntasReales;
+      } catch (e) {
+        console.error('Error sincronizando:', e);
+        throw e;
+      }
+    }
+    
+    async function sincronizarTodasLasCategorias() {
+      if (!confirm('¿Sincronizar contadores de TODAS las categorías?\n\nEsto puede tardar unos segundos.')) return;
+      
+      clearLog('logCat');
+      log('logCat', '🔄 Iniciando sincronización masiva...', 'info');
+      
+      try {
+        const catSnap = await db.collection('categorias').get();
+        let procesadas = 0, errores = 0;
+        
+        for (const catDoc of catSnap.docs) {
+          const catId = catDoc.id;
+          const catNombre = catDoc.data().nombre;
           
-          if (!ultimaFecha || vencimiento > ultimaFecha) {
-            ultimaFecha = vencimiento;
+          try {
+            const preguntasReales = await sincronizarContadorCategoria(catId);
+            procesadas++;
+            log('logCat', `✓ ${catNombre}: ${preguntasReales} preguntas`, 'success');
+          } catch (e) {
+            errores++;
+            log('logCat', `✗ ${catNombre}: Error`, 'error');
           }
         }
         
-        usuariosDetalle.push({
-          email,
-          plan: sub.plan,
-          tandas: sub.tandasUsadas || 0,
-          vencimiento
-        });
-      }
-    });
-    
-    // VERIFICACIÓN EXACTA DE PREGUNTAS EN BD
-    const pregSnap = await db.collection('preguntas').where('categoria', '==', catId).get();
-    const preguntasReales = pregSnap.size;
-    const preguntasEnCat = cat.totalPreguntas || 0;
-    
-    const resSnap = await db.collection('resultados').where('categoria', '==', catId).get();
-    
-    // Verificar discrepancia
-    const hayDiscrepancia = preguntasReales !== preguntasEnCat;
-    
-    let html = `
-      <div class="cat-stats-box">
-        <h3 style="color: #34c3ff; margin-bottom: 15px;">📊 Resumen</h3>
-        <div class="cat-stats-grid">
-          <div class="cat-stat-item premium">
-            <div class="label">Usuarios</div>
-            <div class="value">${totalUsuarios}</div>
-          </div>
-          <div class="cat-stat-item ${hayDiscrepancia ? 'premium' : ''}">
-            <div class="label">Preguntas en BD</div>
-            <div class="value" style="${hayDiscrepancia ? 'color: #ff6b6b;' : ''}">${preguntasReales}</div>
-          </div>
-          <div class="cat-stat-item">
-            <div class="label">En Categoría</div>
-            <div class="value">${preguntasEnCat}</div>
-          </div>
-          <div class="cat-stat-item">
-            <div class="label">Tests Realizados</div>
-            <div class="value">${resSnap.size}</div>
-          </div>
-          <div class="cat-stat-item">
-            <div class="label">Última Renovación</div>
-            <div class="value" style="font-size: 16px;">${ultimaFecha ? ultimaFecha.toLocaleDateString('es-ES') : 'N/A'}</div>
-          </div>
-        </div>
-        ${hayDiscrepancia ? `
-          <div style="background: rgba(255, 107, 107, 0.1); border: 1px solid rgba(255, 107, 107, 0.3); padding: 15px; border-radius: 8px; margin-top: 15px;">
-            <div style="color: #ff6b6b; font-weight: 600; margin-bottom: 5px;">⚠️ DISCREPANCIA DETECTADA</div>
-            <div style="color: #aab3b8; font-size: 14px;">
-              La categoría indica ${preguntasEnCat} preguntas, pero en la BD hay ${preguntasReales} preguntas.
-            </div>
-            <button onclick="sincronizarPreguntas('${catId}', ${preguntasReales})" class="warning" style="margin-top: 10px;">
-              🔄 Sincronizar Categoría
-            </button>
-          </div>
-        ` : `
-          <div style="background: rgba(46, 139, 87, 0.1); border: 1px solid rgba(46, 139, 87, 0.3); padding: 15px; border-radius: 8px; margin-top: 15px; color: #5dff9a;">
-            ✅ La categoría está sincronizada correctamente
-          </div>
-        `}
-      </div>
-      
-      <div class="cat-stats-box">
-        <h3 style="color: #34c3ff; margin-bottom: 15px;">👥 Planes</h3>
-        <div class="cat-stats-grid">
-          <div class="cat-stat-item">
-            <div class="label">🎁 Gratis</div>
-            <div class="value">${totalgratuito}</div>
-          </div>
-          <div class="cat-stat-item">
-            <div class="label">📅 Mensual</div>
-            <div class="value">${totalMensual}</div>
-          </div>
-          <div class="cat-stat-item">
-            <div class="label">🔥 Trimestral</div>
-            <div class="value">${totalTrimestral}</div>
-          </div>
-          <div class="cat-stat-item premium">
-            <div class="label">👑 Anual</div>
-            <div class="value">${totalAnual}</div>
-          </div>
-        </div>
-      </div>
-    `;
-    
-    if (usuariosDetalle.length > 0) {
-      html += `<div class="cat-stats-box"><h3 style="color: #34c3ff; margin-bottom: 15px;">📋 Usuarios</h3>`;
-      usuariosDetalle.forEach(u => {
-        const planBadge = `<span class="badge ${u.plan}">${u.plan}</span>`;
-        const vencTxt = u.vencimiento ? `Vence: ${u.vencimiento.toLocaleDateString('es-ES')}` : 
-                        u.plan === 'gratuito' ? `Tandas: ${u.tandas}/2` : 'Activo';
+        log('logCat', `✅ Completado: ${procesadas} sincronizadas, ${errores} errores`, 'success');
+        alert(`✅ Sincronización completada\n\n${procesadas} categorías actualizadas\n${errores} errores`);
         
-        html += `
-          <div style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between;">
-            <div>
-              <div style="color: #34c3ff; font-weight: 600;">${u.email}</div>
-              <div style="color: #aab3b8; font-size: 13px;">${vencTxt}</div>
-            </div>
-            ${planBadge}
-          </div>
-        `;
-      });
-      html += `</div>`;
+        await verCategorias();
+        await actualizarStatsCategorias();
+        
+      } catch (e) {
+        log('logCat', `❌ Error: ${e.message}`, 'error');
+        alert('Error: ' + e.message);
+      }
     }
     
-    document.getElementById('estatusContenido').innerHTML = html;
-    document.getElementById('modalEstatus').classList.add('show');
-  } catch (e) {
-    alert('Error: ' + e.message);
-  }
-}
-async function sincronizarPreguntas(catId, preguntasReales) {
-  if (!confirm(`¿Actualizar el contador de la categoría a ${preguntasReales} preguntas?`)) return;
-  
-  try {
-    await db.collection('categorias').doc(catId).update({
-      totalPreguntas: preguntasReales,
-      actualizadaEn: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    async function sincronizarPreguntas(catId, preguntasReales) {
+      if (!confirm(`¿Actualizar el contador de la categoría a ${preguntasReales} preguntas?`)) return;
+      
+      try {
+        await db.collection('categorias').doc(catId).update({
+          totalPreguntas: preguntasReales,
+          actualizadaEn: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        alert(`✅ Categoría sincronizada\n\nAhora muestra ${preguntasReales} preguntas correctamente.`);
+        
+        cerrarModalEstatus();
+        await actualizarStatsCategorias();
+        await actualizarStats(true);
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
     
-    alert(`✅ Categoría sincronizada\n\nAhora muestra ${preguntasReales} preguntas correctamente.`);
-    
-    // Cerrar modal y recargar
-    cerrarModalEstatus();
-    await actualizarStatsCategorias();
-    await actualizarStats();
-  } catch (e) {
-    alert('Error: ' + e.message);
-  }
-}
-    
+    // ✅ GESTIÓN DE PREGUNTAS
     async function catSeleccionada() {
       catActual = document.getElementById('catSelect').value;
       if (!catActual) {
@@ -1319,6 +1560,7 @@ async function sincronizarPreguntas(catId, preguntasReales) {
         document.getElementById('btnSubir').disabled = true;
         document.getElementById('btnBorrar').disabled = true;
         document.getElementById('btnExportar').disabled = true;
+        document.getElementById('btnCargarPreguntas').disabled = true;
         return;
       }
       try {
@@ -1336,11 +1578,471 @@ async function sincronizarPreguntas(catId, preguntasReales) {
         document.getElementById('btnSubir').disabled = false;
         document.getElementById('btnBorrar').disabled = false;
         document.getElementById('btnExportar').disabled = count === 0;
+        document.getElementById('btnCargarPreguntas').disabled = count === 0;
         
         clearLog('logPreg');
         log('logPreg', `${cat.nombre} (${count} preguntas)`, 'info');
       } catch (e) {
         console.error('Error:', e);
+      }
+    }
+    
+    async function cargarPreguntasConsola() {
+      if (!catActual) return alert('Selecciona una categoría');
+      
+      clearLog('logPreg');
+      log('logPreg', 'Cargando preguntas...', 'info');
+      
+      try {
+        const snap = await db.collection('preguntas').where('categoria', '==', catActual).get();
+        
+        if (snap.empty) {
+          log('logPreg', '⚠️ No hay preguntas en esta categoría', 'warning');
+          return;
+        }
+        
+        preguntasCargadas = [];
+        snap.forEach(doc => {
+          preguntasCargadas.push({
+            docId: doc.id,
+            ...doc.data()
+          });
+        });
+        
+        preguntasCargadas.sort((a, b) => {
+          const idA = parseInt(a.id) || 0;
+          const idB = parseInt(b.id) || 0;
+          return idA - idB;
+        });
+        
+        log('logPreg', `✅ ${preguntasCargadas.length} preguntas cargadas`, 'success');
+        
+        mostrarModalPreguntas();
+        
+      } catch (e) {
+        log('logPreg', `❌ ${e.message}`, 'error');
+      }
+    }
+    
+    function mostrarModalPreguntas() {
+      const modal = document.getElementById('modalPreguntas');
+      const contenido = document.getElementById('preguntasContenido');
+      
+      let html = '';
+      
+      preguntasCargadas.forEach((pregunta, index) => {
+        const isActiva = pregunta.activa !== false;
+        
+        let opciones = [];
+        if (Array.isArray(pregunta.opciones)) {
+          opciones = pregunta.opciones;
+        } else if (pregunta.opciones && typeof pregunta.opciones === 'object') {
+          opciones = Object.values(pregunta.opciones);
+        }
+        
+        html += `
+          <div class="list-item" style="margin-bottom: 15px; ${!isActiva ? 'opacity: 0.6; border-left: 3px solid #ff6b6b;' : ''}">
+            <div class="info" style="flex: 1; max-width: calc(100% - 150px);">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <div class="nombre" style="flex: 1;">#${pregunta.id || index + 1}</div>
+                ${isActiva ? 
+                  '<span class="badge activa">✅ Activa</span>' : 
+                  '<span class="badge oculta">❌ Inactiva</span>'
+                }
+              </div>
+              <div style="color: #e9eef2; margin-bottom: 8px; font-size: 14px; line-height: 1.5;">
+                ${pregunta.pregunta || 'Sin texto'}
+              </div>
+              <div style="color: #aab3b8; font-size: 13px;">
+                ${opciones.length > 0 ? opciones.map((op, i) => 
+                  `<div style="margin: 3px 0; ${i === pregunta.respuestaCorrecta ? 'color: #5dff9a; font-weight: 600;' : ''}">
+                    ${String.fromCharCode(65 + i)}) ${op}
+                  </div>`
+                ).join('') : 'Sin opciones'}
+              </div>
+            </div>
+            <div class="acciones" style="display: flex; flex-direction: column; gap: 5px;">
+              <button onclick="editarPregunta(${index})" class="btn-small warning" style="width: 100%;">✏️</button>
+              <button onclick="toggleActivaPregunta(${index})" class="btn-small ${isActiva ? 'secondary' : 'success'}" style="width: 100%;">
+                ${isActiva ? '❌' : '✅'}
+              </button>
+              <button onclick="eliminarPregunta(${index})" class="btn-small danger" style="width: 100%;">🗑️</button>
+            </div>
+          </div>
+        `;
+      });
+      
+      contenido.innerHTML = html;
+      modal.classList.add('show');
+    }
+    
+    function buscarDuplicadas() {
+      if (preguntasCargadas.length === 0) {
+        alert('No hay preguntas cargadas');
+        return;
+      }
+      
+      const duplicados = {};
+      const duplicadosEncontrados = [];
+      
+      preguntasCargadas.forEach((pregunta, index) => {
+        const id = pregunta.id;
+        
+        if (duplicados[id]) {
+          duplicados[id].push(index);
+        } else {
+          duplicados[id] = [index];
+        }
+      });
+      
+      Object.entries(duplicados).forEach(([id, indices]) => {
+        if (indices.length > 1) {
+          duplicadosEncontrados.push({
+            id: id,
+            cantidad: indices.length,
+            indices: indices
+          });
+        }
+      });
+      
+      if (duplicadosEncontrados.length === 0) {
+        alert('✅ No se encontraron preguntas duplicadas');
+        return;
+      }
+      
+      mostrarModalDuplicados(duplicadosEncontrados);
+    }
+    
+    function mostrarModalDuplicados(duplicados) {
+      const modal = document.getElementById('modalDuplicados');
+      const contenido = document.getElementById('duplicadosContenido');
+      
+      let totalDuplicados = 0;
+      let html = '<div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 107, 107, 0.1); border: 1px solid rgba(255, 107, 107, 0.3); border-radius: 8px;">';
+      html += `<div style="color: #ff6b6b; font-weight: 600; font-size: 16px;">⚠️ Se encontraron ${duplicados.length} IDs duplicados</div>`;
+      html += '</div>';
+      
+      duplicados.forEach(dup => {
+        totalDuplicados += dup.cantidad - 1;
+        
+        html += `<div style="margin-bottom: 20px; padding: 15px; background: #26292d; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">`;
+        html += `<div style="color: #34c3ff; font-weight: 600; margin-bottom: 10px;">ID #${dup.id} (${dup.cantidad} coincidencias)</div>`;
+        
+        dup.indices.forEach((index, i) => {
+          const pregunta = preguntasCargadas[index];
+          let opciones = [];
+          if (Array.isArray(pregunta.opciones)) {
+            opciones = pregunta.opciones;
+          } else if (pregunta.opciones && typeof pregunta.opciones === 'object') {
+            opciones = Object.values(pregunta.opciones);
+          }
+          
+          html += `
+            <div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 4px; ${i > 0 ? 'border-left: 3px solid #ff6b6b;' : 'border-left: 3px solid #5dff9a;'}">
+              <div style="color: #aab3b8; font-size: 12px; margin-bottom: 5px;">${i === 0 ? '✅ SE MANTIENE' : '🗑️ SE ELIMINARÁ'}</div>
+              <div style="color: #e9eef2; font-size: 13px; margin-bottom: 5px;">${pregunta.pregunta?.substring(0, 150)}${pregunta.pregunta?.length > 150 ? '...' : ''}</div>
+              <div style="color: #aab3b8; font-size: 12px;">DocID: ${pregunta.docId}</div>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+      });
+      
+      document.getElementById('totalDuplicadosEliminar').textContent = totalDuplicados;
+      contenido.innerHTML = html;
+      modal.classList.add('show');
+    }
+    
+    async function eliminarDuplicadas() {
+      if (!confirm(`¿Eliminar todas las preguntas duplicadas?\n\nSe eliminarán las coincidencias, manteniendo solo la primera de cada ID.\n\nEsta acción NO se puede deshacer.`)) {
+        return;
+      }
+      
+      clearLog('logPreg');
+      log('logPreg', 'Eliminando duplicadas...', 'warning');
+      
+      const duplicados = {};
+      
+      preguntasCargadas.forEach((pregunta, index) => {
+        const id = pregunta.id;
+        
+        if (duplicados[id]) {
+          duplicados[id].push({index, docId: pregunta.docId});
+        } else {
+          duplicados[id] = [{index, docId: pregunta.docId}];
+        }
+      });
+      
+      let eliminadas = 0;
+      let errores = 0;
+      
+      try {
+        for (const [id, items] of Object.entries(duplicados)) {
+          if (items.length > 1) {
+            for (let i = 1; i < items.length; i++) {
+              try {
+                await db.collection('preguntas').doc(items[i].docId).delete();
+                eliminadas++;
+                log('logPreg', `✓ Eliminado duplicado ID #${id} (${i}/${items.length - 1})`, 'info');
+              } catch (e) {
+                errores++;
+                log('logPreg', `✗ Error eliminando ID #${id}: ${e.message}`, 'error');
+              }
+            }
+          }
+        }
+        
+        log('logPreg', `✅ Proceso completado: ${eliminadas} eliminadas, ${errores} errores`, 'success');
+        alert(`✅ Duplicados eliminados\n\n${eliminadas} preguntas duplicadas eliminadas\n${errores} errores`);
+        
+        cerrarModalDuplicados();
+        await cargarPreguntasConsola();
+        await catSeleccionada();
+        
+      } catch (e) {
+        log('logPreg', `❌ Error: ${e.message}`, 'error');
+        alert('Error: ' + e.message);
+      }
+    }
+    
+    function buscarPreguntasFaltantes() {
+      if (preguntasCargadas.length === 0) {
+        alert('No hay preguntas cargadas');
+        return;
+      }
+      
+      const idsExistentes = preguntasCargadas
+        .map(p => parseInt(p.id))
+        .filter(id => !isNaN(id))
+        .sort((a, b) => a - b);
+      
+      if (idsExistentes.length === 0) {
+        alert('No hay IDs numéricos en las preguntas');
+        return;
+      }
+      
+      const minId = idsExistentes[0];
+      const maxId = idsExistentes[idsExistentes.length - 1];
+      const faltantes = [];
+      
+      for (let i = minId; i <= maxId; i++) {
+        if (!idsExistentes.includes(i)) {
+          faltantes.push(i);
+        }
+      }
+      
+      if (faltantes.length === 0) {
+        alert(`✅ No hay preguntas faltantes\n\nRango: ${minId} - ${maxId}\nTotal: ${idsExistentes.length} preguntas`);
+        return;
+      }
+      
+      mostrarModalFaltantes(faltantes, minId, maxId, idsExistentes.length);
+    }
+    
+    function mostrarModalFaltantes(faltantes, minId, maxId, total) {
+      const modal = document.getElementById('modalFaltantes');
+      const contenido = document.getElementById('faltantesContenido');
+      
+      let html = `
+        <div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 8px;">
+          <div style="color: #ffc107; font-weight: 600; font-size: 16px;">⚠️ Se encontraron ${faltantes.length} preguntas faltantes</div>
+          <div style="color: #aab3b8; font-size: 14px; margin-top: 5px;">Rango: ${minId} - ${maxId} | Total preguntas: ${total}</div>
+        </div>
+        
+        <div style="background: #26292d; border-radius: 8px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+          <div style="color: #34c3ff; font-weight: 600; margin-bottom: 15px;">IDs Faltantes:</div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 10px;">
+      `;
+      
+      faltantes.forEach(id => {
+        html += `
+          <div style="background: rgba(255, 193, 7, 0.2); padding: 10px; border-radius: 4px; text-align: center; color: #ffc107; font-weight: 600;">
+            #${id}
+          </div>
+        `;
+      });
+      
+      html += `
+          </div>
+        </div>
+      `;
+      
+      contenido.innerHTML = html;
+      modal.classList.add('show');
+    }
+    
+    function cerrarModalDuplicados() {
+      document.getElementById('modalDuplicados').classList.remove('show');
+    }
+    
+    function cerrarModalFaltantes() {
+      document.getElementById('modalFaltantes').classList.remove('show');
+    }
+    
+    async function toggleActivaPregunta(index) {
+      const pregunta = preguntasCargadas[index];
+      const nuevoEstado = pregunta.activa === false;
+      
+      try {
+        await db.collection('preguntas').doc(pregunta.docId).update({
+          activa: nuevoEstado,
+          actualizadaEn: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        log('logPreg', `✅ Pregunta #${pregunta.id} ${nuevoEstado ? 'activada' : 'desactivada'}`, 'success');
+        
+        await cargarPreguntasConsola();
+        
+      } catch (e) {
+        log('logPreg', `❌ Error: ${e.message}`, 'error');
+        alert('Error: ' + e.message);
+      }
+    }
+    
+    async function eliminarPregunta(index) {
+      const pregunta = preguntasCargadas[index];
+      
+      if (!confirm(`¿Eliminar pregunta #${pregunta.id}?\n\n"${pregunta.pregunta?.substring(0, 100)}..."\n\nEsta acción no se puede deshacer.`)) return;
+      
+      try {
+        await db.collection('preguntas').doc(pregunta.docId).delete();
+        
+        log('logPreg', `✅ Pregunta #${pregunta.id} eliminada`, 'success');
+        
+        await cargarPreguntasConsola();
+        await catSeleccionada();
+        
+      } catch (e) {
+        log('logPreg', `❌ Error: ${e.message}`, 'error');
+        alert('Error: ' + e.message);
+      }
+    }
+    
+    function nuevaPregunta() {
+      if (!catActual) return alert('Selecciona una categoría');
+      
+      document.getElementById('editIndex').value = '-1';
+      document.getElementById('editId').value = '';
+      document.getElementById('editPregunta').value = '';
+      document.getElementById('editOpcionA').value = '';
+      document.getElementById('editOpcionB').value = '';
+      document.getElementById('editOpcionC').value = '';
+      document.getElementById('editOpcionD').value = '';
+      document.getElementById('editRespuesta').value = '0';
+      document.getElementById('editActiva').checked = true;
+      
+      document.getElementById('modalEditPregunta').classList.add('show');
+    }
+    
+    async function guardarNuevaPregunta() {
+      const datos = {
+        id: document.getElementById('editId').value,
+        pregunta: document.getElementById('editPregunta').value,
+        opciones: [
+          document.getElementById('editOpcionA').value,
+          document.getElementById('editOpcionB').value,
+          document.getElementById('editOpcionC').value,
+          document.getElementById('editOpcionD').value
+        ],
+        respuestaCorrecta: parseInt(document.getElementById('editRespuesta').value),
+        activa: document.getElementById('editActiva').checked,
+        categoria: catActual,
+        creadaEn: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      
+      try {
+        await db.collection('preguntas').add(datos);
+        
+        log('logPreg', `✅ Pregunta #${datos.id} creada`, 'success');
+        alert('✅ Pregunta creada exitosamente');
+        
+        cerrarModalEditPregunta();
+        await cargarPreguntasConsola();
+        await catSeleccionada();
+        
+      } catch (e) {
+        log('logPreg', `❌ Error: ${e.message}`, 'error');
+        alert('Error: ' + e.message);
+      }
+    }
+    
+    async function guardarPreguntaForm(e) {
+      e.preventDefault();
+      
+      const index = parseInt(document.getElementById('editIndex').value);
+      
+      if (index === -1) {
+        await guardarNuevaPregunta();
+      } else {
+        await guardarPreguntaEditada(e);
+      }
+    }
+    
+    function cerrarModalPreguntas() {
+      document.getElementById('modalPreguntas').classList.remove('show');
+    }
+    
+    function cerrarModalEditPregunta() {
+      document.getElementById('modalEditPregunta').classList.remove('show');
+    }
+    
+    function editarPregunta(index) {
+      const pregunta = preguntasCargadas[index];
+      
+      let opciones = [];
+      if (Array.isArray(pregunta.opciones)) {
+        opciones = pregunta.opciones;
+      } else if (pregunta.opciones && typeof pregunta.opciones === 'object') {
+        opciones = Object.values(pregunta.opciones);
+      }
+      
+      document.getElementById('editIndex').value = index;
+      document.getElementById('editId').value = pregunta.id || '';
+      document.getElementById('editPregunta').value = pregunta.pregunta || '';
+      document.getElementById('editOpcionA').value = opciones[0] || '';
+      document.getElementById('editOpcionB').value = opciones[1] || '';
+      document.getElementById('editOpcionC').value = opciones[2] || '';
+      document.getElementById('editOpcionD').value = opciones[3] || '';
+      document.getElementById('editRespuesta').value = pregunta.respuestaCorrecta || 0;
+      document.getElementById('editActiva').checked = pregunta.activa !== false;
+      
+      document.getElementById('modalEditPregunta').classList.add('show');
+    }
+    
+    async function guardarPreguntaEditada(e) {
+      e.preventDefault();
+      
+      const index = parseInt(document.getElementById('editIndex').value);
+      const pregunta = preguntasCargadas[index];
+      
+      const datos = {
+        id: document.getElementById('editId').value,
+        pregunta: document.getElementById('editPregunta').value,
+        opciones: [
+          document.getElementById('editOpcionA').value,
+          document.getElementById('editOpcionB').value,
+          document.getElementById('editOpcionC').value,
+          document.getElementById('editOpcionD').value
+        ],
+        respuestaCorrecta: parseInt(document.getElementById('editRespuesta').value),
+        activa: document.getElementById('editActiva').checked,
+        categoria: catActual,
+        actualizadaEn: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      
+      try {
+        await db.collection('preguntas').doc(pregunta.docId).update(datos);
+        
+        log('logPreg', `✅ Pregunta #${datos.id} actualizada`, 'success');
+        alert('✅ Pregunta actualizada exitosamente');
+        
+        cerrarModalEditPregunta();
+        await cargarPreguntasConsola();
+        
+      } catch (e) {
+        log('logPreg', `❌ Error: ${e.message}`, 'error');
+        alert('Error: ' + e.message);
       }
     }
     
@@ -1427,7 +2129,7 @@ async function sincronizarPreguntas(catId, preguntasReales) {
         });
         
         await catSeleccionada();
-        await actualizarStats();
+        await actualizarStats(true);
       } catch (e) {
         log('logPreg', `❌ ${e.message}`, 'error');
       }
@@ -1486,40 +2188,37 @@ async function sincronizarPreguntas(catId, preguntasReales) {
         
         log('logPreg', `✅ ${borradas} borradas`, 'success');
         await catSeleccionada();
-        await actualizarStats();
+        await actualizarStats(true);
       } catch (e) {
         log('logPreg', `❌ ${e.message}`, 'error');
       }
     }
     
-    async function actualizarStatsUsers() {
+    // ✅ GESTIÓN DE USUARIOS OPTIMIZADA
+    async function actualizarStatsUsers(forzar = false) {
+      // Si hay caché válido y no se fuerza, usar caché
+      if (!forzar && esCacheValido('usuarios')) {
+        mostrarStatsDesdeCache('usuarios');
+        return;
+      }
+      
       log('logUsers', 'Actualizando estadísticas...', 'info');
-      console.log('🔍 Iniciando actualizarStatsUsers');
       
       try {
-        console.log('📊 Obteniendo usuarios...');
-        const uSnap = await db.collection('usuarios').get();
-        console.log('✅ Usuarios:', uSnap.size);
-        
-        console.log('📊 Obteniendo suscripciones...');
-        const sSnap = await db.collection('suscripciones').get();
-        console.log('✅ Suscripciones:', sSnap.size);
-        
-        console.log('📊 Obteniendo aciertos globales...');
-        const aciertosSnap = await db.collection('aciertosglobales').get();
-        console.log('✅ Aciertos globales:', aciertosSnap.size);
+        // ✅ SOLO CARGAR USUARIOS Y SUSCRIPCIONES
+        const [uSnap, sSnap] = await Promise.all([
+          db.collection('usuarios').get(),
+          db.collection('suscripciones').get()
+        ]);
         
         let totalSubs = 0, totalgratuito = 0, totalMensual = 0, totalTrimestral = 0, totalAnual = 0;
-        const usuariosConPlanes = new Set();
         
         sSnap.forEach(doc => {
           const d = doc.data();
-          const userId = doc.id;
           
           Object.entries(d).forEach(([k, v]) => {
             if (k !== 'email' && v && typeof v === 'object' && v.plan) {
               totalSubs++;
-              usuariosConPlanes.add(userId);
               
               switch(v.plan) {
                 case 'gratuito': totalgratuito++; break;
@@ -1531,27 +2230,18 @@ async function sincronizarPreguntas(catId, preguntasReales) {
           });
         });
         
-        console.log('📈 Planes contabilizados:', {totalSubs, totalgratuito, totalMensual, totalTrimestral, totalAnual});
+        // Guardar en caché
+        const data = {
+          totalUsers: uSnap.size,
+          totalSubs,
+          totalgratuito,
+          totalMensual,
+          totalTrimestral,
+          totalAnual
+        };
+        guardarEnCache('usuarios', data);
         
-        const aciertosPorUsuario = {};
-        aciertosSnap.forEach(doc => {
-          const userId = doc.id;
-          const data = doc.data();
-          let total = 0;
-          
-          Object.entries(data).forEach(([k, v]) => {
-            if (k !== 'email' && typeof v === 'number') {
-              total += v;
-            }
-          });
-          
-          aciertosPorUsuario[userId] = total;
-        });
-        
-        console.log('📈 Aciertos procesados:', Object.keys(aciertosPorUsuario).length, 'usuarios');
-        
-        await detectarUsoExcesivo(sSnap, aciertosPorUsuario);
-        
+        // Mostrar
         document.getElementById('totalUsers').textContent = uSnap.size;
         document.getElementById('totalSubs').textContent = totalSubs;
         document.getElementById('totalgratuito').textContent = totalgratuito;
@@ -1559,108 +2249,33 @@ async function sincronizarPreguntas(catId, preguntasReales) {
         document.getElementById('totalTrimestral').textContent = totalTrimestral;
         document.getElementById('totalAnual').textContent = totalAnual;
         
+        mostrarIndicadorCache('cacheIndicatorUsers', false);
         log('logUsers', `✅ ${uSnap.size} usuarios | ${totalSubs} suscripciones`, 'success');
-        console.log('✅ actualizarStatsUsers completada');
-      } catch (e) {
-        console.error('❌ Error en actualizarStatsUsers:', e);
-        log('logUsers', `❌ ${e.message}`, 'error');
-        alert('Error al actualizar estadísticas: ' + e.message);
-      }
-    }
-    
-    async function detectarUsoExcesivo(sSnap, aciertosPorUsuario) {
-      const ahora = Date.now();
-      const unDia = 24 * 60 * 60 * 1000;
-      
-      sSnap.forEach(doc => {
-        const userId = doc.id;
-        const data = doc.data();
-        const email = data.email || 'Sin email';
-        const totalAciertos = aciertosPorUsuario[userId] || 0;
         
-        Object.entries(data).forEach(([catId, sub]) => {
-          if (catId === 'email' || !sub || typeof sub !== 'object' || !sub.plan) return;
-          
-          const plan = sub.plan;
-          const catNombre = sub.nombre || catId;
-          const fechaActivacion = sub.fechaActivacion || 0;
-          const diasActivo = Math.floor((ahora - fechaActivacion) / unDia);
-          
-          if (plan === 'gratuito') {
-            if (totalAciertos >= 60) {
-              log('logUsers', `🚨 ${email} (GRATUITO) HA ALCANZADO LÍMITE: ${totalAciertos}/60 preguntas - Test: ${catNombre}`, 'error');
-            } else if (totalAciertos >= 50) {
-              log('logUsers', `⚠️ ${email} (GRATUITO) cerca del límite: ${totalAciertos}/60 preguntas - Test: ${catNombre}`, 'warning');
-            }
-          }
-          
-          if (plan === 'mensual') {
-            const preguntasPorDia = diasActivo > 0 ? totalAciertos / diasActivo : totalAciertos;
-            if (preguntasPorDia > 300) {
-              log('logUsers', `⚠️ ${email} (MENSUAL) uso excesivo: ${Math.round(preguntasPorDia)} preguntas/día (límite: 300) - Test: ${catNombre}`, 'warning');
-            }
-          }
-          
-          if (plan === 'trimestral') {
-            const preguntasPorDia = diasActivo > 0 ? totalAciertos / diasActivo : totalAciertos;
-            if (preguntasPorDia > 400) {
-              log('logUsers', `⚠️ ${email} (TRIMESTRAL) uso excesivo: ${Math.round(preguntasPorDia)} preguntas/día (límite: 400) - Test: ${catNombre}`, 'warning');
-            }
-          }
-          
-          if (plan === 'anual') {
-            const preguntasPorDia = diasActivo > 0 ? totalAciertos / diasActivo : totalAciertos;
-            if (preguntasPorDia > 500) {
-              log('logUsers', `⚠️ ${email} (ANUAL) uso excesivo: ${Math.round(preguntasPorDia)} preguntas/día (límite: 500) - Test: ${catNombre}`, 'warning');
-            }
-          }
-          
-          if (totalAciertos > 1000) {
-            log('logUsers', `🚨 ${email} alto volumen: ${totalAciertos} preguntas totales - Test: ${catNombre}`, 'error');
-          }
-        });
-      });
+      } catch (e) {
+        console.error('Error:', e);
+        log('logUsers', `❌ ${e.message}`, 'error');
+      }
     }
     
     async function verUsuarios() {
       console.log('🔍 Iniciando verUsuarios');
       try {
-        console.log('📊 Obteniendo usuarios...');
-        const usersSnap = await db.collection('usuarios').get();
-        console.log('✅ Usuarios obtenidos:', usersSnap.size);
+        const [usersSnap, subsSnap] = await Promise.all([
+          db.collection('usuarios').get(),
+          db.collection('suscripciones').get()
+        ]);
         
         if (usersSnap.empty) {
           alert('No hay usuarios registrados');
           return;
         }
         
-        console.log('📊 Obteniendo suscripciones...');
-        const subsSnap = await db.collection('suscripciones').get();
-        console.log('✅ Suscripciones obtenidas:', subsSnap.size);
         const suscripciones = {};
         subsSnap.forEach(doc => {
           suscripciones[doc.id] = doc.data();
         });
         
-        console.log('📊 Obteniendo aciertos globales...');
-        const aciertosSnap = await db.collection('aciertosglobales').get();
-        console.log('✅ Aciertos globales obtenidos:', aciertosSnap.size);
-        const preguntasPorUsuario = {};
-        aciertosSnap.forEach(doc => {
-          const userId = doc.id;
-          const data = doc.data();
-          let total = 0;
-          
-          Object.entries(data).forEach(([k, v]) => {
-            if (k !== 'email' && typeof v === 'number') {
-              total += v;
-            }
-          });
-          
-          preguntasPorUsuario[userId] = total;
-        });
-        
-        console.log('📈 Procesando usuarios...');
         let html = '';
         
         usersSnap.forEach(doc => {
@@ -1672,8 +2287,6 @@ async function sincronizarPreguntas(catId, preguntasReales) {
           const fechaRegistro = user.fechaRegistro ? 
             new Date(user.fechaRegistro.toDate()).toLocaleDateString('es-ES') : 
             'Desconocida';
-          
-          const totalPreguntas = preguntasPorUsuario[userId] || 0;
           
           let subs = '';
           const userSubs = suscripciones[userId];
@@ -1703,7 +2316,6 @@ async function sincronizarPreguntas(catId, preguntasReales) {
                   <div>👤 ${displayName}</div>
                   <div>🆔 ${userId}</div>
                   <div>📅 Registro: ${fechaRegistro}</div>
-                  <div>❓ Preguntas realizadas: <strong>${totalPreguntas}</strong></div>
                   ${subs}
                 </div>
               </div>
@@ -1731,12 +2343,11 @@ async function sincronizarPreguntas(catId, preguntasReales) {
           `;
         });
         
-        console.log('✅ HTML generado, mostrando modal');
         document.getElementById('listUsers').innerHTML = html;
         document.getElementById('modalUsers').classList.add('show');
         
       } catch (e) {
-        console.error('❌ Error en verUsuarios:', e);
+        console.error('Error:', e);
         alert('Error: ' + e.message);
       }
     }
@@ -1852,7 +2463,7 @@ Esta acción NO se puede deshacer.
         alert(`✅ Usuario ${email} eliminado exitosamente`);
         
         cerrarModalUsers();
-        await actualizarStatsUsers();
+        await actualizarStatsUsers(true);
       } catch (e) {
         log('logUsers', `❌ Error: ${e.message}`, 'error');
         alert('Error: ' + e.message);
@@ -1933,7 +2544,7 @@ Esta acción NO se puede deshacer.
         alert(`✅ Acceso otorgado exitosamente\n\nEmail: ${email}\nTest: ${catNom}\nPlan: ${plan}\n${uSnap.empty ? '\n⚠️ Usuario creado automáticamente' : ''}`);
         
         cerrarModalAcceso();
-        await actualizarStatsUsers();
+        await actualizarStatsUsers(true);
         
       } catch (e) {
         log('logUsers', `❌ ${e.message}`, 'error');
@@ -1941,18 +2552,38 @@ Esta acción NO se puede deshacer.
       }
     }
     
-    async function actualizarStats() {
+    // ✅ STATS OPTIMIZADAS
+    async function actualizarStats(forzar = false) {
+      // Si hay caché válido y no se fuerza, usar caché
+      if (!forzar && esCacheValido('stats')) {
+        mostrarStatsDesdeCache('stats');
+        return;
+      }
+      
       try {
-        const cSnap = await db.collection('categorias').get();
-        const pSnap = await db.collection('preguntas').get();
-        const rSnap = await db.collection('resultados').get();
-        const proSnap = await db.collection('progresos').get();
+        const [cSnap, pSnap, rSnap, proSnap] = await Promise.all([
+          db.collection('categorias').get(),
+          db.collection('preguntas').get(),
+          db.collection('resultados').get(),
+          db.collection('progresos').get()
+        ]);
+        
+        // Guardar en caché
+        const data = {
+          sCat: cSnap.size,
+          sPreg: pSnap.size,
+          sRes: rSnap.size,
+          sProg: proSnap.size
+        };
+        guardarEnCache('stats', data);
         
         document.getElementById('catCount').textContent = cSnap.size;
         document.getElementById('sCat').textContent = cSnap.size;
         document.getElementById('sPreg').textContent = pSnap.size;
         document.getElementById('sRes').textContent = rSnap.size;
         document.getElementById('sProg').textContent = proSnap.size;
+        
+        mostrarIndicadorCache('cacheIndicatorStats', false);
         
         clearLog('logStats');
         log('logStats', `📚 ${cSnap.size} categorías`, 'info');
@@ -2090,7 +2721,7 @@ Esta acción NO se puede deshacer.
             }
             
             log('logStats', '✅ Restaurado', 'success');
-            await actualizarStats();
+            await actualizarStats(true);
             
           } catch (e) {
             log('logStats', `❌ ${e.message}`, 'error');
