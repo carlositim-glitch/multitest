@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Admin 0.11 - MultiTest</title>
+  <title>Admin 0.11f - MultiTest</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -2292,15 +2292,22 @@
           const userSubs = suscripciones[userId];
           
           if (userSubs) {
-            Object.entries(userSubs).forEach(([k, v]) => {
-              if (k !== 'email' && v && v.plan) {
-                const planIcon = v.plan === 'gratuito' ? '🎁' : 
-                               v.plan === 'mensual' ? '📅' : 
-                               v.plan === 'trimestral' ? '🔥' : '👑';
-                subs += `<div style="margin-top:5px;">${v.nombre || k} <span class="badge ${v.plan}">${planIcon} ${v.plan}</span></div>`;
-              }
-            });
-          }
+  Object.entries(userSubs).forEach(([k, v]) => {
+    if (k !== 'email' && v && v.plan) {
+      const planIcon = v.plan === 'gratuito' ? '🎁' : 
+                     v.plan === 'mensual' ? '📅' : 
+                     v.plan === 'trimestral' ? '🔥' : '👑';
+      const desuscrito = v.desuscrito === true ? '<span class="badge oculta">🚫 Desuscrito</span>' : '';
+      const btnDesuscribir = v.desuscrito !== true ? 
+        `<button onclick="desuscribirCategoria('${userId}', '${email}', '${k}', '${(v.nombre || k).replace(/'/g, "\\'")}', event)" class="btn-small danger" style="margin-left: 8px;" title="Desuscribir de esta categoría">❌</button>` : 
+        `<button onclick="resuscribirCategoria('${userId}', '${email}', '${k}', '${(v.nombre || k).replace(/'/g, "\\'")}', event)" class="btn-small success" style="margin-left: 8px;" title="Reactivar suscripción">✅</button>`;
+      subs += `<div style="margin-top:8px; display: flex; align-items: center; justify-content: space-between; padding: 5px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+        <div>${v.nombre || k} <span class="badge ${v.plan}">${planIcon} ${v.plan}</span> ${desuscrito}</div>
+        ${btnDesuscribir}
+      </div>`;
+    }
+  });
+}
           
           if (!subs) {
             subs = '<div style="margin-top:5px; color: #aab3b8; font-size: 12px;">Sin suscripciones</div>';
@@ -2332,9 +2339,9 @@
                     ✅
                   </button>
                 `}
-                <button onclick="desuscribirUsuario('${userId}', '${email}')" class="btn-small warning" title="Desuscribir">
-                  ⚠️
-                </button>
+                <button onclick="desuscribirTodasCategorias('${userId}', '${email}')" class="btn-small warning" title="Desuscribir de TODAS las categorías">
+  ⚠️ TODAS
+</button>
                 <button onclick="eliminarUsuario('${userId}', '${email}')" class="btn-small danger" title="Eliminar">
                   🗑️
                 </button>
@@ -2388,7 +2395,7 @@
       }
     }
     
-    async function desuscribirUsuario(userId, email) {
+    async function desuscribirTodasCategorias(userId, email) {
       if (!confirm(`¿Desuscribir a ${email}?\n\nSus planes seguirán activos hasta que venzan, pero no podrá renovarlos.`)) return;
       
       try {
@@ -2415,7 +2422,47 @@
         alert('Error: ' + e.message);
       }
     }
+    // ✅ DESUSCRIBIR CATEGORÍA INDIVIDUAL
+async function desuscribirCategoria(userId, email, categoriaId, categoriaNombre, event) {
+  event.stopPropagation(); // Evitar que se cierre el modal
+  
+  if (!confirm(`¿Desuscribir a ${email} de "${categoriaNombre}"?\n\nEl plan seguirá activo hasta que venza, pero no podrá renovarlo.`)) return;
+  
+  try {
+    await db.collection('suscripciones').doc(userId).update({
+      [`${categoriaId}.desuscrito`]: true,
+      [`${categoriaId}.fechaDesuscripcion`]: Date.now()
+    });
     
+    log('logUsers', `✅ ${email} desuscrito de ${categoriaNombre}`, 'success');
+    alert(`✅ ${email} desuscrito de "${categoriaNombre}"\n\nEl plan seguirá activo hasta que venza.`);
+    verUsuarios();
+  } catch (e) {
+    log('logUsers', `❌ Error: ${e.message}`, 'error');
+    alert('Error: ' + e.message);
+  }
+}
+
+// ✅ REACTIVAR SUSCRIPCIÓN DE CATEGORÍA
+async function resuscribirCategoria(userId, email, categoriaId, categoriaNombre, event) {
+  event.stopPropagation(); // Evitar que se cierre el modal
+  
+  if (!confirm(`¿Reactivar suscripción de ${email} a "${categoriaNombre}"?\n\nPodrá volver a renovar cuando su plan venza.`)) return;
+  
+  try {
+    await db.collection('suscripciones').doc(userId).update({
+      [`${categoriaId}.desuscrito`]: false,
+      [`${categoriaId}.fechaReactivacion`]: Date.now()
+    });
+    
+    log('logUsers', `✅ Suscripción de ${email} a ${categoriaNombre} reactivada`, 'success');
+    alert(`✅ Suscripción de ${email} a "${categoriaNombre}" reactivada`);
+    verUsuarios();
+  } catch (e) {
+    log('logUsers', `❌ Error: ${e.message}`, 'error');
+    alert('Error: ' + e.message);
+  }
+}
     async function eliminarUsuario(userId, email) {
       const confirmText = `⚠️ ELIMINAR USUARIO
       
