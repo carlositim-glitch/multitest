@@ -2,8 +2,20 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">  
-  <title>Sistema de Tests</title>  
-  <meta name="viewport" content="width=device-width,initial-scale=1">  
+  <title>Multitest-Gobcan</title>  
+  <meta name="viewport" content="width=device-width,initial-scale=1"> 
+   <!-- ✅ AÑADIR ESTAS LÍNEAS PARA EL FAVICON -->
+<link rel="icon" type="image/png" href="icono_atigrados.png?v=1">
+<link rel="apple-touch-icon" href="icono_atigrados.png?v=1">
+<link rel="icon" type="image/png" sizes="32x32" href="icono_atigrados.png?v=1">
+<link rel="icon" type="image/png" sizes="16x16" href="icono_atigrados.png?v=1">
+<link rel="apple-touch-icon" sizes="180x180" href="icono_atigrados.png?v=1">
+
+<!-- Para iOS -->
+<link rel="apple-touch-icon" sizes="180x180" href="icono_atigrados.png">
+
+<!-- Para Android/Chrome -->
+<link rel="manifest" href="site.webmanifest">
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -2259,7 +2271,7 @@ body {
     <div id="screenLogin" class="screen active">  
       <div class="card">  
         <div class="logo">  
-          <h1>🎓 MultiTest</h1>  
+          <h1>🎓 MultiTest </h1>  
           <p>Tu plataforma de tests profesionales</p>  
         </div>  
 
@@ -2336,7 +2348,7 @@ body {
             <div class="user-label" style="font-size: 11px; margin-bottom: 2px;">
               📧 <a href="mailto:multitest.gobcan@gmail.com" style="color: var(--accent); text-decoration: none;" title="Enviar correo de contacto">multitest.gobcan@gmail.com</a>
             </div>
-            <div class="user-label">Versión BETA 0.11d - Conectado como:</div>  
+            <div class="user-label">Versión BETA 0.11f - Conectado como:</div>  
             <div class="email" id="userEmailSeleccion"></div>  
           </div>  
           <button class="logout" onclick="cerrarSesion()">🔄</button>
@@ -3373,9 +3385,9 @@ function actualizarTestsContratados(containerId, listId, titulo) {
   }).join('');
 }
 
-    // Acceder directamente a un test contratado
-   async function accederTestDirecto(testId) {
-  // ✅ EXCEPCIÓN PARA DESARROLLADOR - Acceso total sin restricciones
+ // ========== FUNCIÓN 3: ACCEDER TEST DIRECTO (CON VALIDACIÓN CORRECTA) ==========
+async function accederTestDirecto(testId) {
+  // ✅ EXCEPCIÓN PARA DESARROLLADOR
   if (usuarioActual && usuarioActual.email === 'carlos.itim@gmail.com') {
     console.log('🔧 Acceso de desarrollador - saltando verificaciones');
     categoriaActual = testId;
@@ -3383,10 +3395,9 @@ function actualizarTestsContratados(containerId, listId, titulo) {
     return;
   }
   
-  // ✅ VERIFICACIONES DE SEGURIDAD PARA USUARIOS NORMALES
   const suscripcion = suscripcionesUsuario[testId];
   
-  // Verificar que tenga suscripción válida para ESTE test específico
+  // Verificar que tenga suscripción válida
   if (!suscripcion || !suscripcion.plan || suscripcion.plan === 'none') {
     alert('🚫 No tienes acceso a este test. Debes activar un plan primero.');
     testSeleccionado = testId;
@@ -3396,22 +3407,32 @@ function actualizarTestsContratados(containerId, listId, titulo) {
     return;
   }
   
-  // Si tiene plan gratuito, verificar límite de tandas
-  if (suscripcion.plan === 'gratuito' && suscripcion.tandasUsadas >= TANDAS_GRATUITAS) {
-    alert(`⚠️ Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar con acceso ilimitado.`);
-    testSeleccionado = testId;
-    document.getElementById('testSelect').value = testId;
-    mostrarPlanes();
-    mostrarPantalla('screenSeleccionTest');
-    return;
+  // Si tiene plan gratuito, verificar límite de tandas CON MENSAJE CORRECTO
+  if (suscripcion.plan === 'gratuito') {
+    const tandasRestantes = TANDAS_GRATUITAS - (suscripcion.tandasUsadas || 0);
+    
+    if (tandasRestantes <= 0) {
+      alert(`⚠️ Has completado tus ${TANDAS_GRATUITAS} tandas gratuitas para este test.\n\nActualiza tu plan para continuar con acceso ilimitado.`);
+      testSeleccionado = testId;
+      document.getElementById('testSelect').value = testId;
+      mostrarPlanes();
+      mostrarPantalla('screenSeleccionTest');
+      return;
+    }
+    
+    // Mensaje informativo de tandas restantes (solo si queda 1)
+    if (tandasRestantes === 1) {
+      const continuar = confirm(`ℹ️ Te queda ${tandasRestantes} tanda gratuita.\n\n¿Deseas continuar?`);
+      if (!continuar) return;
+    }
   }
 
   // Acceso permitido
   categoriaActual = testId;
   iniciarTest();
-}// mostrarPlanes actualizado: marca el plan activo con "✅ Ya activado" 
-// y bloquea todos los inferiores con overlay (gratuito incluido se muestra igual si es activo)
-function mostrarPlanes() {
+}
+
+    function mostrarPlanes() {
   const testSelect = document.getElementById('testSelect');
   const planesContainer = document.getElementById('planesContainer');
   if (!testSelect || !planesContainer) return;
@@ -3505,18 +3526,118 @@ function mostrarPlanes() {
     }
   });
 }
+// ========== FUNCIÓN 6: MOSTRAR PLANES (CON BLOQUEO DE PLAN GRATUITO) ==========
+function mostrarPlanes() {
+  const testSelect = document.getElementById('testSelect');
+  const planesContainer = document.getElementById('planesContainer');
+  if (!testSelect || !planesContainer) return;
 
-// seleccionarPlan actualizado: previene selección si la tarjeta está bloqueada;
-// mantiene el mensaje y comportamiento igual; gratuito muestra badge igual al resto si ya está activo
+  const testId = testSelect.value;
+  if (!testId) {
+    planesContainer.classList.remove('show');
+    return;
+  }
+
+  testSeleccionado = testId;
+  planesContainer.classList.add('show');
+
+  const planOrder = ['gratuito', 'mensual', 'trimestral', 'anual'];
+
+  const sub = suscripcionesUsuario && suscripcionesUsuario[testId] ? suscripcionesUsuario[testId] : null;
+  const activePlan = sub && sub.plan ? String(sub.plan).toLowerCase() : null;
+  const activeIndex = activePlan ? planOrder.indexOf(activePlan) : -1;
+
+  // ✅ VERIFICAR SI TIENE PLAN GRATUITO EN OTRA CATEGORÍA
+  const otroPlanGratuito = tieneOtroPlanGratuito(testId);
+
+  document.querySelectorAll('.plan-card').forEach(card => {
+    card.classList.remove('selected', 'disabled', 'disabled-by-superior', 'active-plan');
+    card.style.opacity = '';
+    card.style.pointerEvents = '';
+    card.style.filter = '';
+    card.style.boxShadow = '';
+    const overlays = card.querySelectorAll('.ya-activado, .blocked-overlay');
+    overlays.forEach(o => o.remove());
+  });
+
+  document.querySelectorAll('.plan-card').forEach(card => {
+    let cardPlan = null;
+    if (card.dataset && card.dataset.plan) {
+      cardPlan = String(card.dataset.plan).toLowerCase();
+    } else if (card.id) {
+      const m = card.id.match(/^plan(.+)$/i);
+      if (m && m[1]) {
+        cardPlan = m[1].charAt(0).toLowerCase() + m[1].slice(1);
+        cardPlan = cardPlan.toLowerCase();
+      }
+    }
+    if (!cardPlan) return;
+
+    const idx = planOrder.indexOf(cardPlan);
+
+    // ✅ BLOQUEAR PLAN GRATUITO SI YA LO TIENE EN OTRO TEST
+    if (cardPlan === 'gratuito' && otroPlanGratuito.existe) {
+      card.classList.add('disabled-by-superior');
+      card.style.opacity = '0.45';
+      card.style.pointerEvents = 'none';
+      card.style.filter = 'grayscale(1)';
+
+      const ov = document.createElement('div');
+      ov.className = 'blocked-overlay';
+      ov.style.cssText = 'position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; background:rgba(0,0,0,0.7); pointer-events:none; z-index:12; border-radius:12px; padding:8px; text-align:center; font-size:12px;';
+      ov.innerHTML = `🔒 Plan gratuito ya usado<br>en "${otroPlanGratuito.testNombre}"`;
+      card.style.position = card.style.position || 'relative';
+      card.appendChild(ov);
+      return;
+    }
+
+    // Lógica normal de bloqueo por plan activo
+    if (activeIndex >= 0 && idx >= 0) {
+      if (idx < activeIndex) {
+        card.classList.add('disabled-by-superior');
+        card.style.opacity = '0.45';
+        card.style.pointerEvents = 'none';
+        card.style.filter = 'grayscale(1)';
+
+        if (!card.querySelector('.blocked-overlay')) {
+          const ov = document.createElement('div');
+          ov.className = 'blocked-overlay';
+          ov.style.cssText = 'position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; background:rgba(0,0,0,0.5); pointer-events:none; z-index:12; border-radius:12px;';
+          ov.textContent = '🔒 Bloqueado por plan activo';
+          card.style.position = card.style.position || 'relative';
+          card.appendChild(ov);
+        }
+      } else if (idx === activeIndex) {
+        card.classList.add('disabled', 'active-plan');
+        card.style.opacity = '0.5';
+        card.style.pointerEvents = 'none';
+        card.style.filter = 'grayscale(1)';
+
+        if (!card.querySelector('.ya-activado')) {
+          const badge = document.createElement('div');
+          badge.className = 'ya-activado';
+          badge.style.cssText = 'position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.75); color:#fff; padding:6px 8px; border-radius:12px; font-weight:700; z-index:13; font-size:12px;';
+          badge.textContent = '✅ Ya activado';
+          card.style.position = card.style.position || 'relative';
+          card.appendChild(badge);
+        }
+      } else {
+        card.style.pointerEvents = 'auto';
+      }
+    } else {
+      card.style.pointerEvents = 'auto';
+    }
+  });
+}
+
+// ========== FUNCIÓN 7: SELECCIONAR PLAN (CON VALIDACIÓN GRATUITO) ==========
 function seleccionarPlan(plan) {
   if (!plan) return;
   const planLower = String(plan).toLowerCase();
 
-  // Buscar la tarjeta: primero por data-plan, luego por id / sufijo
   let planCard = document.querySelector(`.plan-card[data-plan="${planLower}"]`) || null;
 
   if (!planCard) {
-    // Buscar por id con sufijo (case-insensitive)
     const all = Array.from(document.querySelectorAll('.plan-card'));
     planCard = all.find(card => {
       if (card.id) {
@@ -3526,7 +3647,6 @@ function seleccionarPlan(plan) {
           return derived.toLowerCase() === planLower;
         }
       }
-      // fallback: comprobar dataset.plan con normalización
       if (card.dataset && card.dataset.plan) {
         return String(card.dataset.plan).toLowerCase() === planLower;
       }
@@ -3534,16 +3654,28 @@ function seleccionarPlan(plan) {
     }) || null;
   }
 
-  // Si la tarjeta está bloqueada por plan superior o ya activada => impedir selección
+  // Verificar si está bloqueado
   if (planCard && (planCard.classList.contains('disabled-by-superior') || planCard.classList.contains('disabled'))) {
-    alert('🔒 Este plan está bloqueado porque ya tienes un plan superior activo o ya está activado.\n\nPara cambiar de plan, primero cancela la suscripción actual.');
+    alert('🔒 Este plan no está disponible.\n\nPuede estar bloqueado porque ya lo tienes activo o porque tienes un plan superior.');
     return;
   }
 
-  // Excepción: si intentan activar gratuito cuando ya lo tienen
-  if (planLower === 'gratuito' && suscripcionesUsuario[testSeleccionado] && suscripcionesUsuario[testSeleccionado].plan === 'gratuito') {
-    alert('✅ Ya tienes el plan gratuito activado.\n\nSelecciona un plan superior para hacer upgrade.');
-    return;
+  // ✅ VALIDACIÓN ESPECIAL PARA PLAN GRATUITO
+  if (planLower === 'gratuito') {
+    const otroPlanGratuito = tieneOtroPlanGratuito(testSeleccionado);
+    
+    if (otroPlanGratuito.existe) {
+      alert(`🚫 Ya tienes un plan gratuito activo\n\n` +
+            `📚 En el test: ${otroPlanGratuito.testNombre}\n\n` +
+            `⚠️ Solo puedes tener UN plan gratuito activo.\n\n` +
+            `💡 Para acceder a más tests, necesitas un plan de pago.`);
+      return;
+    }
+    
+    if (suscripcionesUsuario[testSeleccionado] && suscripcionesUsuario[testSeleccionado].plan === 'gratuito') {
+      alert('✅ Ya tienes el plan gratuito activado en este test.\n\nSelecciona un plan superior para hacer upgrade.');
+      return;
+    }
   }
 
   if (!testSeleccionado) {
@@ -3551,7 +3683,7 @@ function seleccionarPlan(plan) {
     return;
   }
 
-  // Limpiar estilo previo
+  // Limpiar estilos previos
   document.querySelectorAll('.plan-card').forEach(card => {
     card.classList.remove('selected');
     card.style.transform = 'translateY(0) scale(1)';
@@ -3559,7 +3691,7 @@ function seleccionarPlan(plan) {
     card.style.boxShadow = 'none';
   });
 
-  // Aplicar estilo de preselección
+  // Aplicar estilo de selección
   if (planCard) {
     planCard.classList.add('selected');
     planCard.style.transform = 'translateY(-4px) scale(1.02)';
@@ -3567,9 +3699,9 @@ function seleccionarPlan(plan) {
     planCard.style.boxShadow = '0 12px 32px rgba(52,195,255,0.18)';
   }
 
-  // Info de los planes (texto usado en confirm)
   const planesInfo = {
-    gratuito: { nombre: 'Plan Gratuito', precio: 'Gratis', descripcion: '2 tandas de prueba' },
+    gratuito: { nombre: 'Plan Gratuito', precio: 'Gratis', descripcion: '2 tandas de pru
+      eba' },
     mensual: { nombre: 'Plan Mensual', precio: '9,99€/mes', descripcion: 'Acceso ilimitado' },
     trimestral: { nombre: 'Plan Trimestral', precio: '24,99€/3 meses', descripcion: 'Ahorra 25%' },
     anual: { nombre: 'Plan Anual', precio: '79,99€/año', descripcion: 'Ahorra 33%' }
@@ -3586,6 +3718,7 @@ function seleccionarPlan(plan) {
       `💳 Plan: ${planInfo.nombre}\n` +
       `💰 Precio: ${planInfo.precio}\n` +
       `📋 Incluye: ${planInfo.descripcion}\n\n` +
+      `⚠️ Solo puedes tener UN plan gratuito activo.\n\n` +
       `✅ ¿Activar acceso gratuito?`;
   } else {
     confirmMsg = `💳 ¿Confirmas la contratación?\n\n` +
@@ -3604,7 +3737,6 @@ function seleccionarPlan(plan) {
       procesarPagoStripe();
     }
   } else {
-    // cancelar selección visual si el usuario no confirma
     if (planCard) {
       planCard.classList.remove('selected');
       planCard.style.transform = '';
@@ -3615,13 +3747,26 @@ function seleccionarPlan(plan) {
   }
 }
 
-   // Activar plan gratuito (sin pago)
+// ========== FUNCIÓN 5: ACTIVAR PLAN GRATUITO (CON VALIDACIÓN ÚNICA) ==========
 async function activarPlanGratuito() {
   try {
+    // ✅ VERIFICAR SI YA TIENE PLAN GRATUITO EN OTRA CATEGORÍA
+    const otroPlanGratuito = tieneOtroPlanGratuito(testSeleccionado);
+    
+    if (otroPlanGratuito.existe) {
+      alert(`🚫 Ya tienes un plan gratuito activo\n\n` +
+            `📚 Test actual: ${otroPlanGratuito.testNombre}\n\n` +
+            `⚠️ El plan gratuito solo se puede activar en UN test.\n\n` +
+            `💡 Opciones:\n` +
+            `• Usar tu plan gratuito en "${otroPlanGratuito.testNombre}"\n` +
+            `• Contratar un plan de pago para este test`);
+      return;
+    }
+    
     const testNombre = document.getElementById('testSelect').options[document.getElementById('testSelect').selectedIndex].text;
 
     await db.collection('suscripciones').doc(usuarioActual.uid).set({
-        email: usuarioActual.email, // ✅ AÑADIR ESTO
+      email: usuarioActual.email,
       [testSeleccionado]: {
         plan: 'gratuito',
         tandasUsadas: 0,
@@ -3636,18 +3781,11 @@ async function activarPlanGratuito() {
       nombre: testNombre
     };
 
-    alert(`✅ ¡Plan gratuito activado!\n\nTienes ${TANDAS_GRATUITAS} tandas de prueba para el test: ${testNombre}`);
+    alert(`✅ ¡Plan gratuito activado!\n\n` +
+          `📚 Test: ${testNombre}\n` +
+          `🎁 Tienes ${TANDAS_GRATUITAS} tandas de prueba\n\n` +
+          `⚠️ Este es tu único plan gratuito. Para otros tests necesitarás un plan de pago.`);
 
-    // ❌ NO LIMPIAR SELECCIÓN INMEDIATAMENTE
-    // document.getElementById('planesContainer').classList.remove('show');
-    // document.getElementById('testSelect').value = '';
-    // planSeleccionado = null;
-    // testSeleccionado = null;
-
-    // ✅ MOSTRAR BOTÓN INICIAR TEST
-  //  mostrarBotonIniciarTest(testNombre);
-
-    // Actualizar accesos rápidos
     mostrarTestsContratados();
 
   } catch (error) {
@@ -3695,51 +3833,72 @@ async function activarPlanGratuito() {
     alert('Error al procesar el pago: ' + error.message);
   }
 }
-    // Verificar si puede usar el test (límite de tandas)
-    function verificarLimiteTandas() {
-      if (!categoriaActual || !suscripcionesUsuario[categoriaActual]) {
-        return true; // No hay restricción si no hay suscripción
-      }
+    // ==================== FUNCIONES CORREGIDAS PARA SISTEMA DE TANDAS GRATUITAS ====================
 
-      const sub = suscripcionesUsuario[categoriaActual];
-
-      if (sub.plan === 'gratuito') {
-        if (sub.tandasUsadas >= TANDAS_GRATUITAS) {
-          alert(`⚠️ Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar.`);
-          return false;
-        }
-      }
-
-      return true;
+// ========== FUNCIÓN 1: VERIFICAR SI TIENE PLAN GRATUITO EN OTRA CATEGORÍA ==========
+function tieneOtroPlanGratuito(testIdActual) {
+  if (!suscripcionesUsuario) return false;
+  
+  for (const [testId, sub] of Object.entries(suscripcionesUsuario)) {
+    // Si es otro test (no el actual) y tiene plan gratuito activo
+    if (testId !== testIdActual && sub.plan === 'gratuito') {
+      return {
+        existe: true,
+        testNombre: sub.nombre || testId
+      };
     }
+  }
+  
+  return { existe: false };
+}
+    // Verificar si puede usar el test (límite de tandas)
+   // ========== FUNCIÓN 2: VERIFICAR LÍMITE DE TANDAS (SIN ALERT) ==========
+function verificarLimiteTandas() {
+  if (!categoriaActual || !suscripcionesUsuario[categoriaActual]) {
+    return true; // No hay restricción si no hay suscripción
+  }
+
+  const sub = suscripcionesUsuario[categoriaActual];
+
+  if (sub.plan === 'gratuito') {
+    // Retornar false si YA usó las 2 tandas
+    if (sub.tandasUsadas >= TANDAS_GRATUITAS) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 
     // Incrementar contador de tandas usadas
-    async function incrementarTandaUsada() {
-      if (!categoriaActual || !suscripcionesUsuario[categoriaActual]) {
-        return;
+   async function incrementarTandaUsada() {
+  if (!categoriaActual || !suscripcionesUsuario[categoriaActual]) {
+    return;
+  }
+
+  const sub = suscripcionesUsuario[categoriaActual];
+
+  // ✅ SOLO CONTAR TANDAS GRATUITAS EN TANDAS NORMALES (NO REPETICIONES)
+  if (sub.plan === 'gratuito' && !esTandaRepeticion) {
+    sub.tandasUsadas = (sub.tandasUsadas || 0) + 1;
+
+    try {
+      await db.collection('suscripciones').doc(usuarioActual.uid).set({
+        email: usuarioActual.email,
+        [categoriaActual]: sub
+      }, { merge: true });
+
+      console.log(`📊 Tandas usadas: ${sub.tandasUsadas}/${TANDAS_GRATUITAS}`);
+
+      if (sub.tandasUsadas >= TANDAS_GRATUITAS) {
+        alert(`⚠️ Has completado 1/${TANDAS_GRATUITAS} tandas gratuitas.\n\nPara continuar, actualiza a un plan de pago con acceso ilimitado.`);
       }
-
-      const sub = suscripcionesUsuario[categoriaActual];
-
-      if (sub.plan === 'gratuito') {
-        sub.tandasUsadas = (sub.tandasUsadas || 0) + 1;
-
-        try {
-          await db.collection('suscripciones').doc(usuarioActual.uid).set({
-              email: usuarioActual.email, // ✅ AÑADIR ESTO
-            [categoriaActual]: sub
-          }, { merge: true });
-
-          console.log(`📊 Tandas usadas: ${sub.tandasUsadas}/${TANDAS_GRATUITAS}`);
-
-          if (sub.tandasUsadas >= TANDAS_GRATUITAS) {
-            alert(`⚠️ Has completado tus ${TANDAS_GRATUITAS} tandas gratuitas.\n\nPara continuar, actualiza a un plan de pago con acceso ilimitado.`);
-          }
-        } catch (error) {
-          console.error('Error actualizando tandas:', error);
-        }
-      }
+    } catch (error) {
+      console.error('Error actualizando tandas:', error);
     }
+  }
+}
 
     // Modificar hideErrorMessage para soportar múltiples contenedores
     function hideErrorMessage(elementId = 'errorMessage') {
@@ -3892,15 +4051,18 @@ masterPool = mezclarArray(masterPool);
           volverCategorias();
         });
     }
-
-    // Preparar una nueva tanda secuencial
-    // ==================== PREPARAR NUEVA TANDA - CORREGIDO ====================
-function prepararNuevaTanda() {
-  console.log('🔄 Preparando nueva tanda secuencial...');
+// ========== FUNCIÓN 4: PREPARAR NUEVA TANDA (CON ALERT ÚNICO) ==========
+function prepararNuevaTanda(forzarNueva = false) {
+  console.log('🔄 Preparando nueva tanda secuencial...', { forzarNueva });
   
-  // ✅ VERIFICAR LÍMITE DE TANDAS GRATUITAS
+  // ✅ VERIFICAR LÍMITE DE TANDAS GRATUITAS (CON MENSAJE)
   if (!verificarLimiteTandas()) {
-    alert(`🚫 Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar.`);
+    const sub = suscripcionesUsuario[categoriaActual];
+    const tandasUsadas = sub ? (sub.tandasUsadas || 0) : 0;
+    
+    alert(`🚫 Has completado tus ${TANDAS_GRATUITAS} tandas gratuitas.\n\n` +
+          `📊 Tandas realizadas: ${tandasUsadas}/${TANDAS_GRATUITAS}\n\n` +
+          `💎 Actualiza a un plan premium para acceso ilimitado.`);
     volverCategorias();
     return;
   }
@@ -3912,8 +4074,8 @@ function prepararNuevaTanda() {
   const feedback = document.getElementById('feedbackContainer');
   if (feedback) feedback.style.display = 'none';
 
-  // ✅ VERIFICAR SI HAY FALLOS PENDIENTES (prioridad)
-  if (preguntasFalladas.length > 0 && !esTandaRepeticion) {
+  // ✅ VERIFICAR SI HAY FALLOS PENDIENTES
+  if (!forzarNueva && preguntasFalladas.length > 0 && !esTandaRepeticion) {
     prepararTandaRepeticion();
     return;
   }
@@ -3921,7 +4083,7 @@ function prepararNuevaTanda() {
   // ✅ VERIFICAR SI AÚN HAY PREGUNTAS PENDIENTES
   if (preguntasPendientes.length === 0) {
     console.log('📭 No hay más preguntas pendientes');
-    if (preguntasFalladas.length > 0) {
+    if (!forzarNueva && preguntasFalladas.length > 0) {
       prepararTandaRepeticion();
     } else {
       finalizarTest();
@@ -3929,27 +4091,27 @@ function prepararNuevaTanda() {
     return;
   }
 
-  // Tanda normal: tomar preguntas NUEVAS del pool pendiente
+  // Tanda normal
   esTandaRepeticion = false;
   numeroTanda++;
   
-  // ✅ TOMAR LAS PRIMERAS X PREGUNTAS Y ELIMINARLAS DEL POOL
   const cantidadATomar = Math.min(preguntasPorTanda, preguntasPendientes.length);
-  tandaActual = preguntasPendientes.splice(0, cantidadATomar); // ← splice ELIMINA del array
+  tandaActual = preguntasPendientes.splice(0, cantidadATomar);
   
-  // Inicializar respuestas
   respuestasUsuario = new Array(tandaActual.length).fill(null);
   indicePreguntaActual = 0;
 
   console.log(`🔢 Tanda #${numeroTanda}: ${tandaActual.length} preguntas nuevas (quedan ${preguntasPendientes.length} pendientes)`);
   
-  // Incrementar contador de tandas para planes gratuitos
+  // ✅ SOLO INCREMENTAR TANDAS EN TANDAS NORMALES
   incrementarTandaUsada();
   
   guardarProgreso();
   restoreStatsPreference();
   mostrarPregunta();
 }
+
+
     // Preparar tanda de repetición (solo fallos)
    function prepararTandaRepeticion() {
   console.log('🔄 Preparando tanda de repetición de fallos...');
@@ -4372,23 +4534,29 @@ function siguientePregunta() {
     }
 
     // Saltar tanda (continuar sin repetir fallos)
-    function saltarTanda() {
-      // ✅ VERIFICAR LÍMITE ANTES DE SALTAR
+ // ========== FUNCIÓN 8: SALTAR TANDA (CON VALIDACIÓN MEJORADA) ==========
+function saltarTanda() {
+  // ✅ VERIFICAR LÍMITE ANTES DE SALTAR
   if (!verificarLimiteTandas()) {
-    alert(`🚫 Has alcanzado el límite de ${TANDAS_GRATUITAS} tandas gratuitas.\n\nActualiza tu plan para continuar.`);
+    const sub = suscripcionesUsuario[categoriaActual];
+    const tandasUsadas = sub ? (sub.tandasUsadas || 0) : 0;
+    
+    alert(`🚫 Has completado tus ${TANDAS_GRATUITAS} tandas gratuitas.\n\n` +
+          `📊 Tandas realizadas: ${tandasUsadas}/${TANDAS_GRATUITAS}\n\n` +
+          `💎 Actualiza a un plan premium para acceso ilimitado.`);
     volverCategorias();
     return;
   }
-      const panel = document.getElementById('tandaOptions');
-           if (panel) panel.style.display = 'none';
-      
-      const feedback = document.getElementById('feedbackContainer');
-      if (feedback) feedback.style.display = 'none';
+  
+  const panel = document.getElementById('tandaOptions');
+  if (panel) panel.style.display = 'none';
+  
+  const feedback = document.getElementById('feedbackContainer');
+  if (feedback) feedback.style.display = 'none';
 
-      // Continuar con siguiente tanda normal
-      prepararNuevaTanda();
-    }
-
+  console.log('⏭️ Usuario decidió saltar la repetición de fallos');
+  prepararNuevaTanda(true);
+}
     // Finalizar el test completo
     function finalizarTest() {
       console.log('🎉 Test completado!');
