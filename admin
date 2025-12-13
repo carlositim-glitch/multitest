@@ -750,7 +750,34 @@
         <h3>🔍 Preguntas Faltantes</h3>
         <button class="modal-close" onclick="cerrarModalFaltantes()">×</button>
       </div>
-      <div id="faltantesContenido" style="max-height: 600px; overflow-y: auto;"></div>
+
+      <div id="faltantesContenido" style="max-height: 400px; overflow-y: auto;"></div>
+
+      <!-- NUEVA SECCIÓN: CARGAR JSON DE REFERENCIA -->
+      <div style="margin-top: 20px; padding: 20px; background: rgba(52, 195, 255, 0.05); border-radius: 8px; border: 1px solid rgba(52, 195, 255, 0.2);">
+        <div style="margin-bottom: 10px; color: #34c3ff; font-weight: 600; font-size: 16px;">
+          📄 Rellenar preguntas faltantes
+        </div>
+        <div style="color: #aab3b8; font-size: 13px; margin-bottom: 15px;">
+          Carga el JSON completo de preguntas. El sistema buscará automáticamente
+          cada ID faltante y solo insertará esas preguntas en Firestore.
+        </div>
+        
+        <input type="file" id="fileJSONFaltantes" accept=".json" onchange="cargarJSONFaltantes()" style="display:none;">
+        <label for="fileJSONFaltantes" class="file-upload-btn" style="display: inline-block; margin-bottom: 10px;">
+          📁 Seleccionar JSON
+        </label>
+        <div id="fileNameFaltantes" style="color: #5dff9a; font-size: 14px; margin-bottom: 15px;"></div>
+        
+        <button onclick="rellenarPreguntasFaltantesDesdeJSON()" 
+                class="success" 
+                id="btnRellenarFaltantes" 
+                disabled 
+                style="width: 100%;">
+          ✅ Rellenar preguntas faltantes
+        </button>
+      </div>
+
       <div style="margin-top: 20px;">
         <button onclick="cerrarModalFaltantes()" class="secondary" style="width: 100%;">Cerrar</button>
       </div>
@@ -780,6 +807,7 @@
     let modoEdit = false;
     let preguntasCategoriaJSON = null;
     let preguntasCargadas = [];
+    let preguntasReferenciaFaltantes = null; // JSON de referencia para rellenar faltantes
     
     // ✅ SISTEMA DE CACHÉ OPTIMIZADO
     const cache = {
@@ -1840,10 +1868,13 @@
       mostrarModalFaltantes(faltantes, minId, maxId, idsExistentes.length);
     }
     
-    function mostrarModalFaltantes(faltantes, minId, maxId, total) {
+   function mostrarModalFaltantes(faltantes, minId, maxId, total) {
       const modal = document.getElementById('modalFaltantes');
       const contenido = document.getElementById('faltantesContenido');
       
+      // Guardamos los IDs faltantes en un atributo data para acceder después
+      modal.setAttribute('data-faltantes', JSON.stringify(faltantes));
+
       let html = `
         <div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 8px;">
           <div style="color: #ffc107; font-weight: 600; font-size: 16px;">⚠️ Se encontraron ${faltantes.length} preguntas faltantes</div>
@@ -1871,13 +1902,187 @@
       contenido.innerHTML = html;
       modal.classList.add('show');
     }
-    
+async function rellenarPreguntasFaltantesDesdeJSON() {
+      if (!catActual) {
+        alert('❌ Selecciona una categoría primero');
+        return;
+      }
+
+      if (!preguntasReferenciaFaltantes || preguntasReferenciaFaltantes.length === 0) {
+        alert('❌ Primero carga un archivo JSON con las preguntas de referencia');
+        return;
+      }
+
+      const modal = document.getElementById('modalFaltantes');
+      const faltantesStr = modal.getAttribute('data-faltantes');
+      if (!faltantesStr) {
+        alert('❌ No hay lista de IDs faltantes');
+        return;
+      }
+
+      let idsFaltantes;
+      try {
+        idsFaltantes = JSON.parse(faltantesStr);
+      } catch {
+        alert('❌ Error interno al leer los IDs faltantes');
+        return;
+      }
+
+      if (!confirm(`¿Rellenar ${idsFaltantes.length} preguntas faltantes?\n\nSe insertarán solo las preguntas que faltan desde el JSON cargado.\n\nCategoría: ${catActual}`)) {
+        return;
+      }
+
+      // Crear un mapa id -> pregunta para búsqueda rápida
+      const mapaRef = new Map();
+      preguntasReferenciaFaltantes.forEach(p => {
+        if (p && p.id !== undefined && p.id !== null) {
+          // Normalizar el ID a string para comparación
+          const idNormalizado = String(p.id).trim();
+          mapaRef.set(idNormalizado, p);
+        }
+      });
+
+      clearLog('logPreg');
+      log('logPreg', `🔍 Iniciando proceso de relleno de preguntas faltantes...`, 'info');
+      log('logPreg', `📊 IDs faltantes: ${idsFaltantes.length}`, 'info');
+      log('logPreg', `📄 Preguntas en JSON: ${preguntasReferenciaFaltantes.length}`, 'info');
+      log('logPreg', `━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info');
+
+      let insertadas = 0;
+      let sinEncontrar = 0;
+      let errores = 0;
+      let yaExisten = 0;
+
+      // Obtener IDs existentes en Firestore para evitar duplicados
+      let idsExistentes = new Set();
+      try {
+        const snapExist = await db.collection('preguntas')
+          .where('categoria', '==', catActual)
+          .get();
+
+        snapExist.forEach(doc => {
+          const d = doc.data();
+          if (d.id !== undefined && d.id !== null) {
+            idsExistentes.add(String(d.id).trim());
+          }
+        });
+        
+        log('logPreg', `✓ ${idsExistentes.size} preguntas ya existen en BD`, 'info');
+      } catch (e) {
+        log('logPreg', `⚠️ No se pudo verificar preguntas existentes: ${e.message}`, 'warning');
+      }
+
+      // Procesar cada ID faltante
+      for (const id of idsFaltantes) {
+        const idStr = String(id).trim();
+
+        // Verificar si ya existe en BD
+        if (idsExistentes.has(idStr)) {
+          yaExisten++;
+          log('logPreg', `↪ ID #${idStr} ya existe en BD, se omite`, 'info');
+          continue;
+        }
+
+        // Buscar en el JSON de referencia
+        const pRef = mapaRef.get(idStr);
+        if (!pRef) {
+          sinEncontrar++;
+          log('logPreg', `⚠️ ID #${idStr} no encontrado en JSON de referencia`, 'warning');
+          continue;
+        }
+
+        // Normalizar estructura de opciones
+        let opciones = [];
+        if (Array.isArray(pRef.opciones)) {
+          opciones = pRef.opciones;
+        } else if (pRef.opciones && typeof pRef.opciones === 'object') {
+          opciones = Object.values(pRef.opciones);
+        }
+
+        if (opciones.length < 4) {
+          log('logPreg', `⚠️ ID #${idStr} tiene solo ${opciones.length} opciones`, 'warning');
+        }
+
+        // Preparar datos para insertar
+        const datos = {
+          id: pRef.id,
+          pregunta: pRef.pregunta || '',
+          opciones: opciones,
+          respuestaCorrecta: parseInt(pRef.respuestaCorrecta ?? 0),
+          activa: pRef.activa !== false,
+          categoria: catActual,
+          creadaEn: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        // Insertar en Firestore
+        try {
+          await db.collection('preguntas').add(datos);
+          insertadas++;
+          log('logPreg', `✅ Insertada pregunta #${idStr}`, 'success');
+          
+          // Log cada 10 preguntas para no saturar
+          if (insertadas % 10 === 0) {
+            log('logPreg', `📊 Progreso: ${insertadas} insertadas...`, 'info');
+          }
+        } catch (e) {
+          errores++;
+          log('logPreg', `❌ Error insertando #${idStr}: ${e.message}`, 'error');
+        }
+      }
+
+      log('logPreg', `━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info');
+      log('logPreg', `✅ PROCESO COMPLETADO`, 'success');
+      log('logPreg', `➕ Insertadas: ${insertadas}`, insertadas > 0 ? 'success' : 'info');
+      log('logPreg', `✓ Ya existían: ${yaExisten}`, 'info');
+      log('logPreg', `❓ No encontradas en JSON: ${sinEncontrar}`, sinEncontrar > 0 ? 'warning' : 'info');
+      log('logPreg', `⚠️ Errores: ${errores}`, errores > 0 ? 'error' : 'info');
+
+      // Actualizar contador de categoría y recargar
+      if (insertadas > 0) {
+        try {
+          log('logPreg', `🔄 Sincronizando contador de categoría...`, 'info');
+          await sincronizarContadorCategoria(catActual);
+          log('logPreg', `✓ Contador sincronizado`, 'success');
+          
+          await cargarPreguntasConsola();
+          await catSeleccionada();
+        } catch (e) {
+          log('logPreg', `⚠️ Error actualizando stats: ${e.message}`, 'warning');
+        }
+      }
+
+      // Mostrar resumen
+      const mensaje = `✅ Proceso completado
+
+📊 RESUMEN:
+━━━━━━━━━━━━━━━━━━━━━━
+✅ Insertadas: ${insertadas}
+✓ Ya existían: ${yaExisten}
+❓ No encontradas: ${sinEncontrar}
+${errores > 0 ? `⚠️ Errores: ${errores}` : ''}
+
+${insertadas > 0 ? '🔄 La categoría ha sido sincronizada' : ''}`;
+
+      alert(mensaje);
+      
+      // Limpiar el archivo cargado
+      document.getElementById('fileJSONFaltantes').value = '';
+      document.getElementById('fileNameFaltantes').textContent = '';
+      document.getElementById('btnRellenarFaltantes').disabled = true;
+      preguntasReferenciaFaltantes = null;
+    }
     function cerrarModalDuplicados() {
       document.getElementById('modalDuplicados').classList.remove('show');
     }
     
     function cerrarModalFaltantes() {
       document.getElementById('modalFaltantes').classList.remove('show');
+      
+      // Limpiar el archivo y estado
+      document.getElementById('fileJSONFaltantes').value = '';
+      document.getElementById('fileNameFaltantes').textContent = '';
+      document.getElementById('btnRellenarFaltantes').disabled = true;
+      preguntasReferenciaFaltantes = null;
     }
     
     async function toggleActivaPregunta(index) {
@@ -2045,7 +2250,38 @@
         alert('Error: ' + e.message);
       }
     }
-    
+    function cargarJSONFaltantes() {
+      const file = document.getElementById('fileJSONFaltantes').files[0];
+      if (!file) return;
+      
+      document.getElementById('fileNameFaltantes').textContent = `📄 ${file.name}`;
+      log('logPreg', `Cargando ${file.name} para rellenar faltantes...`, 'info');
+      
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const preguntas = JSON.parse(e.target.result);
+          
+          if (!Array.isArray(preguntas) || preguntas.length === 0) {
+            alert('❌ El JSON debe contener un array de preguntas');
+            preguntasReferenciaFaltantes = null;
+            document.getElementById('btnRellenarFaltantes').disabled = true;
+            return;
+          }
+          
+          preguntasReferenciaFaltantes = preguntas;
+          document.getElementById('btnRellenarFaltantes').disabled = false;
+          
+          log('logPreg', `✅ ${preguntas.length} preguntas cargadas desde JSON`, 'success');
+          
+        } catch (err) {
+          alert('❌ Error al procesar el JSON: ' + err.message);
+          preguntasReferenciaFaltantes = null;
+          document.getElementById('btnRellenarFaltantes').disabled = true;
+        }
+      };
+      reader.readAsText(file);
+    }
     function cargarJSON() {
       const file = document.getElementById('fileJSON').files[0];
       if (!file) return;
