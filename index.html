@@ -167,7 +167,7 @@ body {
   background: var(--card);
   border-radius: 16px;
   padding: 32px 24px;
-  margin-top: 30px;
+  margin-top: 6px;
   box-shadow: 0 8px 32px var(--shadow);
   border: 1px solid var(--border);
   transition: all 0.3s ease;
@@ -298,7 +298,7 @@ body {
 /* ==================== LOGO ==================== */
 .logo {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 14px;
 }
 
 .logo h1 {
@@ -412,9 +412,9 @@ body {
 /* ==================== USER INFO ==================== */
 .user-info {
   background: var(--accent-bg);
-  padding: 16px 90px 16px 20px;
+  padding: 16px 16px 16px 16px;
   border-radius: 10px;
-  margin-top: 12px;
+  margin-top: 6px;
   margin-bottom: 12px;
   border: 1px solid var(--accent-border);
   transition: all 0.3s ease;
@@ -430,12 +430,12 @@ body {
   gap: 4px;
   width: 100%;
   min-width: 0;
-  max-width: calc(100% - 80px);
+  max-width: calc(100% - 16px);
 }
 
 .user-info .user-label {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -444,11 +444,12 @@ body {
   font-weight: 600;
   font-size: 14px;
   transition: color 0.3s ease;
-  word-break: break-word;
+  word-break: break-all;
   line-height: 1.3;
   cursor: default;
-  overflow-wrap: break-word;
-  hyphens: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-info .logout {
@@ -484,7 +485,7 @@ body {
 .categoria-grid {
   display: grid;
   gap: 16px;
-  margin-top: 20px;
+  margin-top: 6px;
 }
 
 .categoria-card {
@@ -518,7 +519,7 @@ body {
 .categoria-card .info {
   display: flex;
   gap: 20px;
-  margin-top: 12px;
+  margin-top: 6px;
   font-size: 13px;
 }
 
@@ -636,7 +637,7 @@ body {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-top: 24px;
+  margin-top: 6px;
   gap: 12px;
 }
 
@@ -709,7 +710,7 @@ body {
 /* ==================== BOTÓN EXPLICAR CON IA ==================== */
 #btnExplicarIA {
   width: 100%;
-  margin-top: 16px;
+  margin-top: 6px;
   background: transparent;
   border: 2px solid var(--border-hover);
   color: var(--text);
@@ -726,7 +727,7 @@ body {
 .chatgpt-btn {
   background: linear-gradient(135deg, #10a37f 0%, #0d8a6a 100%);
   color: white;
-  margin-top: 16px;
+  margin-top: 6px;
 }
 
 .chatgpt-btn:hover {
@@ -748,7 +749,7 @@ body {
 #tandaOptions {
   display: flex;
   gap: 8px;
-  margin-top: 20px;
+  margin-top: 6px;
 }
 
 #tandaOptions .btn {
@@ -780,7 +781,7 @@ body {
   height: 6px;
   border-radius: 10px;
   overflow: hidden;
-  margin-top: 8px;
+  margin-top: 6px;
   transition: background 0.3s ease;
 }
 
@@ -855,7 +856,7 @@ body {
   background: var(--card-2);
   border: 1px solid var(--border-hover);
   border-radius: 10px;
-  margin-top: 24px;
+  margin-top: 6px;
   overflow: hidden;
   transition: all 0.3s ease;
 }
@@ -966,7 +967,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 12px;
-  margin-top: 12px;
+  margin-top: 6px;
 }
 
 .stats-mini-card {
@@ -1125,7 +1126,7 @@ body {
   font-size: 12px;
   color: var(--muted);
   text-align: center;
-  margin-top: 8px;
+  margin-top: 6px;
   transition: color 0.3s ease;
 }
 
@@ -1276,6 +1277,81 @@ body {
 .perfil-info-card:hover {
   border-color: var(--accent-border);
   background: var(--accent-bg);
+}
+      /* Estilos para la sección de Soporte en el modal de perfil */
+.perfil-support-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.perfil-support-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.perfil-support-icon {
+  font-size: 32px;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.perfil-support-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.perfil-support-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.perfil-support-email {
+  font-size: 14px;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  display: block;
+  word-break: break-word;
+  transition: color 0.3s ease;
+}
+
+.perfil-support-email:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* Ajustes para móvil */
+@media (max-width: 480px) {
+  .perfil-support-card {
+    gap: 12px;
+    padding: 12px;
+  }
+  
+  .perfil-support-icon {
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+  }
+  
+  .perfil-support-email {
+    font-size: 13px;
+  }
 }
 
 .perfil-avatar {
@@ -1498,7 +1574,7 @@ body {
   font-weight: 600 !important;
   font-size: 15px !important;
   text-shadow: 0 2px 4px rgba(0,0,0,0.6) !important;
-  margin-top: 4px !important;
+  margin-top: 6px !important;
 }
 
 .test-card-quick h4 {
@@ -1698,7 +1774,7 @@ body {
 
 /* ==================== PLANES DE PAGO ==================== */
 .planes-container {
-  margin-top: 30px;
+  margin-top: 6px;
   display: none;
 }
 
@@ -1711,7 +1787,7 @@ body {
   display: grid;
   grid-template-columns: repeat(4, minmax(160px, 1fr));
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 6px;
 }
 
 .plan-card {
@@ -1760,7 +1836,7 @@ body {
   padding: 4px 8px;
   border-radius: 6px;
   display: inline-block;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .plan-card .plan-price small {
@@ -1785,7 +1861,7 @@ body {
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .plan-card.popular {
@@ -1844,13 +1920,13 @@ body {
   .card {
     padding: 16px 12px;
     border-radius: 12px;
-    margin-top: 60px;
+    margin-top: 6px;
   }
 
   .toggles-container {
     padding: 8px;
     gap: 8px;
-    margin-bottom: 4px;
+    margin-bottom: 0px;
   }
 
   .toggle-wrapper {
@@ -1894,7 +1970,7 @@ body {
   }
 
   .logo {
-    margin-bottom: 20px;
+    margin-bottom: 14px;
   }
 
   .logo h1 {
@@ -1907,11 +1983,11 @@ body {
   }
 
   .user-info {
-    padding: 14px 75px 14px 16px;
+    padding: 14px 14px 14px 12px;
   }
 
   .user-info .user-content {
-    max-width: calc(100% - 65px);
+    max-width: calc(100% - 14px);
   }
 
   .user-info .logout {
@@ -1924,7 +2000,7 @@ body {
   }
 
   .pregunta-container {
-    margin-bottom: 20px;
+    margin-bottom: 14px;
   }
 
   .pregunta-header {
@@ -1934,7 +2010,7 @@ body {
 
   .pregunta-texto {
     font-size: 16px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
   #statsRealTime {
@@ -1969,7 +2045,7 @@ body {
   }
 
   #btnExplicarIA {
-    margin-top: 12px;
+    margin-top: 6px;
     font-size: 13px;
   }
 
@@ -1989,7 +2065,7 @@ body {
   }
 
   .botones-navegacion {
-    margin-top: 16px;
+    margin-top: 6px;
     gap: 8px;
   }
 
@@ -2022,7 +2098,7 @@ body {
 
   #tandaOptions {
     gap: 6px;
-    margin-top: 16px;
+    margin-top: 6px;
   }
 
   #tandaOptions .btn {
@@ -2074,7 +2150,7 @@ body {
 
   .progress-bar {
     height: 6px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
   .perfil-button {
@@ -2185,11 +2261,11 @@ body {
 
 @media (max-width: 480px) {
   .user-info {
-    padding: 12px 70px 12px 14px;
+    padding: 12px 20px 12px 14px;
   }
 
   .user-info .user-content {
-    max-width: calc(100% - 60px);
+    max-width: calc(100% - 16px);
   }
 
   .user-info .logout {
@@ -2303,11 +2379,14 @@ body {
           📧 Iniciar sesión con email
         </button>
 
-        <div class="small-text" style="margin-top: 20px;">
-          Al continuar, aceptas nuestros términos y condiciones
-        </div>
+       <div class="small-text" style="margin-top: 6px;">
+  Al continuar, aceptas nuestros 
+  <a href="terminos.html" target="_blank" style="color: var(--accent); text-decoration: none;">Términos y Condiciones</a> 
+  y 
+  <a href="privacidad.html" target="_blank" style="color: var(--accent); text-decoration: none;">Política de Privacidad</a>
+</div>
 
-        <div id="loginLoading" style="display: none; text-align: center; margin-top: 15px;">
+        <div id="loginLoading" style="display: none; text-align: center; margin-top: 6px;">
           <div class="spinner" style="width: 20px; height: 20px; margin: 0 auto 10px;"></div>
           <p style="color: var(--muted); font-size: 14px;">Iniciando sesión...</p>
         </div>
@@ -2326,7 +2405,15 @@ body {
 
         <input type="email" id="emailInput" class="form-input" placeholder="tu@email.com">
         <input type="password" id="passwordInput" class="form-input" placeholder="Contraseña (mín. 6 caracteres)">
-
+<label style="display: flex; align-items: start; gap: 10px; margin: 16px 0; cursor: pointer;">
+  <input type="checkbox" id="aceptoTerminos" required style="margin-top: 6px; cursor: pointer;">
+  <span style="font-size: 13px; color: var(--muted); line-height: 1.4;">
+    Acepto los 
+    <a href="terminos.html" target="_blank" style="color: var(--accent);">Términos y Condiciones</a> 
+    y la 
+    <a href="privacidad.html" target="_blank" style="color: var(--accent);">Política de Privacidad</a>
+  </span>
+</label>
         <button class="btn btn-primary" onclick="loginWithEmail()" style="margin-bottom: 12px;">
           Iniciar Sesión
         </button>
@@ -2334,7 +2421,7 @@ body {
           Crear Nueva Cuenta
         </button>
 
-        <button class="btn btn-secondary" onclick="volverLoginPrincipal()" style="margin-top: 20px;">
+        <button class="btn btn-secondary" onclick="volverLoginPrincipal()" style="margin-top: 6px;">
           ← Volver
         </button>
       </div>
@@ -2348,7 +2435,7 @@ body {
             <div class="user-label" style="font-size: 11px; margin-bottom: 2px;">
               📧 <a href="mailto:multitest.gobcan@gmail.com" style="color: var(--accent); text-decoration: none;" title="Enviar correo de contacto">multitest.gobcan@gmail.com</a>
             </div>
-            <div class="user-label">Versión BETA 0.11f - Conectado como:</div>  
+            <div class="user-label">Versión BETA 0.11g - Conectado como:</div>  
             <div class="email" id="userEmailSeleccion"></div>  
           </div>  
           <button class="logout" onclick="cerrarSesion()">🔄</button>
@@ -2494,7 +2581,7 @@ body {
             💬 Explicar con IA
           </button>
 
-          <div id="feedbackContainer" style="display:none; margin-top: 20px;"></div>
+          <div id="feedbackContainer" style="display:none; margin-top: 6px;"></div>
         </div>
 
         <div id="tandaOptions" style="display:none;">  
@@ -2566,7 +2653,7 @@ body {
             </div>
           </div>
 
-          <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 12px;">
+          <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 12px;">
             <button class="btn btn-primary" onclick="nuevoTest()">
               🔄 Hacer otro test
             </button>
@@ -2590,6 +2677,15 @@ body {
     </div>
     
     <div class="perfil-modal-body">
+      <div class="perfil-section">  
+    <div class="perfil-support-card">  
+      <div class="perfil-support-icon">📧</div>  
+      <div class="perfil-support-details">  
+        <div class="perfil-support-label">Soporte</div>  
+        <a href="mailto:multitest.gobcan@gmail.com" class="perfil-support-email">multitest.gobcan@gmail.com</a>  
+      </div>  
+    </div>  
+  </div>
       <!-- Info del usuario -->
       <div class="perfil-section">
         <div class="perfil-info-card">
@@ -2607,7 +2703,7 @@ body {
         <div id="perfilSuscripciones">
           <div class="loading">
             <div class="spinner" style="width: 30px; height: 30px;"></div>
-            <p style="color: var(--muted); font-size: 14px; margin-top: 10px;">Cargando suscripciones...</p>
+            <p style="color: var(--muted); font-size: 14px; margin-top: 6px;">Cargando suscripciones...</p>
           </div>
         </div>
       </div>
@@ -3224,7 +3320,7 @@ function mostrarBotonIniciarTest(testNombre) {
       border: 2px solid var(--premium-border);
       border-radius: 12px;
       padding: 16px 20px;
-      margin-top: 12px;
+      margin-top: 6px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -3700,8 +3796,7 @@ function seleccionarPlan(plan) {
   }
 
   const planesInfo = {
-    gratuito: { nombre: 'Plan Gratuito', precio: 'Gratis', descripcion: '2 tandas de pru
-      eba' },
+    gratuito: { nombre: 'Plan Gratuito', precio: 'Gratis', descripcion: '2 tandas de prueba' },
     mensual: { nombre: 'Plan Mensual', precio: '9,99€/mes', descripcion: 'Acceso ilimitado' },
     trimestral: { nombre: 'Plan Trimestral', precio: '24,99€/3 meses', descripcion: 'Ahorra 25%' },
     anual: { nombre: 'Plan Anual', precio: '79,99€/año', descripcion: 'Ahorra 33%' }
@@ -5477,108 +5572,89 @@ async function cancelarSuscripcion(testId, testNombre) {
       }
     });
 
-    window.onload = function() {
-  console.log('🔄 Página cargada, inicializando...');
-  loadSavedTheme();
-  loadStatsPreference();
-
-  // ========== VERIFICAR PAGO AL VOLVER DE STRIPE ==========
-  const urlParams = new URLSearchParams(window.location.search);
-  const paymentStatus = urlParams.get('payment');
-  const sessionId = urlParams.get('session_id');
+  // ... código anterior ...
   
-  if (paymentStatus === 'success' && sessionId) {
-    verificarPagoStripe(sessionId);
-  } else if (paymentStatus === 'cancelled') {
-    alert('❌ Pago cancelado.');
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
-  // ======================================================
+  window.onload = function() {
+    console.log('🔄 Página cargada, inicializando...');
+    loadSavedTheme();
+    loadStatsPreference();
+    setTimeout(mostrarBannerCookies, 100);
 
-  window.addEventListener('beforeunload', function() {
-    guardarProgreso();
-  });
-};
-
-// ========== FUNCIÓN VERIFICAR PAGO ==========
-async function verificarPagoStripe(sessionId) {
-  let loadingDiv = null;
-  
-  try {
-    // Mostrar loading
-    loadingDiv = document.createElement('div');
-    loadingDiv.id = 'loadingPago';
-    loadingDiv.style.cssText = `
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.8); z-index: 99999;
-      display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 20px;
-    `;
-    loadingDiv.innerHTML = `
-      <div class="spinner" style="width: 50px; height: 50px;"></div>
-      <p style="color: white; font-size: 18px;">Verificando tu pago...</p>
-    `;
-    document.body.appendChild(loadingDiv);
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    const sessionId = urlParams.get('session_id');
     
-    console.log('🔍 Verificando pago con sessionId:', sessionId);
-    
-    // ✅ Usar firebase.app().functions()
-    const verificarPago = firebase.app().functions('europe-west6').httpsCallable('verificarPago');
-    
-    // ✅ Añadir timeout de 10 segundos
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout verificando pago')), 10000)
-    );
-    
-    const resultado = await Promise.race([
-      verificarPago({ sessionId: sessionId }),
-      timeoutPromise
-    ]);
-    
-    console.log('✅ Resultado verificación:', resultado.data);
-    
-    // Eliminar loading
-    if (loadingDiv && loadingDiv.parentNode) {
-      document.body.removeChild(loadingDiv);
-      loadingDiv = null;
-    }
-    
-    if (resultado.data.success) {
-      // Recargar suscripciones
-      await cargarSuscripcionesUsuario();
-      
-      alert(`🎉 ¡Pago exitoso!\n\n` +
-            `Plan: ${resultado.data.plan}\n` +
-            `Categoría: ${resultado.data.categoria}\n\n` +
-            `Ya puedes usar tus tests ilimitados.`);
-      
-      // Limpiar URL
+    if (paymentStatus === 'success' && sessionId) {
+      verificarPagoStripe(sessionId);
+    } else if (paymentStatus === 'cancelled') {
+      alert('❌ Pago cancelado.');
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-    
-  } catch (error) {
-    console.error('❌ Error verificando pago:', error);
-    
-    // Asegurar que se elimina el loading
-    if (loadingDiv && loadingDiv.parentNode) {
-      document.body.removeChild(loadingDiv);
-    }
-    
-    // Si es timeout, el webhook lo procesará
-    if (error.message === 'Timeout verificando pago') {
-      alert('⏱️ La verificación está tardando más de lo normal.\n\n' +
-            'Tu pago se procesará en unos minutos.\n' +
-            'Recarga la página en 1-2 minutos para ver tu suscripción activa.');
-    } else {
-      alert('⚠️ Hubo un problema verificando tu pago.\n\n' +
-            'Tu pago fue procesado correctamente y se activará automáticamente.\n' +
-            'Recarga la página en 1 minuto.');
-    }
-    
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
-}
 
-  </script>
+    window.addEventListener('beforeunload', function() {
+      guardarProgreso();
+    });
+  };
+
+  // ========== FUNCIÓN VERIFICAR PAGO ==========
+  async function verificarPagoStripe(sessionId) {
+    // ... tu código de verificar pago ...
+  }
+
+  // ========== FUNCIONES DE COOKIES ==========
+  function mostrarBannerCookies() {
+    const banner = document.getElementById('cookieBanner');
+    if (!banner) return;
+    
+    const consentimiento = localStorage.getItem('cookieConsent');
+    if (!consentimiento) {
+      banner.style.display = 'block';
+    } else if (consentimiento === 'aceptado') {
+      inicializarAnalytics();
+    }
+  }
+
+  function aceptarCookies() {
+    localStorage.setItem('cookieConsent', 'aceptado');
+    const banner = document.getElementById('cookieBanner');
+    if (banner) banner.style.display = 'none';
+    inicializarAnalytics();
+  }
+
+  function rechazarCookies() {
+    localStorage.setItem('cookieConsent', 'rechazado');
+    const banner = document.getElementById('cookieBanner');
+    if (banner) banner.style.display = 'none';
+  }
+
+  function inicializarAnalytics() {
+    if (typeof analytics !== 'undefined' && analytics) {
+      console.log('📊 Analytics activado con consentimiento');
+    }
+  }
+
+  </script> <!-- ✅ CERRAR SCRIPT AQUÍ -->
+
+  <!-- ✅ AHORA SÍ, EL HTML DEL BANNER -->
+  <div id="cookieBanner" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); padding: 20px; box-shadow: 0 -4px 20px rgba(0,0,0,0.5); z-index: 10000; border-top: 2px solid var(--accent);">
+    <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 250px;">
+        <p style="color: var(--text); margin-bottom: 8px; font-weight: 600;">🍪 Usamos cookies</p>
+        <p style="color: var(--muted); font-size: 14px;">
+          Utilizamos cookies necesarias para el funcionamiento de la plataforma y análisis básico. 
+          <a href="privacidad.html" target="_blank" style="color: var(--accent); text-decoration: none;">Más información</a>
+        </p>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <button onclick="rechazarCookies()" style="padding: 10px 20px; background: transparent; border: 2px solid var(--border-hover); color: var(--muted); border-radius: 8px; cursor: pointer; font-weight: 600;">
+          Rechazar
+        </button>
+        <button onclick="aceptarCookies()" style="padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+          Aceptar
+        </button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
