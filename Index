@@ -448,6 +448,28 @@ body {
   color: var(--danger);  
   transform: translateY(-1px);  
 }
+/* AÑADE ESTO AL FINAL DE TU SECCIÓN DE ESTILOS (antes del responsive) */
+.stats-always-visible #statsRealTime {
+  display: grid !important; /* Fuerza visibilidad */
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* También podemos añadir una clase al body */
+body.stats-visible .stats-switch {
+  display: none; /* Ocultamos el toggle pero mantenemos funcionalidad */
+}
+
+/* Opcional: Añade un pequeño indicador visual */
+.stats-always-visible::after {
+  content: '📊';
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  font-size: 12px;
+  opacity: 0.3;
+  z-index: 1000;
+}
 .user-info {
   position: relative;
   display: flex;
@@ -2411,12 +2433,12 @@ grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       <div class="theme-option active" id="darkIcon">🌙</div>
     </div>
 
-    <div class="toggle-wrapper" title="Mostrar/Ocultar estadísticas">
-      <div class="stats-switch active" id="statsSwitch" onclick="toggleStatsVisibility()">
-        <div class="stats-switch-slider"></div>
-      </div>
+    <div class="toggle-wrapper" title="Mostrar/Ocultar estadísticas" style="display: none;">
+    <div class="stats-switch active" id="statsSwitch" onclick="toggleStatsVisibility()">
+      <div class="stats-switch-slider"></div>
     </div>
   </div>
+</div>
 
     <!-- PANTALLA 1: LOGIN CON FIREBASE -->
     <div id="screenLogin" class="screen active">  
@@ -4262,7 +4284,12 @@ function prepararNuevaTanda(forzarNueva = false) {
   incrementarTandaUsada();
   
   guardarProgreso();
-  restoreStatsPreference();
+  // ❌ ELIMINADO: restoreStatsPreference();
+// ✅ AÑADIDO: Forzar stats visibles
+const statsPanel = document.getElementById('statsRealTime');
+if (statsPanel) {
+    statsPanel.classList.remove('hidden');
+}
   mostrarPregunta();
 }
 
@@ -4830,23 +4857,28 @@ function mostrarStatsEnTiempoReal() {
   }
 
   const bloques = [];
-// PREGUNTA (Morado) -> índice de la pregunta actual (1‑based)
-  const numeroPregunta = indicePreguntaActual + 1;
-  bloques.push(`
-    <div style="text-align: center;">
-      <div style="color: var(--muted); font-size: 11px;">Pregunta</div>
-      <div class="stat-value-pregunta" style="font-size: 20px; font-weight: 700;">${numeroPregunta}</div>
-    </div>
-  `);
 
-  // TANDA (Amarillo) -> número de tanda global
+  // 1. PREGUNTA (Morado) -> índice de la pregunta actual (1‑based)
+const numeroPregunta = indicePreguntaActual + 1;  
+const preguntasPorTanda = tandaActual.length || 1;  // tamaño de la tanda actual  
+bloques.push(`  
+  <div style="text-align: center;">  
+    <div style="color: var(--muted); font-size: 11px;">Pregunta</div>  
+    <div class="stat-value-pregunta" style="font-size: 20px; font-weight: 700;">  
+      ${numeroPregunta}/${preguntasPorTanda}  
+    </div>  
+  </div>  
+`);
+
+  // 2. TANDA (Amarillo) -> número de tanda global
   bloques.push(`
     <div style="text-align: center;">
       <div style="color: var(--muted); font-size: 11px;">Tanda</div>
       <div class="stat-value-tanda" style="font-size: 20px; font-weight: 700;">${numeroTanda}</div>
     </div>
   `);
-  // ACIERTOS (Verde)
+
+  // 3. ACIERTOS (Verde)
   bloques.push(`
     <div style="text-align: center;">
       <div style="color: var(--muted); font-size: 11px;">Aciertos</div>
@@ -4854,15 +4886,15 @@ function mostrarStatsEnTiempoReal() {
     </div>
   `);
 
-  // FALLOS (Rojo)
+  // 4. ERRORES (Rojo) - Cambié "Fallos" por "Errores" para mantener consistencia con tu solicitud
   bloques.push(`
     <div style="text-align: center;">
-      <div style="color: var(--muted); font-size: 11px;">Fallos</div>
+      <div style="color: var(--muted); font-size: 11px;">Errores</div>
       <div style="color: var(--danger); font-size: 20px; font-weight: 700;">${(preguntasRealizadasTotal - (aciertosGlobal || 0))}</div>
     </div>
   `);
 
-  // RESTANTES (Azul/Accent)
+  // 5. RESTANTES (Azul/Accent)
   bloques.push(`
     <div style="text-align: center;">
       <div style="color: var(--muted); font-size: 11px;">Restantes</div>
@@ -4870,31 +4902,20 @@ function mostrarStatsEnTiempoReal() {
     </div>
   `);
 
-  // PREGUNTA (Morado) -> índice de la pregunta actual (1‑based)
-  const numeroPregunta = indicePreguntaActual + 1;
-  bloques.push(`
-    <div style="text-align: center;">
-      <div style="color: var(--muted); font-size: 11px;">Pregunta</div>
-      <div class="stat-value-pregunta" style="font-size: 20px; font-weight: 700;">${numeroPregunta}</div>
-    </div>
-  `);
-
-  // TANDA (Amarillo) -> número de tanda global
-  bloques.push(`
-    <div style="text-align: center;">
-      <div style="color: var(--muted); font-size: 11px;">Tanda</div>
-      <div class="stat-value-tanda" style="font-size: 20px; font-weight: 700;">${numeroTanda}</div>
-    </div>
-  `);
-
   statsPanel.innerHTML = bloques.join('\n');
 
-  const isVisible = document.getElementById('statsSwitch').classList.contains('active');
-  if (!isVisible) {
-    statsPanel.classList.add('hidden');
-  } else {
-    statsPanel.classList.remove('hidden');
-  }
+//  const isVisible = document.getElementById('statsSwitch').classList.contains('active');
+//  if (!isVisible) {
+//    statsPanel.classList.add('hidden');
+//  } else {
+//    statsPanel.classList.remove('hidden');
+//  }
+statsPanel.classList.remove('hidden');
+  
+  // ✅ ASEGURAMOS QUE ESTÉ BIEN MOSTRADO
+  statsPanel.style.display = 'grid';
+  statsPanel.style.opacity = '1';
+  statsPanel.style.visibility = 'visible';
 }
     // ==================== GUARDADO Y CARGA DE PROGRESO ====================
 
@@ -5666,10 +5687,25 @@ async function cancelarSuscripcion(testId, testNombre) {
       }
     });
 
-  window.onload = function() {
+ window.onload = function() {
     console.log('🔄 Página cargada, inicializando...');
     loadSavedTheme();
-    loadStatsPreference();
+    loadStatsPreference(); // ✅ MANTENEMOS (para localStorage si existe)
+    
+    // ✅ FORZAMOS QUE LAS ESTADÍSTICAS ESTÉN SIEMPRE VISIBLES
+    const statsSwitch = document.getElementById('statsSwitch');
+    if (statsSwitch) {
+        statsSwitch.classList.add('active'); // Siempre activo
+    }
+    
+    // ✅ FORZAMOS EL PANEL DE STATS A VISIBLE
+    setTimeout(() => {
+        const statsPanel = document.getElementById('statsRealTime');
+        if (statsPanel) {
+            statsPanel.classList.remove('hidden');
+        }
+    }, 100);
+    
     setTimeout(mostrarBannerCookies, 100);
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -5677,17 +5713,16 @@ async function cancelarSuscripcion(testId, testNombre) {
     const sessionId = urlParams.get('session_id');
     
     if (paymentStatus === 'success' && sessionId) {
-      verificarPagoStripe(sessionId);
+        verificarPagoStripe(sessionId);
     } else if (paymentStatus === 'cancelled') {
-      alert('❌ Pago cancelado.');
-      window.history.replaceState({}, document.title, window.location.pathname);
+        alert('❌ Pago cancelado.');
+        window.history.replaceState({}, document.title, window.location.pathname);
     }
 
     window.addEventListener('beforeunload', function() {
-      guardarProgreso();
+        guardarProgreso();
     });
-  };
-
+};
   // ========== FUNCIÓN VERIFICAR PAGO ==========
   async function verificarPagoStripe(sessionId) {
     // ... tu código de verificar pago ...
